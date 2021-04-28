@@ -23,7 +23,9 @@ fi
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # Add z command
-eval "$(zoxide init zsh)"
+if command -v zoxide; then
+  eval "$(zoxide init zsh)"
+fi
 
 # replace ls with exa
 # alias l='exa -1a'
