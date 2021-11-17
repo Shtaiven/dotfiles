@@ -22,16 +22,41 @@ fi
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-# Add z command
-if command -v zoxide; then
+#
+# zoxide
+#
+
+if (( $+commands[zoxide] )); then
   eval "$(zoxide init zsh)"
 fi
 
-# replace ls with exa
-# alias l='exa -1a'
-# alias ll='exa -l'
-# alias la='exa -a'
-# alias ls='exa --color=auto --group-directories-first'
+#
+# exa
+#
 
-# replace tree with exa
-# alias tree='exa --tree'
+# if (( $+commands[exa] )); then
+#   # replace ls with exa
+#   alias l='exa -1a'
+#   alias ll='exa -l'
+#   alias la='exa -a'
+#   alias ls='exa --color=auto --group-directories-first'
+
+#   # replace tree with exa
+#   alias tree='exa --tree'
+# fi
+
+#
+# mujoco
+#
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/steven/.mujoco/mujoco200/bin
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so
+
+#
+# pyenv and pyenv-virtualenv
+#
+
+if (( $+commands[pyenv] )); then
+  eval "$(pyenv init -)"
+  eval "$(pyenv virtualenv-init -)"
+fi
