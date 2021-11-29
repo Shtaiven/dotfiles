@@ -2,7 +2,7 @@
 # Installs dotfiles to home directory.
 #
 # Authors:
-#   Steven Eisinger
+#   Steven Eisinger <steven.a.eisinger@gmail.com>
 #
 
 # vars
@@ -25,6 +25,12 @@ for rcfile in $SOURCE_DIR/runcoms/^README.md(.N); do
     ln $LN_OPTS "$rcfile" "$INSTALL_DIR/.${rcfile:t}"
 done
 
-# install powerlevel10k config
-$ECHO "Installing $SOURCE_DIR/p10k.zsh to $INSTALL_DIR/.p10k.zsh"
-ln $LN_OPTS "$SOURCE_DIR/p10k.zsh" "$INSTALL_DIR/.p10k.zsh"
+# install config files
+for cfile in $SOURCE_DIR/config/**/*(.)^README.md(.N); do
+    $ECHO "Installing $cfile to $INSTALL_DIR/.config/.${cfile:t}"
+    ln $LN_OPTS "$cfile" "$INSTALL_DIR/.config/.${cfile:t}"
+done
+
+# install starship for prompt customization
+sh -c "$(curl -fsSL https://starship.rs/install.sh)" -- -y
+

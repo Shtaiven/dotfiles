@@ -3,6 +3,7 @@
 #
 # Authors:
 #   Sorin Ionescu <sorin.ionescu@gmail.com>
+#   Steven Eisinger <steven.a.eisinger@gmail.com>
 #
 
 #
@@ -17,8 +18,8 @@ fi
 # Editors
 #
 
-export EDITOR='nano'
-export VISUAL='nano'
+export EDITOR='vim'
+export VISUAL='vim'
 export PAGER='less'
 
 #
@@ -73,3 +74,9 @@ if (( $+commands[pyenv] )); then
   export PATH="$PYENV_ROOT/bin:$PATH"
   eval "$(pyenv init --path)"
 fi
+
+#
+# Vulkan fix for nvidia gpu
+#
+
+export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/nvidia_icd.json"

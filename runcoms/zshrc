@@ -1,15 +1,9 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
 #
 # Executes commands at the start of an interactive session.
 #
 # Authors:
 #   Sorin Ionescu <sorin.ionescu@gmail.com>
+#   Steven Eisinger <steven.a.eisinger@gmail.com>
 #
 
 # Source Prezto.
@@ -17,10 +11,8 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
 
-# Customize to your needs...
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# Customize prompt using starship
+eval "$(starship init zsh)"
 
 #
 # zoxide
@@ -29,21 +21,6 @@ fi
 if (( $+commands[zoxide] )); then
   eval "$(zoxide init zsh)"
 fi
-
-#
-# exa
-#
-
-# if (( $+commands[exa] )); then
-#   # replace ls with exa
-#   alias l='exa -1a'
-#   alias ll='exa -l'
-#   alias la='exa -a'
-#   alias ls='exa --color=auto --group-directories-first'
-
-#   # replace tree with exa
-#   alias tree='exa --tree'
-# fi
 
 #
 # mujoco
@@ -57,6 +34,7 @@ export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so
 #
 
 if (( $+commands[pyenv] )); then
+  export PYENV_VIRTUALENV_DISABLE_PROMPT=1
   eval "$(pyenv init -)"
   eval "$(pyenv virtualenv-init -)"
 fi
