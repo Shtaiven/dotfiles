@@ -39,7 +39,9 @@ Personal dotfiles for *nix
     where `<package>` is the name of the package folder you would like to install, e.g. `stow zsh`. To install all packages, run:
 
     ```zsh
-    for d in */ ; do
-        stow ${d%*/}
+    for f in */ ; do
+        if [ -d "$f" ]; then
+            stow ${f%*/}
+        fi
     done
     ```
