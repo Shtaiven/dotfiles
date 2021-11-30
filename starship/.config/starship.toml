@@ -1,0 +1,6 @@
+format = """
+[╭─[\uE0B6\uE0B4](bold red)[\uE0B2\uE0B0](bold green)[\uE0BA\uE0B8](bold blue)](bold white) $directory$all
+[╰─](bold white)$character"""
+
+[line_break]
+disabled = true
