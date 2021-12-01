@@ -5,11 +5,11 @@
 #
 
 format = """
-[[█](cyan)$username$hostname$singularity$directory$vcsh$git_branch$git_commit$git_state$git_metrics$git_status$hg_branch$fill\uE0B7 $all\uE0B5$fill$jobs$time](dimmed white)
+[ [\uE0B6](cyan)$username$hostname$singularity$directory[\uE0B8](cyan)[\uE0BE](yellow)$vcsh$git_branch$git_commit$git_state$git_metrics$git_status$hg_branch[\uE0B4](yellow) $all$fill[\uE0B6](yellow)$jobs[\uE0BC](yellow)[\uE0BA](purple)$time[\uE0B4](purple) ](dimmed white)
 $character"""
 
 [fill]
-symbol = "─"
+symbol = " "
 style = "dimmed white"
 
 [line_break]
@@ -58,36 +58,47 @@ truncation_symbol = "…/"
 #
 
 [vcsh]
+format = "[$symbol$repo](fg:bold white bg:$style)[█]($style)"
+style = "yellow"
 
 [git_branch]
-format = "[█]($style)[$symbol$branch](fg:bold white bg:$style)[█]($style)"
-style = "green"
+format = "[$symbol$branch](fg:bold white bg:$style)[█]($style)"
+style = "yellow"
 
 [git_commit]
 format = "[\\($hash$tag\\)](fg:bold white bg:$style)[█]($style)"
-style = "green"
+style = "yellow"
 
 [git_state]
 format = '\([$state( $progress_current/$progress_total)](fg:bold white bg:$style)\)[█]($style)'
-style = "green"
+style = "yellow"
 
 [git_metrics]
 
 [git_status]
 format = '[\[$all_status$ahead_behind\]](fg:bold red bg:$style)[█]($style)'
-style = "green"
+style = "yellow"
 
 [hg_branch]
+format = "[$symbol$branch](fg:bold white bg:$style)[█]($style)"
+style = "yellow"
+disabled = false
 
 #
-# right prompt - jobs and time
+# right prompt - jobs
 #
 
 [jobs]
+format = "[█]($style)[$symbol$number](fg:bold white bg:$style)"
+style = "yellow"
+
+#
+# right prompt - time
+#
 
 [time]
 disabled = false
-format = "[\uE0B6[$time](bold fg:white bg:$style)█]($style)"
+format = "[█]($style)[$time](fg:bold white bg:$style)"
 style = "purple"
 
 #
