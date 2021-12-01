@@ -1,6 +1,72 @@
+# Author: Steven Eisinger <steven.a.eisinger@gmail.com>
+
 format = """
-[╭─[\uE0B6\uE0B4](bold red)[\uE0B2\uE0B0](bold green)[\uE0BA\uE0B8](bold blue)](bold white) $directory$all
-[╰─](bold white)$character"""
+[$username$hostname$singularity$directory$vcsh$git_branch$git_commit$git_state$git_metrics$git_status$hg_branch$fill\uE0B7 $all\uE0B5$fill$jobs$time](dimmed white)
+$character"""
 
 [line_break]
 disabled = true
+
+[fill]
+symbol = "─"
+style = "dimmed white"
+
+[time]
+disabled = false
+format = "[\uE0B6[$time](bold fg:white bg:$style)█]($style)"
+style = "purple"
+
+[directory]
+format = "[█[$read_only$path](bold fg:white bg:$style)\uE0B4]($style)"
+read_only = " "
+read_only_style = "bold fg:white bg:$style"
+style = "cyan"
+truncation_symbol = "…/"
+
+[cmd_duration]
+disabled = true
+
+[cmake]
+disabled = true
+
+[hostname]
+ssh_only = true
+format = "[@$hostname](fg:bold white bg:$style)[█]($style)"
+style = "cyan"
+
+[username]
+show_always = false
+format = "[█](cyan)[$user](fg:$style white bg:cyan)"
+style_root = "bold red"
+style_user = "bold white"
+
+[singularity]
+format = '[█]($style)[\[$env\]](fg:bold white bg:$style)[█]($style)'
+style = 'cyan'
+
+[vcsh]
+
+[git_branch]
+
+[git_commit]
+
+[git_state]
+
+[git_metrics]
+
+[git_status]
+
+[hg_branch]
+
+[jobs]
+
+[battery]
+disabled = true
+
+[shell]
+disabled = true
+
+[character]
+success_symbol = "[\uE0B0](dimmed white)"
+error_symbol = "[\uE0B0](red)"
+vicmd_symbol = "[\uE0B1](dimmed white)"
