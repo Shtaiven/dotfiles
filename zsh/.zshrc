@@ -26,7 +26,7 @@ fi
 # mujoco
 #
 
-if [[ -f /usr/lib/x86_64-linux-gnu/libGLEW.so ]]; then 
+if [[ -f /usr/lib/x86_64-linux-gnu/libGLEW.so ]]; then
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/steven/.mujoco/mujoco200/bin
   export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so
 fi
@@ -39,4 +39,12 @@ if (( $+commands[pyenv] )); then
   export PYENV_VIRTUALENV_DISABLE_PROMPT=1
   eval "$(pyenv init -)"
   eval "$(pyenv virtualenv-init -)"
+fi
+
+#
+# conda
+#
+
+if (( $+commands[conda] )); then
+  eval "$(conda config --set changeps1 False)"
 fi
