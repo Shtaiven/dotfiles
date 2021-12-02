@@ -120,6 +120,6 @@ style = "purple"
 #
 
 [character]
-success_symbol = "[\uE0B0](dimmed white)"
-error_symbol = "[\uE0B0](red)"
-vicmd_symbol = "[\uE0B1](dimmed white)"
+success_symbol = "[\u25CF](cyan)"
+error_symbol = "[\u25CF](red)"
+vicmd_symbol = "[\u25CB](cyan)"
