@@ -14,6 +14,9 @@ fi
 # Customize prompt using starship
 eval "$(starship init zsh)"
 
+# Emacs mode for the terminal
+bindkey -e
+
 #
 # zoxide
 #
