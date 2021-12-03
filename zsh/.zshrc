@@ -17,6 +17,9 @@ eval "$(starship init zsh)"
 # Emacs mode for the terminal
 bindkey -e
 
+# please alias
+alias please='sudo $(fc -ln -1)'
+
 #
 # zoxide
 #
