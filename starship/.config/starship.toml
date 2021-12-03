@@ -10,7 +10,7 @@
 #
 
 format = """
-[ [\uE0B6█](#d4be98)$username$hostname$singularity$directory[░▒▓](fg:#7daea3 bg:#d4be98)$vcsh$git_branch$git_commit$git_state$git_metrics$git_status$hg_branch[\uE0B4](#7daea3) [\uE0B6█](#665c54)$nix_shell$docker_context$conda$python[\uE0B4](#665c54)$fill[\uE0B6](#e78a4e)$cmd_duration$jobs[▓▒░](fg:#e78a4e bg:#ea6962)$time[█\uE0B4](#ea6962) ]()
+[ [\uE0B6█](#d4be98)$username$hostname$singularity$directory[░▒▓](fg:#7daea3 bg:#d4be98)$vcsh$git_branch$git_commit$git_state$git_metrics$git_status$hg_branch[\uE0B4](#7daea3)$nix_shell$docker_context$conda$python$fill[\uE0B6](#d4be98)$cmd_duration$jobs[▓▒░](fg:#d4be98 bg:#ea6962)$time[█\uE0B4](#ea6962) ]()
 $character"""
 
 [fill]
@@ -40,7 +40,8 @@ style = "#d4be98"
 format = "[$read_only$path](fg:bold #282828 bg:$style)[█]($style)"
 read_only = " "
 style = "#d4be98"
-truncation_symbol = "…/"
+fish_style_pwd_dir_length = 2
+truncation_length = 1
 
 #
 # Left prompt 2
@@ -78,19 +79,19 @@ disabled = false
 #
 
 [nix_shell]
-format = '[$state( \($name\))](fg:bold #d4be98 bg:$style)[█]($style)'
+format = " [\uE0B6█]($style)[$state( $name)](fg:bold #d4be98 bg:$style)[█\uE0B4]($style)"
 style = "#665c54"
 
 [docker_context]
-format = "[$context](fg:bold #7daea3 bg:$style)[█]($style)"
+format = " [\uE0B6█]($style)[$context](fg:bold #7daea3 bg:$style)[█\uE0B4]($style)"
 style = "#665c54"
 
 [conda]
-format = "[$environment](fg:bold #a9b665 bg:$style)[█]($style)"
+format = " [\uE0B6█]($style)[$environment](fg:bold #a9b665 bg:$style)[█\uE0B4]($style)"
 style = "#665c54"
 
 [python]
-format = "[${pyenv_prefix}$virtualenv](fg:bold #d8a657 bg:$style)[█]($style)"
+format = " [\uE0B6█]($style)[${pyenv_prefix}$virtualenv](fg:bold #d8a657 bg:$style)[█\uE0B4]($style)"
 style = "#665c54"
 pyenv_prefix = "pyenv:"
 
@@ -100,11 +101,11 @@ pyenv_prefix = "pyenv:"
 
 [cmd_duration]
 format = "[█]($style)[took $duration](fg:bold #282828 bg:$style)"
-style = "#e78a4e"
+style = "#d4be98"
 
 [jobs]
 format = "[█]($style)[$symbol$number](fg:bold #282828 bg:$style)"
-style = "#e78a4e"
+style = "#d4be98"
 
 #
 # Right prompt 2
