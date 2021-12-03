@@ -8,9 +8,12 @@ Personal dotfiles for *nix
 
     ```zsh
     # install dependencies with your package manager, e.g.
-    sudo apt install zsh git stow curl
-    # or
-    sudo pacman -S zsh git stow curl
+    # Debian/Ubuntu
+    sudo apt install zsh git stow curl powerline powerline-fonts fonts-firacode
+    # Arch
+    sudo pacman -S zsh git stow curl powerline powerline-fonts ttf-fira-code
+    # Fedora
+    sudo dnf install zsh git stow curl powerline powerline-fonts fira-code-fonts
 
     # install rustup
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -40,7 +43,7 @@ Personal dotfiles for *nix
 
     ```zsh
     for f in */ ; do
-        if [ -d "$f" ]; then
+        if [ -d "$f" ] ; then
             stow ${f%*/}
         fi
     done

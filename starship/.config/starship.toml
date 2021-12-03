@@ -1,5 +1,5 @@
 #
-# Custom theme for starship.rs
+# Thought theme for starship prompt, featuring gruvbox material colors
 #
 # Authors:
 #   Steven Eisinger <steven.a.eisinger@gmail.com>
@@ -10,12 +10,12 @@
 #
 
 format = """
-[ [\uE0B6█](cyan)$username$hostname$singularity$directory[\uE0B8](cyan)[\uE0BE█](yellow)$vcsh$git_branch$git_commit$git_state$git_metrics$git_status$hg_branch[\uE0B4](yellow) [\uE0B6█](black)$nix_shell$docker_context$conda$python[\uE0B4](black)$fill[\uE0B6](yellow)$cmd_duration$jobs[█\uE0BC](yellow)[\uE0BA](purple)$time[█\uE0B4](purple) ]()
+[ [\uE0B6█](#d4be98)$username$hostname$singularity$directory[░▒▓](fg:#7daea3 bg:#d4be98)$vcsh$git_branch$git_commit$git_state$git_metrics$git_status$hg_branch[\uE0B4](#7daea3) [\uE0B6█](#665c54)$nix_shell$docker_context$conda$python[\uE0B4](#665c54)$fill[\uE0B6](#e78a4e)$cmd_duration$jobs[▓▒░](fg:#e78a4e bg:#ea6962)$time[█\uE0B4](#ea6962) ]()
 $character"""
 
 [fill]
 symbol = " "
-style = "dimmed white"
+style = "#d4be98"
 
 #
 # Left prompt 1
@@ -23,23 +23,23 @@ style = "dimmed white"
 
 [username]
 show_always = false
-format = "[$user](fg:$style bg:cyan)[█](cyan)"
-style_root = "bold red"
-style_user = "bold white"
+format = "[$user](fg:$style bg:#d4be98)[█](#d4be98)"
+style_root = "bold #ea6962"
+style_user = "bold #282828"
 
 [hostname]
 ssh_only = true
-format = "[@$hostname](fg:bold white bg:$style)[█]($style)"
-style = "cyan"
+format = "[@$hostname](fg:bold #282828 bg:$style)[█]($style)"
+style = "#d4be98"
 
 [singularity]
-format = '[\[$env\]](fg:bold white bg:$style)[█]($style)'
-style = "cyan"
+format = '[\[$env\]](fg:bold #282828 bg:$style)[█]($style)'
+style = "#d4be98"
 
 [directory]
-format = "[$read_only$path](fg:bold white bg:$style)[█]($style)"
+format = "[$read_only$path](fg:bold #282828 bg:$style)[█]($style)"
 read_only = " "
-style = "cyan"
+style = "#d4be98"
 truncation_symbol = "…/"
 
 #
@@ -47,30 +47,30 @@ truncation_symbol = "…/"
 #
 
 [vcsh]
-format = "[$symbol$repo](fg:bold white bg:$style)[█]($style)"
-style = "yellow"
+format = "[$symbol$repo](fg:bold #282828 bg:$style)[█]($style)"
+style = "#7daea3"
 
 [git_branch]
-format = "[$symbol$branch](fg:bold white bg:$style)[█]($style)"
-style = "yellow"
+format = "[$symbol$branch](fg:bold #282828 bg:$style)[█]($style)"
+style = "#7daea3"
 
 [git_commit]
-format = "[\\($hash$tag\\)](fg:bold white bg:$style)[█]($style)"
-style = "yellow"
+format = "[\\($hash$tag\\)](fg:bold #282828 bg:$style)[█]($style)"
+style = "#7daea3"
 
 [git_state]
-format = '\([$state( $progress_current/$progress_total)](fg:bold white bg:$style)\)[█]($style)'
-style = "yellow"
+format = '\([$state( $progress_current/$progress_total)](fg:bold #282828 bg:$style)\)[█]($style)'
+style = "#7daea3"
 
 [git_metrics]
 
 [git_status]
-format = '[\[$all_status$ahead_behind\]](fg:bold red bg:$style)[█]($style)'
-style = "yellow"
+format = '[\[$all_status$ahead_behind\]](fg:bold #282828 bg:$style)[█]($style)'
+style = "#7daea3"
 
 [hg_branch]
-format = "[$symbol$branch](fg:bold white bg:$style)[█]($style)"
-style = "yellow"
+format = "[$symbol$branch](fg:bold #282828 bg:$style)[█]($style)"
+style = "#7daea3"
 disabled = false
 
 #
@@ -78,20 +78,20 @@ disabled = false
 #
 
 [nix_shell]
-format = '[$state( \($name\))](fg:bold white bg:$style)[█]($style)'
-style = "black"
+format = '[$state( \($name\))](fg:bold #d4be98 bg:$style)[█]($style)'
+style = "#665c54"
 
 [docker_context]
-format = "[$context](fg:bold blue bg:$style)[█]($style)"
-style = "black"
+format = "[$context](fg:bold #7daea3 bg:$style)[█]($style)"
+style = "#665c54"
 
 [conda]
-format = "[$environment](fg:bold green bg:$style)[█]($style)"
-style = "black"
+format = "[$environment](fg:bold #a9b665 bg:$style)[█]($style)"
+style = "#665c54"
 
 [python]
-format = "[${pyenv_prefix}$virtualenv](fg:bold yellow bg:$style)[█]($style)"
-style = "black"
+format = "[${pyenv_prefix}$virtualenv](fg:bold #d8a657 bg:$style)[█]($style)"
+style = "#665c54"
 pyenv_prefix = "pyenv:"
 
 #
@@ -99,12 +99,12 @@ pyenv_prefix = "pyenv:"
 #
 
 [cmd_duration]
-format = "[█]($style)[took $duration](fg:bold white bg:$style)"
-style = "yellow"
+format = "[█]($style)[took $duration](fg:bold #282828 bg:$style)"
+style = "#e78a4e"
 
 [jobs]
-format = "[█]($style)[$symbol$number](fg:bold white bg:$style)"
-style = "yellow"
+format = "[█]($style)[$symbol$number](fg:bold #282828 bg:$style)"
+style = "#e78a4e"
 
 #
 # Right prompt 2
@@ -112,14 +112,14 @@ style = "yellow"
 
 [time]
 disabled = false
-format = "[█]($style)[$time](fg:bold white bg:$style)"
-style = "purple"
+format = "[█]($style)[$time](fg:bold #282828 bg:$style)"
+style = "#ea6962"
 
 #
 # Second line
 #
 
 [character]
-success_symbol = "[\u25CF](cyan)"
-error_symbol = "[\u25CF](red)"
-vicmd_symbol = "[\u25CB](cyan)"
+success_symbol = "[\u25CF](#d4be98)"
+error_symbol = "[\u25CF](#ea6962)"
+vicmd_symbol = "[\u25CB](#d4be98)"
