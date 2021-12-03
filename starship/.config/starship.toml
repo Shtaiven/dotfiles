@@ -10,7 +10,7 @@
 #
 
 format = """
-[ [\uE0B6](#d4be98)$username$hostname$singularity$directory[░▒▓](fg:#7daea3 bg:#d4be98)$vcsh$git_branch$git_commit$git_state$git_metrics$git_status$hg_branch[\uE0B4](#7daea3)$nix_shell$docker_context$conda$python$fill[\uE0B6](#d4be98)$cmd_duration$jobs[▓▒░](fg:#d4be98 bg:#ea6962)$time[\uE0B4](#ea6962) ]()
+( [\uE0B6](#d4be98)$username$hostname$singularity$directory[░▒▓](fg:#7daea3 bg:#d4be98)$vcsh$git_branch$git_commit$git_state$git_metrics$git_status$hg_branch[\uE0B4](#7daea3)$nix_shell$docker_context$conda$python$fill[\uE0B6](#d4be98)$cmd_duration$jobs[▓▒░](fg:#d4be98 bg:#ea6962)$time[\uE0B4](#ea6962) )
 $character"""
 
 [fill]
@@ -49,10 +49,12 @@ truncation_length = 1
 
 [vcsh]
 format = "[$symbol$repo](fg:bold #282828 bg:$style)[█]($style)"
+symbol = ""
 style = "#7daea3"
 
 [git_branch]
 format = "[$symbol$branch](fg:bold #282828 bg:$style)[█]($style)"
+symbol = ""
 style = "#7daea3"
 
 [git_commit]
@@ -71,6 +73,7 @@ style = "#7daea3"
 
 [hg_branch]
 format = "[$symbol$branch](fg:bold #282828 bg:$style)[█]($style)"
+symbol = ""
 style = "#7daea3"
 disabled = false
 
