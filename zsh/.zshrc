@@ -11,14 +11,19 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
 
-# Customize prompt using starship
-eval "$(starship init zsh)"
-
 # Emacs mode for the terminal
 bindkey -e
 
 # please alias
 alias please='sudo $(fc -ln -1)'
+
+#
+# starship prompt customization
+#
+
+if (( $+commands[starship] )); then
+  eval "$(starship init zsh)"
+fi
 
 #
 # zoxide

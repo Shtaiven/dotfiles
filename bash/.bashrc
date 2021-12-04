@@ -120,28 +120,41 @@ fi
 PATH=$PATH:~/local/bin
 
 #
-# rustup
-#
-. "$HOME/.cargo/env"
-
-#
-# pyenv
-#
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
-
-#
-# zoxide
-#
-eval "$(zoxide init bash)"
-
-#
 # mujoco
 #
+
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/steven/.mujoco/mujoco200/bin
 export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so
 
 #
+# cargo
+#
+
+if [ -x "$(command -v cargo)" ]; then
+    . "$HOME/.cargo/env"
+fi
+
+#
+# pyenv
+#
+
+if [ -x "$(command -v pyenv)" ]; then
+    eval "$(pyenv init -)"
+    eval "$(pyenv virtualenv-init -)"
+fi
+
+#
+# zoxide
+#
+
+if [ -x "$(command -v zoxide)" ]; then
+    eval "$(zoxide init bash)"
+fi
+
+#
 # starship
 #
-eval "$(starship init bash)"
+
+if [ -x "$(command -v starship)" ]; then
+    eval "$(starship init bash)"
+fi
