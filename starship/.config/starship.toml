@@ -19,8 +19,8 @@ ${custom.left_sep}\
 $vcsh\
 $git_branch\
 $git_commit\
-$git_state\
 $git_status\
+$git_state\
 $hg_branch\
 ${custom.left_end}\
 $nix_shell\
@@ -45,29 +45,29 @@ symbol = " "
 #
 
 [custom.left_start]
-format = "[ \uE0B6]($style)"
+format = "[ ]($style)"
 style = "#7daea3"
 when = "true"
 
 [username]
 show_always = false
-format = "[$user](fg:$style bg:#7daea3)[█](#7daea3)"
-style_root = "bold #ea6962"
-style_user = "bold #282828"
+format = "[$user ]($style)"
+style_root = "fg:bold #ea6962 bg:#7daea3"
+style_user = "fg:bold #282828 bg:#7daea3"
 
 [hostname]
 ssh_only = true
-format = "[ $hostname](fg:bold #282828 bg:$style)[█]($style)"
-style = "#7daea3"
+format = "[ $hostname ]($style)"
+style = "fg:bold #282828 bg:#7daea3"
 
 [singularity]
-format = '[\[$env\]](fg:bold #282828 bg:$style)[█]($style)'
-style = "#7daea3"
+format = '[\[$env\] ]($style)'
+style = "fg:bold #282828 bg:#7daea3"
 
 [directory]
-format = "[$read_only$path](fg:bold #282828 bg:$style)[█]($style)"
+format = "[$read_only$path ]($style)"
 read_only = " "
-style = "#7daea3"
+style = "fg:bold #282828 bg:#7daea3"
 fish_style_pwd_dir_length = 2
 truncation_length = 1
 
@@ -81,35 +81,35 @@ when = "true"
 #
 
 [vcsh]
-format = "[$symbol$repo](fg:bold #282828 bg:$style)[█]($style)"
+format = "[$symbol$repo ]($style)"
 symbol = ""
-style = "#d4be98"
+style = "fg:bold #282828 bg:#d4be98"
 
 [git_branch]
-format = "[$symbol$branch](fg:bold #282828 bg:$style)[█]($style)"
+format = "[$symbol$branch ]($style)"
 symbol = ""
-style = "#d4be98"
+style = "fg:bold #282828 bg:#d4be98"
 
 [git_commit]
-format = "[\\($hash$tag\\)](fg:bold #282828 bg:$style)[█]($style)"
-style = "#d4be98"
-
-[git_state]
-format = '\([$state( $progress_current/$progress_total)](fg:bold #282828 bg:$style)\)[█]($style)'
-style = "#d4be98"
+format = "[\\($hash$tag\\) ]($style)"
+style = "fg:bold #282828 bg:#d4be98"
 
 [git_status]
-format = '[\[$all_status$ahead_behind\]](fg:bold #282828 bg:$style)[█]($style)'
-style = "#d4be98"
+format = '[\[$all_status$ahead_behind\] ]($style)'
+style = "fg:bold #282828 bg:#d4be98"
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total) ]($style)\)'
+style = "fg:bold #282828 bg:#d4be98"
 
 [hg_branch]
-format = "[$symbol$branch](fg:bold #282828 bg:$style)[█]($style)"
+format = "[$symbol$branch ]($style)"
 symbol = ""
-style = "#d4be98"
+style = "fg:bold #282828 bg:#d4be98"
 disabled = false
 
 [custom.left_end]
-format = "[\uE0B4]($style)"
+format = "[]($style)"
 style = "#d4be98"
 when = "true"
 
@@ -118,19 +118,19 @@ when = "true"
 #
 
 [nix_shell]
-format = " [\uE0B6]($style)[$state(:$name)](fg:bold #d4be98 bg:$style)[\uE0B4]($style)"
+format = " []($style)[$state(:$name)](fg:bold #d4be98 bg:$style)[]($style)"
 style = "#665c54"
 
 [docker_context]
-format = " [\uE0B6]($style)[$context](fg:bold #7daea3 bg:$style)[\uE0B4]($style)"
+format = " []($style)[$context](fg:bold #7daea3 bg:$style)[]($style)"
 style = "#665c54"
 
 [conda]
-format = " [\uE0B6]($style)[$environment](fg:bold #a9b665 bg:$style)[\uE0B4]($style)"
+format = " []($style)[$environment](fg:bold #a9b665 bg:$style)[]($style)"
 style = "#665c54"
 
 [python]
-format = " [\uE0B6]($style)[${pyenv_prefix}$virtualenv](fg:bold #d8a657 bg:$style)[\uE0B4]($style)"
+format = " []($style)[${pyenv_prefix}$virtualenv](fg:bold #d8a657 bg:$style)[]($style)"
 style = "#665c54"
 pyenv_prefix = "pyenv:"
 
@@ -139,17 +139,17 @@ pyenv_prefix = "pyenv:"
 #
 
 [custom.right_start]
-format = "[\uE0B6]($style)"
+format = "[]($style)"
 style = "#d4be98"
 when = "true"
 
 [cmd_duration]
-format = "[█]($style)[took $duration](fg:bold #282828 bg:$style)"
-style = "#d4be98"
+format = "[ took $duration]($style)"
+style = "fg:bold #282828 bg:#d4be98"
 
 [jobs]
-format = "[█]($style)[$symbol$number](fg:bold #282828 bg:$style)"
-style = "#d4be98"
+format = "[ $symbol$number]($style)"
+style = "fg:bold #282828 bg:#d4be98"
 
 [custom.right_sep]
 format = "[▓▒░]($style)"
@@ -162,11 +162,11 @@ when = "true"
 
 [time]
 disabled = false
-format = "[█]($style)[$time](fg:bold #282828 bg:$style)"
-style = "#ea6962"
+format = "[ $time]($style)"
+style = "fg:bold #282828 bg:#ea6962"
 
 [custom.right_end]
-format = "[\uE0B4 ]($style)"
+format = "[ ]($style)"
 style = "#ea6962"
 when = "true"
 
@@ -175,6 +175,6 @@ when = "true"
 #
 
 [character]
-success_symbol = "[\u25CF](#7daea3)"
-error_symbol = "[\u25CF](#ea6962)"
-vicmd_symbol = "[\u25CB](#7daea3)"
+success_symbol = "[●](#7daea3)"
+error_symbol = "[●](#ea6962)"
+vicmd_symbol = "[○](#7daea3)"
