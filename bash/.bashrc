@@ -126,6 +126,18 @@ PATH=$PATH:~/local/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/steven/.mujoco/mujoco200/bin
 export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so
 
+if [ -x "$(command -v fd)" ]; then
+  export FZF_CTRL_T_COMMAND="fd --hidden --follow --exclude \".git\" . $HOME"
+  export FZF_ALT_C_COMMAND="fd -t d --hidden --follow --exclude \".git\" . $HOME"
+
+  _fzf_compgen_path() {
+    fd --type f --hidden --follow --exclude .git . "$1"
+  }
+  _fzf_compgen_dir() {
+    fd --type d . "$1"
+  }
+fi
+
 #
 # cargo
 #

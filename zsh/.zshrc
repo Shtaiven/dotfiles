@@ -17,6 +17,19 @@ bindkey -e
 # please alias
 alias please='sudo $(fc -ln -1)'
 
+# use fd as fzf default instead of find
+if (( $+commands[fd] )); then
+  export FZF_CTRL_T_COMMAND="fd --hidden --follow --exclude \".git\" . $HOME"
+  export FZF_ALT_C_COMMAND="fd -t d --hidden --follow --exclude \".git\" . $HOME"
+
+  _fzf_compgen_path() {
+    fd --type f --hidden --follow --exclude .git . "$1"
+  }
+  _fzf_compgen_dir() {
+    fd --type d . "$1"
+  }
+fi
+
 #
 # starship prompt customization
 #
