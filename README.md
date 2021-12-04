@@ -39,12 +39,18 @@ Personal dotfiles for *nix
     stow <package>
     ```
 
-    where `<package>` is the name of the package folder you would like to install, e.g. `stow zsh`. To install all packages, run:
+    where `<package>` is the name of the package folder you would like to install, e.g. `stow zsh`.
+
+    NOTE: `extras` should not be stowed. Read the README within each of its subdirectories for more information.
+
+    To install all packages, run:
 
     ```zsh
     for f in */ ; do
-        if [ -d "$f" ] ; then
-            stow ${f%*/}
+        if [ "${f%*/}" = "extras" ] ; then
+            continue
+        elif [ -d "$f" ] ; then
+            stow "${f%*/}"
         fi
     done
     ```
