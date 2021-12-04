@@ -54,3 +54,11 @@ fi
 if (( $+commands[conda] )); then
   eval "$(conda config --set changeps1 False)"
 fi
+
+#
+# kitty ssh alias
+#
+
+if [[ $TERM == "xterm-kitty" ]]; then
+  alias ssh="kitty +kitten ssh"
+fi
