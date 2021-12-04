@@ -10,16 +10,44 @@
 #
 
 format = """
-( [\uE0B6](#7daea3)$username$hostname$singularity$directory[░▒▓](fg:#d4be98 bg:#7daea3)$vcsh$git_branch$git_commit$git_state$git_metrics$git_status$hg_branch[\uE0B4](#d4be98)$nix_shell$docker_context$conda$python$fill[\uE0B6](#d4be98)$cmd_duration$jobs[▓▒░](fg:#d4be98 bg:#ea6962)$time[\uE0B4](#ea6962) )
+${custom.left_start}\
+$username\
+$hostname\
+$singularity\
+$directory\
+${custom.left_sep}\
+$vcsh\
+$git_branch\
+$git_commit\
+$git_state\
+$git_metrics\
+$git_status\
+$hg_branch\
+${custom.left_end}\
+$nix_shell\
+$docker_context\
+$conda\
+$python\
+$fill\
+${custom.right_start}\
+$cmd_duration\
+$jobs\
+${custom.right_sep}\
+$time\
+${custom.right_end}\
+$line_break\
 $character"""
 
 [fill]
 symbol = " "
-style = "#d4be98"
 
 #
 # Left prompt 1
 #
+
+[custom.left_start]
+format = " [ \uE0B6](#7daea3)"
+when = "true"
 
 [username]
 show_always = false
@@ -42,6 +70,10 @@ read_only = " "
 style = "#7daea3"
 fish_style_pwd_dir_length = 2
 truncation_length = 1
+
+[custom.left_sep]
+format = "[░▒▓](fg:#d4be98 bg:#7daea3)"
+when = "true"
 
 #
 # Left prompt 2
@@ -77,6 +109,10 @@ symbol = ""
 style = "#d4be98"
 disabled = false
 
+[custom.left_end]
+format = "[\uE0B4](#d4be98)"
+when = "true"
+
 #
 # Middle prompt
 #
@@ -102,6 +138,10 @@ pyenv_prefix = "pyenv:"
 # Right prompt 1
 #
 
+[custom.right_start]
+format = "[\uE0B6](#d4be98)"
+when = "true"
+
 [cmd_duration]
 format = "[█]($style)[took $duration](fg:bold #282828 bg:$style)"
 style = "#d4be98"
@@ -109,6 +149,10 @@ style = "#d4be98"
 [jobs]
 format = "[█]($style)[$symbol$number](fg:bold #282828 bg:$style)"
 style = "#d4be98"
+
+[custom.right_sep]
+format = "[▓▒░](fg:#d4be98 bg:#ea6962)"
+when = "true"
 
 #
 # Right prompt 2
@@ -118,6 +162,10 @@ style = "#d4be98"
 disabled = false
 format = "[█]($style)[$time](fg:bold #282828 bg:$style)"
 style = "#ea6962"
+
+[custom.right_end]
+format = "[\uE0B4 ](#ea6962)"
+when = "true"
 
 #
 # Second line
