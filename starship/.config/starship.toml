@@ -133,9 +133,8 @@ format = " []($style)[$environment](fg:bold #a9b665 bg:$style)[]($style)"
 style = "#665c54"
 
 [python]
-format = " []($style)[${pyenv_prefix}$virtualenv](fg:bold #d8a657 bg:$style)[]($style)"
+format = " []($style)[$virtualenv](fg:bold #d8a657 bg:$style)[]($style)"
 style = "#665c54"
-pyenv_prefix = "pyenv:"
 
 #
 # Right prompt 1
