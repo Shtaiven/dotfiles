@@ -1,0 +1,19 @@
+{
+  "float": [
+    {
+      "class": "pop-shell-example",
+      "title": "pop-shell-example"
+    },
+    {
+      "class": "Kicad"
+    },
+    {
+      "class": "Steam"
+    },
+    {
+      "class": "mujoco_py"
+    }
+  ],
+  "skiptaskbarhidden": [],
+  "log_on_focus": false
+}

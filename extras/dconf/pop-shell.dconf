@@ -1,0 +1,8 @@
+[/]
+active-hint=true
+gap-inner=uint32 4
+gap-outer=uint32 4
+hint-color-rgba='rgb(234,105,98)'
+show-title=true
+smart-gaps=true
+tile-by-default=true
