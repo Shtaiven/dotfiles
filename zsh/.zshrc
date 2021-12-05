@@ -17,6 +17,11 @@ bindkey -e
 # please alias
 alias please='sudo $(fc -ln -1)'
 
+# Take default less args from zprofile for bat scrolling
+if (( $+commands[bat] )); then
+  export BAT_PAGER="less $LESS"
+fi
+
 # use fd as fzf default instead of find
 if (( $+commands[fd] )); then
   export FZF_CTRL_T_COMMAND="fd --hidden --follow --exclude \".git\" . $HOME"

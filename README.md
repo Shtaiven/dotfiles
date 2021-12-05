@@ -1,6 +1,6 @@
 # dotfiles
 
-Personal dotfiles for *nix
+Personal dotfiles for *nix.
 
 ## Installation
 
@@ -54,3 +54,5 @@ Personal dotfiles for *nix
         fi
     done
     ```
+
+    The scripts `stow-all.sh` and `unstow-all.sh` are provided to perform this operation (and undo it).
