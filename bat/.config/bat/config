@@ -1,0 +1,5 @@
+# Set the theme
+--theme="base16"
+
+# Use C++ syntax for Arduino .ino files
+--map-syntax "*.ino:C++"

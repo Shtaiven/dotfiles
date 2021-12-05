@@ -1,3 +1,6 @@
 [submodule "gruvbox-material-gtk"]
 	path = extras/gruvbox-material-gtk
 	url = https://github.com/TheGreatMcPain/gruvbox-material-gtk.git
+[submodule "extras/pop-gruvbox-material-gtk-theme"]
+	path = extras/pop-gruvbox-material-gtk-theme
+	url = https://github.com/Shtaiven/pop-gruvbox-material-gtk-theme
