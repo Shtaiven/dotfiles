@@ -120,6 +120,14 @@ fi
 PATH=$PATH:~/local/bin
 
 #
+# bat
+#
+
+if [ -x "$(command -v bat)" ]; then
+  export BAT_PAGER="less $LESS"
+fi
+
+#
 # mujoco
 #
 

@@ -11,9 +11,6 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
 
-# Emacs mode for the terminal
-bindkey -e
-
 # please alias
 alias please='sudo $(fc -ln -1)'
 

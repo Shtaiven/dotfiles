@@ -48,6 +48,7 @@ symbol = " "
 format = "[ ]($style)"
 style = "#7daea3"
 when = "true"
+description = "Left prompt start characters"
 
 [username]
 show_always = false
@@ -75,6 +76,7 @@ truncation_length = 1
 format = "[░▒▓]($style)"
 style = "fg:#d4be98 bg:#7daea3"
 when = "true"
+description = "Left prompt separator characters"
 
 #
 # Left prompt 2
@@ -112,6 +114,7 @@ disabled = false
 format = "[]($style)"
 style = "#d4be98"
 when = "true"
+description = "Left prompt end characters"
 
 #
 # Middle prompt
@@ -142,6 +145,7 @@ pyenv_prefix = "pyenv:"
 format = "[]($style)"
 style = "#d4be98"
 when = "true"
+description = "Right prompt start characters"
 
 [cmd_duration]
 format = "[ took $duration]($style)"
@@ -155,6 +159,7 @@ style = "fg:bold #282828 bg:#d4be98"
 format = "[▓▒░]($style)"
 style = "fg:#d4be98 bg:#ea6962"
 when = "true"
+description = "Right prompt separator characters"
 
 #
 # Right prompt 2
@@ -169,6 +174,7 @@ style = "fg:bold #282828 bg:#ea6962"
 format = "[ ]($style)"
 style = "#ea6962"
 when = "true"
+description = "Right prompt end characters"
 
 #
 # Second line
