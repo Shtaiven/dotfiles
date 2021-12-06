@@ -135,6 +135,8 @@ style = "#665c54"
 [python]
 format = " []($style)[$virtualenv](fg:bold #d8a657 bg:$style)[]($style)"
 style = "#665c54"
+detect_extensions = []
+detect_files = []
 
 #
 # Right prompt 1
