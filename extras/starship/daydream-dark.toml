@@ -1,0 +1,187 @@
+#
+# Daydream theme for starship prompt, featuring gruvbox material colors
+#
+# Authors:
+#   Steven Eisinger <steven.a.eisinger@gmail.com>
+#
+
+#
+# Prompt common
+#
+
+format = """
+${custom.left_start}\
+$username\
+$hostname\
+$singularity\
+$directory\
+${custom.left_sep}\
+$vcsh\
+$git_branch\
+$git_commit\
+$git_status\
+$git_state\
+$hg_branch\
+${custom.left_end}\
+$nix_shell\
+$docker_context\
+$conda\
+$python\
+$fill\
+${custom.right_start}\
+$cmd_duration\
+$jobs\
+${custom.right_sep}\
+$time\
+${custom.right_end}\
+$line_break\
+$character"""
+
+[fill]
+symbol = " "
+
+#
+# Left prompt 1
+#
+
+[custom.left_start]
+format = "[ ]($style)"
+style = "#7daea3"
+when = "true"
+description = "Left prompt start characters"
+
+[username]
+show_always = false
+format = "[$user ]($style)"
+style_root = "fg:bold #ea6962 bg:#7daea3"
+style_user = "fg:bold #282828 bg:#7daea3"
+
+[hostname]
+ssh_only = true
+format = "[ $hostname ]($style)"
+style = "fg:bold #282828 bg:#7daea3"
+
+[singularity]
+format = '[\[$env\] ]($style)'
+style = "fg:bold #282828 bg:#7daea3"
+
+[directory]
+format = "[$read_only$path ]($style)"
+read_only = " "
+style = "fg:bold #282828 bg:#7daea3"
+fish_style_pwd_dir_length = 2
+truncation_length = 1
+
+[custom.left_sep]
+format = "[░▒▓]($style)"
+style = "fg:#d4be98 bg:#7daea3"
+when = "true"
+description = "Left prompt separator characters"
+
+#
+# Left prompt 2
+#
+
+[vcsh]
+format = "[$symbol$repo ]($style)"
+symbol = ""
+style = "fg:bold #282828 bg:#d4be98"
+
+[git_branch]
+format = "[$symbol$branch ]($style)"
+symbol = ""
+style = "fg:bold #282828 bg:#d4be98"
+
+[git_commit]
+format = "[\\($hash$tag\\) ]($style)"
+style = "fg:bold #282828 bg:#d4be98"
+
+[git_status]
+format = '[\[$all_status$ahead_behind\] ]($style)'
+style = "fg:bold #282828 bg:#d4be98"
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total) ]($style)\)'
+style = "fg:bold #282828 bg:#d4be98"
+
+[hg_branch]
+format = "[$symbol$branch ]($style)"
+symbol = ""
+style = "fg:bold #282828 bg:#d4be98"
+disabled = false
+
+[custom.left_end]
+format = "[]($style)"
+style = "#d4be98"
+when = "true"
+description = "Left prompt end characters"
+
+#
+# Middle prompt
+#
+
+[nix_shell]
+format = " []($style)[$state(:$name)](fg:bold #d4be98 bg:$style)[]($style)"
+style = "#665c54"
+
+[docker_context]
+format = " []($style)[$context](fg:bold #7daea3 bg:$style)[]($style)"
+style = "#665c54"
+
+[conda]
+format = " []($style)[$environment](fg:bold #a9b665 bg:$style)[]($style)"
+style = "#665c54"
+
+[python]
+format = " []($style)[$virtualenv](fg:bold #d8a657 bg:$style)[]($style)"
+style = "#665c54"
+detect_extensions = []
+detect_files = []
+
+#
+# Right prompt 1
+#
+
+[custom.right_start]
+format = "[]($style)"
+style = "#d4be98"
+when = "true"
+description = "Right prompt start characters"
+
+[cmd_duration]
+format = "[ took $duration]($style)"
+style = "fg:bold #282828 bg:#d4be98"
+
+[jobs]
+format = "[ $symbol$number]($style)"
+style = "fg:bold #282828 bg:#d4be98"
+
+[custom.right_sep]
+format = "[▓▒░]($style)"
+style = "fg:#d4be98 bg:#ea6962"
+when = "true"
+description = "Right prompt separator characters"
+
+#
+# Right prompt 2
+#
+
+[time]
+disabled = false
+format = "[ $time]($style)"
+style = "fg:bold #282828 bg:#ea6962"
+
+[custom.right_end]
+format = "[ ]($style)"
+style = "#ea6962"
+when = "true"
+description = "Right prompt end characters"
+
+#
+# Second line
+#
+
+[character]
+success_symbol = "[●](#7daea3)"
+error_symbol = "[●](#ea6962)"
+vicmd_symbol = "[○](#7daea3)"
