@@ -131,7 +131,7 @@ fi
 # mujoco
 #
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/steven/.mujoco/mujoco200/bin
+# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/steven/.mujoco/mujoco200/bin
 export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so
 
 if [ -x "$(command -v fd)" ]; then

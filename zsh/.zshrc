@@ -53,7 +53,7 @@ fi
 #
 
 if [[ -f /usr/lib/x86_64-linux-gnu/libGLEW.so ]]; then
-  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/steven/.mujoco/mujoco200/bin
+  # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/steven/.mujoco/mujoco200/bin
   export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so
 fi
 
