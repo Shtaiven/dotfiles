@@ -44,3 +44,9 @@ fi
 
 # vulkan for nvidia gpu
 export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/nvidia_icd.json"
+
+# Use kvantum for Qt theme
+# export QT_STYLE_OVERRIDE=kvantum
+
+# Use gtk style for Qt theme
+export QT_QPA_PLATFORMTHEME=qt5ct
