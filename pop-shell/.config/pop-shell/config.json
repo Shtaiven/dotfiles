@@ -12,6 +12,9 @@
     },
     {
       "class": "mujoco_py"
+    },
+    {
+      "class": "Kazam"
     }
   ],
   "skiptaskbarhidden": [],
