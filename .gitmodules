@@ -4,3 +4,6 @@
 [submodule "extras/pop-gruvbox-material-gtk-theme"]
 	path = extras/pop-gruvbox-material-gtk-theme
 	url = https://github.com/Shtaiven/pop-gruvbox-material-gtk-theme
+[submodule "i3/.config/i3/scripts/i3ass"]
+	path = extras/i3ass
+	url = git@github.com:budlabs/i3ass
