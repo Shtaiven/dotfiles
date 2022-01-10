@@ -13,7 +13,7 @@ set $mod Mod4
 
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
-font pango:FiraCode Nerd Font Mono 11
+font pango:FiraCode Nerd Font Mono Bold 11
 
 # This font is widely installed, provides lots of unicode glyphs, right-to-left
 # text rendering and scalability on retina/hidpi displays (thanks to pango).
@@ -164,26 +164,26 @@ mode "resize" {
     # Pressing right will grow the window's width.
     # Pressing up will shrink the window's height.
     # Pressing down will grow the window's height.
-    bindsym h resize shrink width 10 px or 10 ppt
-    bindsym j resize grow height 10 px or 10 ppt
-    bindsym k resize shrink height 10 px or 10 ppt
-    bindsym l resize grow width 10 px or 10 ppt
+    bindsym h resize shrink width 5 px or 5 ppt
+    bindsym j resize grow height 5 px or 5 ppt
+    bindsym k resize shrink height 5 px or 5 ppt
+    bindsym l resize grow width 5 px or 5 ppt
 
-    bindsym Shift+h resize shrink width 50 px or 50 ppt
-    bindsym Shift+j resize grow height 50 px or 50 ppt
-    bindsym Shift+k resize shrink height 50 px or 50 ppt
-    bindsym Shift+l resize grow width 50 px or 50 ppt
+    bindsym Shift+h resize shrink width 20 px or 20 ppt
+    bindsym Shift+j resize grow height 20 px or 20 ppt
+    bindsym Shift+k resize shrink height 20 px or 20 ppt
+    bindsym Shift+l resize grow width 20 px or 20 ppt
 
     # same bindings, but for the arrow keys
-    bindsym Left resize shrink width 10 px or 10 ppt
-    bindsym Down resize grow height 10 px or 10 ppt
-    bindsym Up resize shrink height 10 px or 10 ppt
-    bindsym Right resize grow width 10 px or 10 ppt
+    bindsym Left resize shrink width 5 px or 5 ppt
+    bindsym Down resize grow height 5 px or 5 ppt
+    bindsym Up resize shrink height 5 px or 5 ppt
+    bindsym Right resize grow width 5 px or 5 ppt
 
-    bindsym Shift+Left resize shrink width 50 px or 50 ppt
-    bindsym Shift+Down resize grow height 50 px or 50 ppt
-    bindsym Shift+Up resize shrink height 50 px or 50 ppt
-    bindsym Shift+Right resize grow width 50 px or 50 ppt
+    bindsym Shift+Left resize shrink width 20 px or 20 ppt
+    bindsym Shift+Down resize grow height 20 px or 20 ppt
+    bindsym Shift+Up resize shrink height 20 px or 20 ppt
+    bindsym Shift+Right resize grow width 20 px or 20 ppt
 
     # back to normal: Enter or Escape or $mod+r
     bindsym Return mode "default"
@@ -193,15 +193,38 @@ mode "resize" {
 
 bindsym $mod+r mode "resize"
 
+#
 # Theming
-# class                 border  backgr. text    indicator child_border
-client.focused          #4c7899 #285577 #ffffff #2e9ef4   #285577
-client.focused_inactive #333333 #5f676a #ffffff #484e50   #5f676a
-client.unfocused        #333333 #222222 #888888 #292d2e   #222222
-client.urgent           #2f343a #900000 #ffffff #900000   #900000
-client.placeholder      #000000 #0c0c0c #ffffff #000000   #0c0c0c
+#
 
-client.background       #ffffff
+# Colors
+set $bg             "#282828"
+set $fg             "#d4be98"
+set $black          "#665c54"
+set $bright-black   "#928374"
+set $red            "#ea6962"
+set $bright-red     "#ea6962"
+set $green          "#a9b665"
+set $bright-green   "#a9b665"
+set $yellow         "#d8a657"
+set $bright-yellow  "#d8a657"
+set $blue           "#7daea3"
+set $bright-blue    "#7daea3"
+set $magenta        "#d3869b"
+set $bright-magenta "#d3869b"
+set $cyan           "#89b482"
+set $bright-cyan    "#89b482"
+set $white          "#d4be98"
+set $bright-white   "#d4be98"
+
+# class                 border  backgr. text    indicator child_border
+client.focused          $blue   $blue   $bg     $blue     $blue
+client.focused_inactive $fg     $fg     $bg     $fg       $fg
+client.unfocused        $bg     $bg     $fg     $black    $black
+client.urgent           $red    $red    $fg     $red      $red
+client.placeholder      $bg     $bg     $fg     $black    $black
+
+client.background       $bg
 
 # Remove title bars for i3-gaps
 for_window [class=".*"] border pixel 4
