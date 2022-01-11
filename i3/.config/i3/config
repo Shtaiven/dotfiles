@@ -221,7 +221,7 @@ set $bright-white   "#d4be98"
 client.focused          $red      $red      $bg       $red      $red
 client.focused_inactive $fg       $fg       $bg       $fg       $fg
 client.unfocused        $bg       $bg       $fg       $black    $black
-client.urgent           $magenta  $magenta  $fg       $magenta  $magenta
+client.urgent           $yellow   $yellow   $fg       $yellow   $yellow
 client.placeholder      $bg       $bg       $fg       $black    $black
 
 client.background       $bg
