@@ -217,12 +217,12 @@ set $bright-cyan    "#89b482"
 set $white          "#d4be98"
 set $bright-white   "#d4be98"
 
-# class                 border  backgr. text    indicator child_border
-client.focused          $blue   $blue   $bg     $blue     $blue
-client.focused_inactive $fg     $fg     $bg     $fg       $fg
-client.unfocused        $bg     $bg     $fg     $black    $black
-client.urgent           $red    $red    $fg     $red      $red
-client.placeholder      $bg     $bg     $fg     $black    $black
+# class                 border    backgr.   text      indicator child_border
+client.focused          $red      $red      $bg       $red      $red
+client.focused_inactive $fg       $fg       $bg       $fg       $fg
+client.unfocused        $bg       $bg       $fg       $black    $black
+client.urgent           $magenta  $magenta  $fg       $magenta  $magenta
+client.placeholder      $bg       $bg       $fg       $black    $black
 
 client.background       $bg
 
