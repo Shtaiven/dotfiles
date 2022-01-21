@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Notion Enhanced
+Exec="/opt/Notion Enhanced/notion-app-enhanced" %U
+Terminal=false
+Type=Application
+Icon=notion
+StartupWMClass=notion-app-enhanced
+StartupNotify=true
+Comment=The all-in-one workspace for your notes and tasks, but enhanced
+MimeType=x-scheme-handler/notion;x-scheme-handler/notion;x-scheme-handler/notion;
+Categories=Office;Utility;
