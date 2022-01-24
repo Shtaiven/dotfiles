@@ -1,0 +1,188 @@
+#
+# Daydream theme for starship prompt, base16 compatible
+#
+# Authors:
+#   Steven Eisinger <steven.a.eisinger@gmail.com>
+#
+
+#
+# Prompt common
+#
+
+format = """
+${custom.left_start}\
+$username\
+$hostname\
+$singularity\
+$directory\
+${custom.left_sep}\
+$vcsh\
+$git_branch\
+$git_commit\
+$git_status\
+$git_state\
+$hg_branch\
+${custom.left_end}\
+$nix_shell\
+$docker_context\
+$conda\
+$python\
+$line_break\
+$character"""
+
+right_format="""
+${custom.right_start}\
+$cmd_duration\
+$jobs\
+${custom.right_sep}\
+$time\
+${custom.right_end}"""
+
+[fill]
+symbol = " "
+
+#
+# Left prompt 1
+#
+
+[custom.left_start]
+format = "[ ]($style)"
+style = "bright-blue"
+when = "true"
+description = "Left prompt start characters"
+
+[username]
+show_always = false
+format = "[$user ]($style)"
+style_root = "fg:bold bright-red bg:bright-blue"
+style_user = "inverted fg:bold bright-blue"
+
+[hostname]
+ssh_only = true
+format = "[ $hostname ]($style)"
+style = "inverted fg:bold bright-blue"
+
+[singularity]
+format = '[\[$env\] ]($style)'
+style = "inverted fg:bold bright-blue"
+
+[directory]
+format = "[$read_only$path ]($style)"
+read_only = " "
+style = "inverted fg:bold bright-blue"
+fish_style_pwd_dir_length = 2
+truncation_length = 1
+
+[custom.left_sep]
+format = "[░▒▓]($style)"
+style = "bg:bright-blue"
+when = "true"
+description = "Left prompt separator characters"
+
+#
+# Left prompt 2
+#
+
+[vcsh]
+format = "[$symbol$repo ]($style)"
+symbol = ""
+style = "bold inverted"
+
+[git_branch]
+format = "[$symbol$branch ]($style)"
+symbol = ""
+style = "bold inverted"
+
+[git_commit]
+format = "[\\($hash$tag\\) ]($style)"
+style = "bold inverted"
+
+[git_status]
+format = '[\[$all_status$ahead_behind\] ]($style)'
+style = "bold inverted"
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total) ]($style)\)'
+style = "bold inverted"
+
+[hg_branch]
+format = "[$symbol$branch ]($style)"
+symbol = ""
+style = "bold inverted"
+disabled = false
+
+[custom.left_end]
+format = "[]($style)"
+style = ""
+when = "true"
+description = "Left prompt end characters"
+
+#
+# Middle prompt
+#
+
+[nix_shell]
+format = " []($style)[$state(:$name)](fg:bold bright-white bg:$style)[]($style)"
+style = "black"
+
+[docker_context]
+format = " []($style)[$context](fg:bold bright--blue bg:$style)[]($style)"
+style = "black"
+
+[conda]
+format = " []($style)[$environment](fg:bold bright-green bg:$style)[]($style)"
+style = "black"
+
+[python]
+format = " []($style)[$virtualenv](fg:bold bright-yellow bg:$style)[]($style)"
+style = "black"
+detect_extensions = []
+detect_files = []
+
+#
+# Right prompt 1
+#
+
+[custom.right_start]
+format = "[]($style)"
+style = ""
+when = "true"
+description = "Right prompt start characters"
+
+[cmd_duration]
+format = "[ took $duration]($style)"
+style = "bold inverted"
+
+[jobs]
+format = "[ $symbol$number]($style)"
+style = "bold inverted"
+
+[custom.right_sep]
+format = "[▓▒░]($style)"
+style = "bg:bright-red"
+when = "true"
+description = "Right prompt separator characters"
+
+#
+# Right prompt 2
+#
+
+[time]
+disabled = false
+format = "[ $time]($style)"
+style = "inverted fg:bold bright-red"
+
+[custom.right_end]
+format = "[ ]($style)"
+style = "bright-red"
+when = "true"
+description = "Right prompt end characters"
+
+#
+# Second line
+#
+
+[character]
+success_symbol = "[●](bright-blue)"
+error_symbol = "[●](bright-red)"
+vicmd_symbol = "[○](bright-blue)"
