@@ -21,6 +21,13 @@
     },
     {
       "class": "Gcolor3"
+    },
+    {
+      "class": "Wine",
+      "title": "CMSEngine"
+    },
+    {
+      "class": "Hexcells Infinite.x86_64"
     }
   ],
   "skiptaskbarhidden": [],

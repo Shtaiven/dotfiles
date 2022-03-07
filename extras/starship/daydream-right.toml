@@ -10,19 +10,19 @@
 #
 
 format = """
-${custom.left_start}\
+[ ](bright-blue)\
 $username\
 $hostname\
 $singularity\
 $directory\
-${custom.left_sep}\
+[░▒▓](bg:bright-blue)\
 $vcsh\
 $git_branch\
 $git_commit\
 $git_status\
 $git_state\
 $hg_branch\
-${custom.left_end}\
+[]()\
 $nix_shell\
 $docker_context\
 $conda\
@@ -31,12 +31,12 @@ $line_break\
 $character"""
 
 right_format="""
-${custom.right_start}\
+[]()\
 $cmd_duration\
 $jobs\
-${custom.right_sep}\
+[▓▒░](bg:bright-red)\
 $time\
-${custom.right_end}"""
+[ ](bright-red)"""
 
 [fill]
 symbol = " "
@@ -44,12 +44,6 @@ symbol = " "
 #
 # Left prompt 1
 #
-
-[custom.left_start]
-format = "[ ]($style)"
-style = "bright-blue"
-when = "true"
-description = "Left prompt start characters"
 
 [username]
 show_always = false
@@ -72,12 +66,6 @@ read_only = " "
 style = "inverted fg:bold bright-blue"
 fish_style_pwd_dir_length = 2
 truncation_length = 1
-
-[custom.left_sep]
-format = "[░▒▓]($style)"
-style = "bg:bright-blue"
-when = "true"
-description = "Left prompt separator characters"
 
 #
 # Left prompt 2
@@ -111,12 +99,6 @@ symbol = ""
 style = "bold inverted"
 disabled = false
 
-[custom.left_end]
-format = "[]($style)"
-style = ""
-when = "true"
-description = "Left prompt end characters"
-
 #
 # Middle prompt
 #
@@ -143,12 +125,6 @@ detect_files = []
 # Right prompt 1
 #
 
-[custom.right_start]
-format = "[]($style)"
-style = ""
-when = "true"
-description = "Right prompt start characters"
-
 [cmd_duration]
 format = "[ took $duration]($style)"
 style = "bold inverted"
@@ -156,12 +132,6 @@ style = "bold inverted"
 [jobs]
 format = "[ $symbol$number]($style)"
 style = "bold inverted"
-
-[custom.right_sep]
-format = "[▓▒░]($style)"
-style = "bg:bright-red"
-when = "true"
-description = "Right prompt separator characters"
 
 #
 # Right prompt 2
@@ -171,12 +141,6 @@ description = "Right prompt separator characters"
 disabled = false
 format = "[ $time]($style)"
 style = "inverted fg:bold bright-red"
-
-[custom.right_end]
-format = "[ ]($style)"
-style = "bright-red"
-when = "true"
-description = "Right prompt end characters"
 
 #
 # Second line
