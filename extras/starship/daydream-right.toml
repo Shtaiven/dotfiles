@@ -108,7 +108,7 @@ format = " []($style)[$state(:$name)](fg:bold bright-white bg:$style)[]($s
 style = "black"
 
 [docker_context]
-format = " []($style)[$context](fg:bold bright--blue bg:$style)[]($style)"
+format = " []($style)[$context](fg:bold bright-blue bg:$style)[]($style)"
 style = "black"
 
 [conda]
