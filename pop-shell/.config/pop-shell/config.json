@@ -28,6 +28,12 @@
     },
     {
       "class": "Hexcells Infinite.x86_64"
+    },
+    {
+      "class": "Gnome-calculator"
+    },
+    {
+      "class": "Mullvad VPN"
     }
   ],
   "skiptaskbarhidden": [],
