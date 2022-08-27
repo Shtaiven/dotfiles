@@ -17,6 +17,7 @@ alias please='sudo $(fc -ln -1)'
 # Take default less args from zprofile for bat scrolling
 if (( $+commands[bat] )); then
   export BAT_PAGER="less $LESS"
+  alias cat="bat --plain"
 fi
 
 # use fd as fzf default instead of find
