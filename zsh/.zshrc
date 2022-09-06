@@ -14,13 +14,31 @@ fi
 # please alias
 alias please='sudo $(fc -ln -1)'
 
-# Take default less args from zprofile for bat scrolling
-if (( $+commands[bat] )); then
-  export BAT_PAGER="less $LESS"
+#
+# exa
+#
+if (( $+commands[exa] )); then
+  export EXA_COMMON_ARGS="--icons --color=auto"
+  alias l="exa -1 $EXA_COMMON_ARGS"
+  alias la="exa -a $EXA_COMMON_ARGS"
+  alias ll="exa -lah $EXA_COMMON_ARGS"
+  alias ls="exa $EXA_COMMON_ARGS"
+  alias tree="exa --tree $EXA_COMMON_ARGS"
+  unset EXA_COMMON_ARGS
 fi
 
-# use fd as fzf default instead of find
+if (( $+commands[bat] )); then
+  # Take default less args from zprofile for bat scrolling
+  export BAT_PAGER="less $LESS"
+  alias cat="bat --plain"
+fi
+
+#
+# fd
+#
+
 if (( $+commands[fd] )); then
+  # use fd as fzf default instead of find
   export FZF_CTRL_T_COMMAND="fd --hidden --follow --exclude \".git\" . $HOME"
   export FZF_ALT_C_COMMAND="fd -t d --hidden --follow --exclude \".git\" . $HOME"
 
