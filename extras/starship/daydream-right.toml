@@ -64,8 +64,9 @@ style = "inverted fg:bold bright-blue"
 format = "[$read_only$path ]($style)"
 read_only = " "
 style = "inverted fg:bold bright-blue"
-fish_style_pwd_dir_length = 2
-truncation_length = 1
+#fish_style_pwd_dir_length = 3
+truncation_length = 2
+truncation_symbol = ""
 
 #
 # Left prompt 2
