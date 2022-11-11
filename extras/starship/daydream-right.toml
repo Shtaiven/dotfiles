@@ -38,6 +38,9 @@ $jobs\
 $time\
 [ ](bright-red)"""
 
+scan_timeout = 100
+command_timeout = 700
+
 [fill]
 symbol = " "
 
