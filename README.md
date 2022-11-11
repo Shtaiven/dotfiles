@@ -56,3 +56,11 @@ Personal dotfiles for *nix.
     ```
 
     The scripts `stow-all.sh` and `unstow-all.sh` are provided to perform this operation (and undo it).
+
+## Recommended installs
+    * ripgrep
+    * fzf
+    * bat
+    * zoxide
+    * tmux
+    * exa
