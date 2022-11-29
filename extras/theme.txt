@@ -62,6 +62,7 @@ grey2               #a89984
 
 Interface Colors
 ================
+background          #101010
 text_light          #d4be98
 text_dark           #282828
 text_selection      #45403d
