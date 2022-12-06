@@ -1,0 +1,13 @@
+[user]
+    name = Steven Eisinger
+[filter "lfs"]
+    clean = git-lfs clean -- %f
+    smudge = git-lfs smudge -- %f
+    process = git-lfs filter-process
+    required = true
+[alias]
+    # Show activity on the changes to the repository
+    activity = for-each-ref --sort=committerdate refs/remotes/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset)%(upstream:track) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))'
+
+    # A pretty log format
+    adog = log --all --decorate --oneline --graph
