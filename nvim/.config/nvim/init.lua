@@ -130,6 +130,9 @@ vim.o.hlsearch = false
 -- Make line numbers default
 vim.wo.number = true
 
+-- Show relative line numbers
+vim.o.relativenumber = true
+
 -- Enable mouse mode
 vim.o.mouse = 'a'
 
@@ -184,10 +187,10 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 -- See `:help lualine.txt`
 require('lualine').setup {
   options = {
-    icons_enabled = false,
+    icons_enabled = true,
     theme = 'gruvbox-material',
     component_separators = '|',
-    section_separators = '',
+    section_separators = { left='', right='' },
   },
 }
 
