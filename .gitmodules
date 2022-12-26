@@ -1,9 +1,6 @@
-[submodule "i3/.config/i3/scripts/i3ass"]
-	path = extras/i3ass
+[submodule "i3ass"]
+	path = misc/i3ass
 	url = git@github.com:budlabs/i3ass
-[submodule "extras/Gruvbox-GTK-Theme"]
-	path = themes/.local/share/themes/Gruvbox-GTK-Theme
-	url = https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme.git
 [submodule "Gruvbox-GTK-Theme"]
-	path = extras/Gruvbox-GTK-Theme
+	path = misc/Gruvbox-GTK-Theme
 	url = https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme.git
