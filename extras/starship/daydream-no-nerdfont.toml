@@ -10,7 +10,8 @@
 #
 
 format = """
-[ ](bright-blue)\
+[║](bright-blue)\
+[ ](bg:bright-blue)\
 $username\
 $hostname\
 $singularity\
@@ -22,18 +23,19 @@ $git_commit\
 $git_status\
 $git_state\
 $hg_branch\
-[]()\
+[║]()\
 $nix_shell\
 $docker_context\
 $conda\
 $python\
 $fill\
-[]()\
+[║]()\
 $cmd_duration\
 $jobs\
 [▓▒░](bg:bright-red)\
 $time\
-[ ](bright-red)\
+[ ](bg:bright-red)\
+[║](bright-red)\
 $line_break\
 $character"""
 
@@ -55,7 +57,7 @@ style_user = "inverted fg:bold bright-blue"
 
 [hostname]
 ssh_only = true
-format = "[ $hostname ]($style)"
+format = "[▸ $hostname ]($style)"
 style = "inverted fg:bold bright-blue"
 
 [singularity]
@@ -64,7 +66,7 @@ style = "inverted fg:bold bright-blue"
 
 [directory]
 format = "[$read_only$path ]($style)"
-read_only = " "
+read_only = "R "
 style = "inverted fg:bold bright-blue"
 fish_style_pwd_dir_length = 1
 truncation_length = 1
@@ -75,12 +77,12 @@ truncation_length = 1
 
 [vcsh]
 format = "[$symbol$repo ]($style)"
-symbol = ""
+symbol = "┟"
 style = "bold inverted"
 
 [git_branch]
 format = "[$symbol$branch ]($style)"
-symbol = ""
+symbol = "┟"
 style = "bold inverted"
 
 [git_commit]
@@ -97,7 +99,7 @@ style = "bold inverted"
 
 [hg_branch]
 format = "[$symbol$branch ]($style)"
-symbol = ""
+symbol = "┟"
 style = "bold inverted"
 disabled = false
 
@@ -106,19 +108,19 @@ disabled = false
 #
 
 [nix_shell]
-format = " []($style)[$state(:$name)](fg:bold bright-white bg:$style)[]($style)"
+format = " [║]($style)[$state(:$name)](fg:bold bright-white bg:$style)[║]($style)"
 style = "black"
 
 [docker_context]
-format = " []($style)[$context](fg:bold bright-blue bg:$style)[]($style)"
+format = " [║]($style)[$context](fg:bold bright-blue bg:$style)[║]($style)"
 style = "black"
 
 [conda]
-format = " []($style)[$environment](fg:bold bright-green bg:$style)[]($style)"
+format = " [║]($style)[$environment](fg:bold bright-green bg:$style)[║]($style)"
 style = "black"
 
 [python]
-format = " []($style)[$virtualenv](fg:bold bright-yellow bg:$style)[]($style)"
+format = " [║]($style)[$virtualenv](fg:bold bright-yellow bg:$style)[║]($style)"
 style = "black"
 detect_extensions = []
 detect_files = []
@@ -133,6 +135,7 @@ style = "bold inverted"
 
 [jobs]
 format = "[ $symbol$number]($style)"
+symbol = "*"
 style = "bold inverted"
 
 #

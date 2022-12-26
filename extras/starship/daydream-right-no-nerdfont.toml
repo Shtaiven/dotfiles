@@ -136,6 +136,7 @@ style = "bold inverted"
 
 [jobs]
 format = "[ $symbol$number]($style)"
+symbol = "*"
 style = "bold inverted"
 
 #
