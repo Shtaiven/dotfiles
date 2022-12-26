@@ -76,8 +76,7 @@ require('packer').startup(function(use)
   use 'tpope/vim-rhubarb'
   use 'lewis6991/gitsigns.nvim'
 
-  --use 'navarasu/onedark.nvim' -- Theme inspired by Atom
-  use 'sainnhe/gruvbox-material'
+  use 'sainnhe/gruvbox-material' -- Theme
   use 'nvim-lualine/lualine.nvim' -- Fancier statusline
   use 'lukas-reineke/indent-blankline.nvim' -- Add indentation guides even on blank lines
   use 'numToStr/Comment.nvim' -- "gc" to comment visual regions/lines
@@ -156,6 +155,9 @@ vim.cmd [[colorscheme gruvbox-material]]
 
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
+
+-- Set vim to always use system clipboard if available for y, p, etc.
+vim.o.clipboard='unnamedplus'
 
 -- [[ Basic Keymaps ]]
 -- Set <space> as the leader key
