@@ -9,11 +9,11 @@ Personal dotfiles for *nix.
     ```zsh
     # install dependencies with your package manager, e.g.
     # Debian/Ubuntu
-    sudo apt install zsh git stow curl powerline powerline-fonts fonts-firacode
+    sudo apt install zsh git stow curl fonts-firacode
     # Arch
-    sudo pacman -S zsh git stow curl powerline powerline-fonts ttf-fira-code
+    sudo pacman -S zsh git stow curl ttf-fira-code
     # Fedora
-    sudo dnf install zsh git stow curl powerline powerline-fonts fira-code-fonts
+    sudo dnf install zsh git stow curl fira-code-fonts
 
     # install rustup
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -27,7 +27,7 @@ Personal dotfiles for *nix.
 
 1. Clone the dotfiles directory and `cd` into it.
 
-    ```zsh
+    ```sh
     cd ~
     git clone git@github.com:Shtaiven/dotfiles.git .dotfiles
     cd ~/.dotfiles
@@ -35,24 +35,16 @@ Personal dotfiles for *nix.
 
 1. For each package you want to install:
 
-    ```zsh
-    stow <package>
+    ```sh
+    stow -d stow -t $HOME -S <package>
     ```
 
-    where `<package>` is the name of the package folder you would like to install, e.g. `stow zsh`.
-
-    NOTE: `extras` should not be stowed. Read the README within each of its subdirectories for more information.
+    where `<package>` is the name of the package folder you would like to install, e.g. `stow -d stow -t $HOME -S zsh`.
 
     To install all packages, run:
 
-    ```zsh
-    for f in */ ; do
-        if [ "${f%*/}" = "extras" ] ; then
-            continue
-        elif [ -d "$f" ] ; then
-            stow "${f%*/}"
-        fi
-    done
+    ```sh
+    ./scripts/stow-all.sh
     ```
 
     The scripts `stow-all.sh` and `unstow-all.sh` are provided to perform this operation (and undo it).
