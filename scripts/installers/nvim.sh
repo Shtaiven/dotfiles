@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # Install pre-built binary of nvim
 curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
 

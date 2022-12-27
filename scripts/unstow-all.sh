@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # Stow all directories
 
 STOW_DIR="stow"

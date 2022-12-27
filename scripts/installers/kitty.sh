@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # Install pre-built binary of kitty
 curl -Ls https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
 

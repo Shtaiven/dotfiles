@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 #
 # A script for showing terminal colors.
 # get_cols adapted from Neofetch
