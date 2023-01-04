@@ -162,6 +162,9 @@ vim.o.clipboard = 'unnamedplus'
 -- Remove mode from command line (already shown in lualine)
 vim.o.showmode = false
 
+-- Show a line for max line length
+vim.opt.colorcolumn = '80,120'
+
 -- [[ Basic Keymaps ]]
 -- Set <space> as the leader key
 -- See `:help mapleader`
