@@ -157,7 +157,10 @@ vim.cmd [[colorscheme gruvbox-material]]
 vim.o.completeopt = 'menuone,noselect'
 
 -- Set vim to always use system clipboard if available for y, p, etc.
-vim.o.clipboard='unnamedplus'
+vim.o.clipboard = 'unnamedplus'
+
+-- Remove mode from command line (already shown in lualine)
+vim.o.showmode = false
 
 -- [[ Basic Keymaps ]]
 -- Set <space> as the leader key
