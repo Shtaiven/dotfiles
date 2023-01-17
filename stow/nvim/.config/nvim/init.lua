@@ -1,21 +1,21 @@
 -- MIT License
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
--- of this software and associated documentation files (the "Software"), to 
--- deal in the Software without restriction, including without limitation the 
--- rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
--- sell copies of the Software, and to permit persons to whom the Software is 
+-- of this software and associated documentation files (the "Software"), to
+-- deal in the Software without restriction, including without limitation the
+-- rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+-- sell copies of the Software, and to permit persons to whom the Software is
 -- furnished to do so, subject to the following conditions:
--- 
--- The above copyright notice and this permission notice shall be included in 
+--
+-- The above copyright notice and this permission notice shall be included in
 -- all copies or substantial portions of the Software.
--- 
--- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
--- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
--- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
--- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
--- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
--- FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+-- FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 -- IN THE SOFTWARE.
 
 -- Webpage: https://github.com/nvim-lua/kickstart.nvim
@@ -175,6 +175,9 @@ vim.opt.colorcolumn = '80,120'
 --  NOTE: Must happen before plugins are required (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
+
+-- Theme options
+vim.g.gruvbox_material_better_performance = 1
 
 -- Keymaps for better default experience
 -- See `:help vim.keymap.set()`
@@ -431,7 +434,11 @@ mason_lspconfig.setup_handlers {
 }
 
 -- Turn on lsp status information
-require('fidget').setup()
+require('fidget').setup {
+  text = {
+    spinner = "dots",
+  },
+}
 
 -- nvim-cmp setup
 local cmp = require 'cmp'
