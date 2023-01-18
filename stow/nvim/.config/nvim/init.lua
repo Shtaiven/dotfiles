@@ -71,6 +71,11 @@ require('packer').startup(function(use)
     after = 'nvim-treesitter',
   }
 
+  use { -- File explorer
+    'nvim-tree/nvim-tree.lua',
+    requires = { 'nvim-tree/nvim-web-devicons' },
+  }
+
   -- Git related plugins
   use 'tpope/vim-fugitive'
   use 'tpope/vim-rhubarb'
@@ -179,6 +184,10 @@ vim.g.maplocalleader = ' '
 -- Theme options
 vim.g.gruvbox_material_better_performance = 1
 
+-- Options reccomended for nvim-tree
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
 -- Keymaps for better default experience
 -- See `:help vim.keymap.set()`
 vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
@@ -238,6 +247,9 @@ require('gitsigns').setup {
     changedelete = { text = '~' },
   },
 }
+
+-- nvim-tree
+require('nvim-tree').setup()
 
 -- [[ Configure Telescope ]]
 -- See `:help telescope` and `:help telescope.setup()`
