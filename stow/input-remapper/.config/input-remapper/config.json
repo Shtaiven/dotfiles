@@ -1,8 +1,8 @@
 {
-    "version": "1.4.0",
     "autoload": {
-        "AT Translated Set 2 keyboard": "CTRL<->CAPS",
-        "MX Anywhere 3 Mouse": "Workspaces"
+        "Logitech MX Master 3 for Mac": "Workspace Switcher",
+        "MX Anywhere 3 Mouse": "Workspace Switcher",
+        "AT Translated Set 2 keyboard": "CTRL<->CAPS"
     },
     "macros": {
         "keystroke_sleep_ms": 10
@@ -16,5 +16,6 @@
             "x_scroll_speed": 2,
             "y_scroll_speed": 0.5
         }
-    }
+    },
+    "version": "1.4.0"
 }

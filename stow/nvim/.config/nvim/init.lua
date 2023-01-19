@@ -76,6 +76,10 @@ require('packer').startup(function(use)
     requires = { 'nvim-tree/nvim-web-devicons' },
   }
 
+  use {
+    "akinsho/toggleterm.nvim", tag = '*'
+  }
+
   -- Git related plugins
   use 'tpope/vim-fugitive'
   use 'tpope/vim-rhubarb'
@@ -182,7 +186,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Theme options
-vim.g.gruvbox_material_better_performance = 1
+-- vim.g.gruvbox_material_better_performance = 1
 
 -- Options reccomended for nvim-tree
 vim.g.loaded_netrw = 1
@@ -195,6 +199,21 @@ vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 -- Remap for dealing with word wrap
 vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
+
+-- [[ Terminal mappings ]]
+-- These are suggested by akinsho/toggleterm.nvim
+function _G.set_terminal_keymaps()
+  local opts = {buffer = 0}
+  vim.keymap.set('t', '<esc>', [[<C-\><C-n>]], opts)
+  vim.keymap.set('t', 'jk', [[<C-\><C-n>]], opts)
+  vim.keymap.set('t', '<C-h>', [[<Cmd>wincmd h<CR>]], opts)
+  vim.keymap.set('t', '<C-j>', [[<Cmd>wincmd j<CR>]], opts)
+  vim.keymap.set('t', '<C-k>', [[<Cmd>wincmd k<CR>]], opts)
+  vim.keymap.set('t', '<C-l>', [[<Cmd>wincmd l<CR>]], opts)
+end
+
+-- if you only want these mappings for toggle term use term://*toggleterm#* instead
+vim.cmd('autocmd! TermOpen term://* lua set_terminal_keymaps()')
 
 -- [[ Highlight on yank ]]
 -- See `:help vim.highlight.on_yank()`
@@ -209,6 +228,7 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 
 -- Set lualine as statusline
 -- See `:help lualine.txt`
+
 require('lualine').setup {
   options = {
     icons_enabled = true,
@@ -250,6 +270,16 @@ require('gitsigns').setup {
 
 -- nvim-tree
 require('nvim-tree').setup()
+vim.keymap.set('n', '<leader>b', require('nvim-tree.api').tree.toggle, { desc = 'Toggle File [B]rowser' })
+
+-- toggleterm
+require('toggleterm').setup {
+  open_mapping = [[<leader>j]],
+  -- direction = 'float',
+  -- float_opts = {
+  --  border = 'curved',
+  -- },
+}
 
 -- [[ Configure Telescope ]]
 -- See `:help telescope` and `:help telescope.setup()`
