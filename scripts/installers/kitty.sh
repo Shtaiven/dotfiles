@@ -2,6 +2,9 @@
 # Install pre-built binary of kitty
 curl -Ls https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
 
+# Make sure that ~/.local/bin exists
+mkdir -p ~/.local/bin
+
 # Create a symbolic link to add kitty to PATH (assuming ~/.local/bin is in
 # your system-wide PATH)
 ln -s ~/.local/kitty.app/bin/kitty ~/.local/bin/ 2>/dev/null
