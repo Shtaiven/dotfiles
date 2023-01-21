@@ -76,7 +76,7 @@ require('packer').startup(function(use)
     requires = { 'nvim-tree/nvim-web-devicons' },
   }
 
-  use {
+  use { -- Pull up a terminal 
     "akinsho/toggleterm.nvim", tag = '*'
   }
 
@@ -228,21 +228,31 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 
 -- Set lualine as statusline
 -- See `:help lualine.txt`
-
 require('lualine').setup {
   options = {
     icons_enabled = true,
     theme = 'gruvbox-material',
+    globalstatus = true,
     component_separators = '',
     section_separators = { left='▓▒░', right='░▒▓' },
   },
   sections = {
     lualine_a = {
-      { 'mode', separator = { left=' ', right='▓▒░' } },
+      { 'mode', separator = { right='▓▒░' } },
     },
     lualine_z = {
-      { 'location', separator = { left='░▒▓', right=' ' } },
+      { 'location', separator = { left='░▒▓' } },
     },
+  },
+  tabline = {
+    lualine_a = {'buffers'},
+    lualine_z = {'tabs'},
+  },
+  extensions = {
+    'fugitive',
+    'fzf',
+    'nvim-tree',
+    'toggleterm',
   },
 }
 
