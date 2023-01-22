@@ -16,7 +16,8 @@ mkdir -p ${INSTALL_DEST}
 curl -LO https://github.com/neovim/neovim/releases/latest/download/${TARBALL_NAME}${TARBALL_EXT}
 
 # Extract and untar, move to the specified download folder, and remove the download
-tar ${TAR_ARGS} ${TARBALL_NAME}${TARBALL_EXT}
+tar ${TAR_ARGS} ${TARBALL_NAME}${TARBALL_EXT} 1>/dev/null
+rm -rf ${DOWNLOAD_DEST}/${TARBALL_NAME} 2>/dev/null
 mv -f ${TARBALL_NAME} ${DOWNLOAD_DEST}/${TARBALL_NAME}
 rm -rf ${TARBALL_NAME}${TARBALL_EXT}
 
