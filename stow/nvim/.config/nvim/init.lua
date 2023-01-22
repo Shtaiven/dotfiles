@@ -117,11 +117,11 @@ end)
 --
 -- You'll need to restart nvim, and then it will work.
 if is_bootstrap then
-  print '=================================='
-  print '    Plugins are being installed'
-  print '    Wait until Packer completes,'
-  print '       then restart nvim'
-  print '=================================='
+  print '╭────────────────────────────────╮'
+  print '│   Plugins are being installed  │'
+  print '│   Wait until Packer completes, │'
+  print '│      then restart nvim         │'
+  print '╰────────────────────────────────╯'
   return
 end
 
@@ -285,6 +285,7 @@ vim.keymap.set('n', '<leader>b', require('nvim-tree.api').tree.toggle, { desc = 
 require('toggleterm').setup {
   open_mapping = [[<leader>j]],
   insert_mappings = false,
+  terminal_mappings = false,
 }
 
 -- [[ Configure Telescope ]]
@@ -324,7 +325,7 @@ vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { de
 -- See `:help nvim-treesitter`
 require('nvim-treesitter.configs').setup {
   -- Add languages to be installed here that you want installed for treesitter
-  ensure_installed = { 'bash', 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'typescript', 'help' },
+  ensure_installed = { 'bash', 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'typescript', 'vim', 'help' },
 
   highlight = { enable = true },
   indent = { enable = true, disable = { 'python' } },
