@@ -1,8 +1,13 @@
 [/]
 active-hint=true
-gap-inner=uint32 4
-gap-outer=uint32 4
+active-hint-border-radius=uint32 16
+fullscreen-launcher=true
+gap-inner=uint32 2
+gap-outer=uint32 2
 hint-color-rgba='rgb(234,105,98)'
+mouse-cursor-focus-location=uint32 0
+mouse-cursor-follows-active-window=false
 show-title=true
-smart-gaps=true
+smart-gaps=false
 tile-by-default=true
+tile-enter=['<Super>r']
