@@ -1,6 +1,0 @@
-[submodule "i3ass"]
-	path = misc/i3ass
-	url = git@github.com:budlabs/i3ass
-[submodule "Gruvbox-GTK-Theme"]
-	path = misc/Gruvbox-GTK-Theme
-	url = https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme.git
