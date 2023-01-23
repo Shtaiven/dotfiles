@@ -6,7 +6,6 @@ This file tracks all work to be done
 
 * Make nvimdiff more useable
 * Make nvim UI consistent
-* Use nvim tarball instead of AppImage
 * Automate installation of applications. Options are:
     * Write an installer for each application
     * Use a tool like go-task/task and bootstrap its installation 
@@ -14,7 +13,8 @@ This file tracks all work to be done
 * Configure tmux and kitty so that they have similar bindings and look consistent
 * Handle stow not working when it doesn't own a symlink
 * Clean up .bashrc and move modules to `.../bash/.bashrc.d/`
-* Make custom modules for zprezto and move them from `.../zsh/.zshrc` to `.zprezto/contrib/`
+* Make custom modules for zprezto and move them from `.../zsh/.zshrc` to `.zprezto/contrib/` or something similar
+* Separate and create installer for `dconf` settings
 
 ## Installable applications
 * zsh
@@ -33,3 +33,7 @@ This file tracks all work to be done
 * tmux
 * bat
 
+## Theming
+* Gradience
+* adw-gtk3
+* adw-gtk3-dark
