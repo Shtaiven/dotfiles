@@ -6,6 +6,11 @@ This file tracks all work to be done
 
 * Make nvimdiff more useable
 * Make nvim UI consistent
+    * add nvim-notify
+    * add nvim-highlight-colors
+    * rounds corners of lualine and tabline
+    * better colors for toggleterm and nvim-tree
+    * use telescope for toggleterm?
 * Automate installation of applications. Options are:
     * Write an installer for each application
     * Use a tool like go-task/task and bootstrap its installation 
@@ -14,7 +19,7 @@ This file tracks all work to be done
 * Handle stow not working when it doesn't own a symlink
 * Clean up .bashrc and move modules to `.../bash/.bashrc.d/`
 * Make custom modules for zprezto and move them from `.../zsh/.zshrc` to `.zprezto/contrib/` or something similar
-* Separate and create installer for `dconf` settings
+* Create installer for `dconf` settings
 
 ## Installable applications
 * zsh
@@ -23,7 +28,6 @@ This file tracks all work to be done
 * nvim
 * git
 * curl
-* task ??
 * zoxide
 * fzf
 * ripgrep
