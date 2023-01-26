@@ -63,8 +63,8 @@ format = '[ \[$env\] ]($style)'
 style = "inverted fg:bold bright-blue"
 
 [directory]
-format = "[ $read_only $path ]($style)"
-read_only = ""
+format = "[ $read_only$path ]($style)"
+read_only = " "
 style = "inverted fg:bold bright-blue"
 fish_style_pwd_dir_length = 1
 truncation_length = 1
