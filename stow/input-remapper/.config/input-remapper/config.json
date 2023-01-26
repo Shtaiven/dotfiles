@@ -1,7 +1,7 @@
 {
     "autoload": {
         "Logitech MX Master 3 for Mac": "Workspace Switcher",
-        "MX Anywhere 3 Mouse": "Workspace Switcher",
+        "MX Anywhere 3 Mouse": "Workspaces",
         "AT Translated Set 2 keyboard": "CTRL<->CAPS"
     },
     "macros": {
