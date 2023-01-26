@@ -15,3 +15,6 @@ dconf load /org/gnome/shell/extensions/<extension-name>/ < <extension-name>.dcon
 ```
 
 replacing `<extension_name>` with the appropriate name.
+
+`<extension_name>` is formatted to use the name of the full path to the dconf setting, with the leading `/` omitted and all other `/` replaced by `.`.
+

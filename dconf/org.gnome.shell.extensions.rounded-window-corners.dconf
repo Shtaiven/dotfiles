@@ -1,0 +1,10 @@
+[/]
+border-width=1
+custom-rounded-corner-settings=@a{sv} {}
+enable-preferences-entry=true
+focused-shadow={'vertical_offset': 4, 'horizontal_offset': 0, 'blur_offset': 28, 'spread_radius': 4, 'opacity': 0}
+global-rounded-corner-settings={'padding': <{'left': <uint32 0>, 'right': <uint32 0>, 'top': <uint32 0>, 'bottom': <uint32 0>}>, 'keep_rounded_corners': <{'maximized': <false>, 'fullscreen': <false>}>, 'border_radius': <uint32 18>, 'smoothing': <uint32 0>, 'enabled': <true>}
+settings-version=uint32 5
+skip-libadwaita-app=false
+tweak-kitty-terminal=true
+unfocused-shadow={'vertical_offset': 2, 'horizontal_offset': 0, 'blur_offset': 12, 'spread_radius': -1, 'opacity': 0}
