@@ -1,6 +1,6 @@
 [/]
 active-hint=true
-active-hint-border-radius=uint32 16
+active-hint-border-radius=uint32 20
 fullscreen-launcher=true
 gap-inner=uint32 2
 gap-outer=uint32 2
