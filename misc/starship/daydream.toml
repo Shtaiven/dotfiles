@@ -74,13 +74,13 @@ truncation_length = 1
 #
 
 [vcsh]
-format = "[ $symbol $repo ]($style)"
-symbol = ""
+format = "[ $symbol$repo ]($style)"
+symbol = " "
 style = "bold inverted"
 
 [git_branch]
-format = "[ $symbol $branch ]($style)"
-symbol = ""
+format = "[ $symbol$branch ]($style)"
+symbol = " "
 style = "bold inverted"
 
 [git_commit]
@@ -96,8 +96,8 @@ format = '[ \($state( $progress_current/$progress_total)\) ]($style)'
 style = "bold inverted"
 
 [hg_branch]
-format = "[ $symbol $branch ]($style)"
-symbol = ""
+format = "[ $symbol$branch ]($style)"
+symbol = " "
 style = "bold inverted"
 disabled = false
 
@@ -132,7 +132,7 @@ format = "[ took $duration ]($style)"
 style = "bold inverted"
 
 [jobs]
-format = "[ $symbol $number ]($style)"
+format = "[ $symbol$number ]($style)"
 style = "bold inverted"
 
 #
