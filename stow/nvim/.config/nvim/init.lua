@@ -91,6 +91,7 @@ require('packer').startup(function(use)
   use 'numToStr/Comment.nvim' -- "gc" to comment visual regions/lines
   use 'tpope/vim-sleuth' -- Detect tabstop and shiftwidth automatically
   use 'danilamihailov/beacon.nvim' -- Highlight cursor jumps
+  use 'brenoprata10/nvim-highlight-colors' -- Highlight hexcodes and CSS colors
 
   -- Jump to any position with 2 characters
   use { 'ggandor/leap.nvim', requires = { 'tpope/vim-repeat' } }
@@ -260,6 +261,13 @@ require('lualine').setup {
 
 -- Enable Comment.nvim
 require('Comment').setup()
+
+-- Enable nvim-highlight-colors
+require('nvim-highlight-colors').setup {
+  render = 'background',
+  enable_named_colors = true,
+  enable_tailwind = true,
+}
 
 -- Enable `lukas-reineke/indent-blankline.nvim`
 -- See `:help indent_blankline.txt`

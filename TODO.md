@@ -7,7 +7,6 @@ This file tracks all work to be done
 * Make nvimdiff more useable
 * Make nvim UI consistent
     * add nvim-notify
-    * add nvim-highlight-colors
     * rounds corners of lualine and tabline
     * better colors for toggleterm and nvim-tree
     * use telescope for toggleterm?
