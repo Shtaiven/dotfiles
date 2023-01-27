@@ -1,0 +1,14 @@
+[applications]
+blur=false
+
+[dash-to-dock]
+blur=false
+override-background=true
+style-dash-to-dock=2
+
+[overview]
+customize=false
+style-components=1
+
+[panel]
+blur=false

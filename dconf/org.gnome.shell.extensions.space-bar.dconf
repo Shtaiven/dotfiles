@@ -1,0 +1,3 @@
+[behavior]
+show-empty-workspaces=true
+smart-workspace-names=true
