@@ -1,6 +1,7 @@
 [/]
+activate-launcher=@as []
 active-hint=true
-active-hint-border-radius=uint32 20
+active-hint-border-radius=uint32 14
 fullscreen-launcher=true
 gap-inner=uint32 2
 gap-outer=uint32 2
