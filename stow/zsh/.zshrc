@@ -100,3 +100,7 @@ fi
 if [[ $TERM == "xterm-kitty" ]]; then
   alias ssh="kitty +kitten ssh"
 fi
+
+# Generated for envman. Do not edit.
+[ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
+

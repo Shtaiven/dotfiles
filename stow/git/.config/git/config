@@ -1,18 +1,40 @@
 [user]
     name = Steven Eisinger
     email = steven.a.eisinger@gmail.com
+
+[core]
+    pager = delta
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+    side-by-side = true # show diff side-by-side
+    navigate = true     # use n and N to move between diff sections
+    light = false       # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
+
+[merge]
+    conflictstyle = diff3
+
+[diff]
+    colorMoved = default
+
 [filter "lfs"]
     clean = git-lfs clean -- %f
     smudge = git-lfs smudge -- %f
     process = git-lfs filter-process
     required = true
-[merge]
-    tool = nvimdiff
-[diff]
-    tool = nvimdiff
+
 [alias]
     # Show activity on the changes to the repository
     activity = for-each-ref --sort=committerdate refs/remotes/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset)%(upstream:track) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))'
 
     # A pretty log format
     adog = log --all --decorate --oneline --graph
+
+[page]
+	diff = delta
+	show = delta
+	log = delta
+	blame = delta
+	reflog = delta
