@@ -32,6 +32,9 @@
     # A pretty log format
     adog = log --all --decorate --oneline --graph
 
+    # Checkout the latest tag
+    latest =!git fetch --tags && git checkout $(git describe --tags $(git rev-list --tags --max-count=1))
+
 [page]
 	diff = delta
 	show = delta
