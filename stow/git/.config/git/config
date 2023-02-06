@@ -9,9 +9,10 @@
 	diffFilter = delta --color-only
 
 [delta]
-    side-by-side = true # show diff side-by-side
-    navigate = true     # use n and N to move between diff sections
-    light = false       # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
+    syntax-theme = base16   # color theme
+    side-by-side = true     # show diff side-by-side
+    navigate = true         # use n and N to move between diff sections
+    light = false           # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
 
 [merge]
     conflictstyle = diff3
