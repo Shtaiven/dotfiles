@@ -6,5 +6,5 @@ then
     source $(dirname "$0")/webi.sh
 fi
 
-cat $(dirname "$0")/packages.txt | xargs webi
+cat $(dirname "$0")/webi-packages.txt | xargs webi
 
