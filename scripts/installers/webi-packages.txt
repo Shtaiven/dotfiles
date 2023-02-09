@@ -2,6 +2,7 @@ bat@stable
 delta@stable
 fd@stable
 gh@stable
+jq@stable
 ripgrep@stable
 shfmt@stable
 shellcheck@stable
