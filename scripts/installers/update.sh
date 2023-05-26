@@ -6,6 +6,7 @@ SCRIPT_ARR=(
     "install-webi-packages.sh"
     "nvim.sh"
     "kitty.sh"
+    "zellij.sh"
 )
 
 for script in ${SCRIPT_ARR[@]}; do
