@@ -5,6 +5,9 @@
 [core]
     pager = delta
 
+[push]
+    autoSetupRemote = true
+
 [interactive]
 	diffFilter = delta --color-only
 
