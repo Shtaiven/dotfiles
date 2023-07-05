@@ -36,6 +36,11 @@
     a = add 
     d = diff
     s = status
+    r = rebase
+    m = merge
+    b = branch
+    t = tag
+    f = fetch
 
     # Show activity on the changes to the repository
     activity = for-each-ref --sort=committerdate refs/remotes/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset)%(upstream:track) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))'
