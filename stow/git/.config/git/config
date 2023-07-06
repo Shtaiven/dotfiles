@@ -9,7 +9,7 @@
     autoSetupRemote = true
 
 [interactive]
-	diffFilter = delta --color-only
+    diffFilter = delta --color-only
 
 [delta]
     syntax-theme = base16   # color theme
@@ -41,6 +41,7 @@
     b = branch
     t = tag
     f = fetch
+    l = log
 
     # Show activity on the changes to the repository
     activity = for-each-ref --sort=committerdate refs/remotes/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset)%(upstream:track) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))'
@@ -55,8 +56,8 @@
     hash = rev-parse --short HEAD
 
 [page]
-	diff = delta
-	show = delta
-	log = delta
-	blame = delta
-	reflog = delta
+    diff = delta
+    show = delta
+    log = delta
+    blame = delta
+    reflog = delta
