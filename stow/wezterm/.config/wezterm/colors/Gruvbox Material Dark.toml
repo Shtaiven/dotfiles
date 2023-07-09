@@ -1,0 +1,35 @@
+[colors]
+ansi = [
+    '#5a524c',
+    '#ea6962',
+    '#a9b665',
+    '#d8a657',
+    '#7daea3',
+    '#d3869b',
+    '#89b482',
+    '#d4be98',
+]
+background = '#282828'
+brights = [ 
+    '#5a524c',
+    '#ea6962',
+    '#a9b665',
+    '#d8a657',
+    '#7daea3',
+    '#d3869b',
+    '#89b482',
+    '#d4be98',
+]
+cursor_bg = '#d4be98'
+cursor_border = '#d4be98'
+cursor_fg = '#282828'
+foreground = '#d4be98'
+selection_bg = '#45403d'
+selection_fg = none
+
+[colors.indexed]
+
+[metadata]
+name = 'Gruvbox Material Dark'
+origin_url = 'https://github.com/sainnhe/gruvbox-material'
+
