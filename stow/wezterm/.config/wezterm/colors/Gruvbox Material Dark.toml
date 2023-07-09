@@ -25,7 +25,7 @@ cursor_border = '#d4be98'
 cursor_fg = '#282828'
 foreground = '#d4be98'
 selection_bg = '#45403d'
-selection_fg = none
+selection_fg = 'none'
 
 [colors.indexed]
 
