@@ -14,6 +14,14 @@ config.window_padding = {
   bottom = '0cell',
 }
 
+-- Define common colors
+local INACTIVE_BG_COLOR = '#101010'
+local INACTIVE_FG_COLOR = '#5a524c'
+local ACTIVE_BG_COLOR = '#282828'
+local ACTIVE_FG_COLOR = '#d4be98'
+local HOVER_BG_COLOR = '#101010'
+local HOVER_FG_COLOR = '#928374'
+
 config.window_frame = {
   -- The font used in the tab bar.
   -- Roboto Bold is the default; this font is bundled
@@ -29,11 +37,11 @@ config.window_frame = {
 
   -- The overall background color of the tab bar when
   -- the window is focused
-  active_titlebar_bg = '#101010',
+  active_titlebar_bg = ACTIVE_BG_COLOR,
 
   -- The overall background color of the tab bar when
   -- the window is not focused
-  inactive_titlebar_bg = '#101010',
+  inactive_titlebar_bg = INACTIVE_BG_COLOR,
 }
 
 config.colors = {
@@ -43,14 +51,14 @@ config.colors = {
 
     -- The color of the strip that goes along the top of the window
     -- (does not apply when fancy tab bar is in use)
-    background = '#101010',
+    background = INACTIVE_BG_COLOR,
 
     -- The active tab is the one that has focus in the window
     active_tab = {
       -- The color of the background area for the tab
-      bg_color = '#282828',
+      bg_color = ACTIVE_BG_COLOR,
       -- The color of the text for the tab
-      fg_color = '#d4be98',
+      fg_color = ACTIVE_FG_COLOR,
 
       -- Specify whether you want "Half", "Normal" or "Bold" intensity for the
       -- label shown for this tab.
@@ -60,28 +68,28 @@ config.colors = {
 
     -- Inactive tabs are the tabs that do not have focus
     inactive_tab = {
-      bg_color = '#101010',
-      fg_color = '#5a524c',
+      bg_color = INACTIVE_BG_COLOR,
+      fg_color = INACTIVE_FG_COLOR,
     },
 
     -- You can configure some alternate styling when the mouse pointer
     -- moves over inactive tabs
     inactive_tab_hover = {
-      bg_color = '#101010',
-      fg_color = '#928374',
+      bg_color = HOVER_BG_COLOR,
+      fg_color = HOVER_FG_COLOR,
     },
 
     -- The new tab button that let you create new tabs
     new_tab = {
-      bg_color = '#101010',
-      fg_color = '#5a524c',
+      bg_color = INACTIVE_BG_COLOR,
+      fg_color = INACTIVE_FG_COLOR,
     },
 
     -- You can configure some alternate styling when the mouse pointer
     -- moves over the new tab button
     new_tab_hover = {
-      bg_color = '#101010',
-      fg_color = '#928374',
+      bg_color = HOVER_BG_COLOR,
+      fg_color = HOVER_FG_COLOR,
     },
   },
 }
@@ -116,16 +124,16 @@ end
 wezterm.on(
   'format-tab-title',
   function(tab, tabs, panes, config, hover, max_width)
-    local edge_background = '#101010'
-    local background = '#101010'
-    local foreground = '#5a524c'
+    local edge_background = INACTIVE_BG_COLOR
+    local background = INACTIVE_BG_COLOR
+    local foreground = INACTIVE_FG_COLOR
 
     if tab.is_active then
-      background = '#282828'
-      foreground = '#d4be98'
+      background = ACTIVE_BG_COLOR
+      foreground = ACTIVE_FG_COLOR
     elseif hover then
-      background = '#101010'
-      foreground = '#928374'
+      background = HOVER_BG_COLOR
+      foreground = HOVER_FG_COLOR
     end
 
     local edge_foreground = background
