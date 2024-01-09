@@ -55,6 +55,9 @@
     # Get the short hash of the current commit
     hash = rev-parse --short HEAD
 
+    # Get the branches of all 1st level subdirs
+    subdirs = "!sh -c 'for i in */; do (cd $i && echo -n \"${i}: \" && git rev-parse --abbrev-ref HEAD); done'"
+
 [page]
     diff = delta
     show = delta
