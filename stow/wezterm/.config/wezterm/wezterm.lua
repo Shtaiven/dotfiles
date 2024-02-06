@@ -1,6 +1,9 @@
 local wezterm = require 'wezterm'
 local config = {}
 
+-- startup
+config.check_for_updates = false
+
 -- Style
 config.font = wezterm.font 'FiraCode Nerd Font Mono'
 config.color_scheme = 'Gruvbox Material Dark'
@@ -157,4 +160,8 @@ wezterm.on(
     }
   end
 )
+
+-- Keybindings
+
+
 return config
