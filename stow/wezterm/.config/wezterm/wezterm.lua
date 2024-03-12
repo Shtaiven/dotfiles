@@ -1,7 +1,7 @@
 local wezterm = require 'wezterm'
 local config = {}
 
--- startup
+-- Startup
 config.check_for_updates = false
 
 -- Style

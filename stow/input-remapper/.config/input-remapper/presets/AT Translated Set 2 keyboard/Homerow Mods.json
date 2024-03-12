@@ -1,0 +1,60 @@
+{
+    "mapping": {
+        "1,58,1": [
+            "Control_L",
+            "keyboard"
+        ],
+        "1,29,1+1,22,1": [
+            "KEY_PAGEUP",
+            "keyboard"
+        ],
+        "1,29,1+1,24,1": [
+            "KEY_PAGEDOWN",
+            "keyboard"
+        ],
+        "1,29,1+1,25,1": [
+            "KEY_PRINT",
+            "keyboard"
+        ],
+        "1,29,1+1,14,1": [
+            "KEY_DELETE",
+            "keyboard"
+        ],
+        "1,29,1": [
+            "KEY_UNKNOWN",
+            "keyboard"
+        ],
+        "1,29,1+1,39,1": [
+            "KEY_END",
+            "keyboard"
+        ],
+        "1,29,1+1,38,1": [
+            "KEY_RIGHT",
+            "keyboard"
+        ],
+        "1,29,1+1,37,1": [
+            "KEY_DOWN",
+            "keyboard"
+        ],
+        "1,29,1+1,36,1": [
+            "KEY_LEFT",
+            "keyboard"
+        ],
+        "1,29,1+1,35,1": [
+            "KEY_HOME",
+            "keyboard"
+        ],
+        "1,29,1+1,23,1": [
+            "KEY_UP",
+            "keyboard"
+        ],
+        "1,29,1+1,15,1": [
+            "KEY_CAPSLOCK",
+            "keyboard"
+        ],
+        "1,33,1": [
+            "if_single(key(f), Control_L, 1000)",
+            "keyboard"
+        ]
+    }
+}

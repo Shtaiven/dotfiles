@@ -1,0 +1,12 @@
+{
+    "mapping": {
+        "1,276,1": [
+            "Control_L+Super_L+KP_Up",
+            "keyboard"
+        ],
+        "1,275,1": [
+            "Control_L+Super_L+KP_Down",
+            "keyboard"
+        ]
+    }
+}
