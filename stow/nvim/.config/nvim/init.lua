@@ -39,7 +39,6 @@ require('packer').startup(function(use)
   -- Package manager
   use 'wbthomason/packer.nvim'
 
-  
   use { -- Pin fidget to legacy branch until rewrite
     'j-hui/fidget.nvim', tag='legacy'
   }
