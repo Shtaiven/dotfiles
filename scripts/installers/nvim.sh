@@ -26,4 +26,3 @@ ln -sf ${DOWNLOAD_DEST}/${BIN_PATH} ${INSTALL_DEST}/${INSTALL_NAME}
 
 # Give it executable permission
 chmod +x ${INSTALL_DEST}/${INSTALL_NAME}
-

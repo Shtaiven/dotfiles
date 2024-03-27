@@ -1,0 +1,11 @@
+bat
+git-delta
+fd-find
+gh
+jq
+ripgrep
+go-shfmt
+shellcheck
+starship
+tmux
+pre-commit

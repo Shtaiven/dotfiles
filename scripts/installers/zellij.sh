@@ -25,4 +25,3 @@ rm -f ${TARBALL_NAME}${TARBALL_EXT}
 
 # Give it executable permission
 chmod +x ${INSTALL_DEST}/${INSTALL_NAME}
-
