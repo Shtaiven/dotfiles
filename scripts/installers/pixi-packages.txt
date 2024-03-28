@@ -1,11 +1,13 @@
 bat
-git-delta
 fd-find
+fzf
 gh
-jq
-ripgrep
+git-delta
 go-shfmt
+jq
+nnn
+pre-commit
+ripgrep
 shellcheck
 starship
 tmux
-pre-commit
