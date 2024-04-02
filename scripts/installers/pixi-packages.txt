@@ -6,6 +6,7 @@ git-delta
 go-shfmt
 jq
 nnn
+nvim
 pre-commit
 ripgrep
 shellcheck

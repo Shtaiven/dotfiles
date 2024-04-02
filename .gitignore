@@ -1,2 +1,5 @@
 .vscode/
 **/input-remapper/**/xmodmap.json
+# pixi environments
+.pixi
+
