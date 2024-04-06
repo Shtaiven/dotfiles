@@ -11,6 +11,7 @@ This file tracks all work to be done
     * better colors for toggleterm and nvim-tree
     * use telescope for toggleterm?
     * integration with kitty windows
+* Port nvim config to lazy.nvim
 * Find a replacement for GNU stow that will work without PERL (or write your own)
 * Configure tmux and kitty so that they have similar bindings and look consistent
 * Handle stow not working when it doesn't own a symlink

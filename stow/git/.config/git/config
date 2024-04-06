@@ -5,6 +5,9 @@
 [core]
     pager = delta
 
+[advice]
+    detachedHead = false
+
 [push]
     autoSetupRemote = true
 
@@ -42,6 +45,7 @@
     t = tag
     f = fetch
     l = log
+    ch = checkout
 
     # Show activity on the changes to the repository
     activity = for-each-ref --sort=committerdate refs/remotes/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset)%(upstream:track) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))'

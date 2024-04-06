@@ -1,0 +1,50 @@
+{
+  "settingsVersion": "2.0.5",
+  "userDefinedLinkHintCss": "#vimiumHintMarkerContainer div.internalVimiumHintMarker, #vimiumHintMarkerContainer div.vimiumHintMarker {\n  padding: 3px 4px;\n  background: #d8a657;\n  border: none;\n  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);\n}\n\n#vimiumHintMarkerContainer div span {\n  color: #282828;\n  text-shadow: none;\n}\n\n#vimiumHintMarkerContainer div > .matchingCharacter {\n  opacity: 0.4;\n}\n\n#vimiumHintMarkerContainer div > .matchingCharacter ~ span {\n  color: #45403d;\n}\n\n#vomnibar {\n  background: #444;\n  border: none;\n  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);\n  animation: show 200ms cubic-bezier(0, 0, 0.2, 1) forwards;\n}\n\n@keyframes show {\n  0% {\n    transform: translateY(50px);\n    opacity: 0;\n  }\n  100% {\n    transform: translateY(0);\n    opacity: 1;\n  }\n}\n\n#vomnibar .vomnibarSearchArea,\n#vomnibar input {\n  color: #fff;\n  background: transparent;\n  border: none;\n}\n\n#vomnibar .vomnibarSearchArea {\n  padding: 10px 30px;\n}\n\n#vomnibar input {\n  padding: 0;\n}\n\n#vomnibar ul {\n  padding: 0;\n  background: #444;\n  border-top: 1px solid #333;\n}\n\n#vomnibar li {\n  padding: 10px;\n  border-bottom: 1px solid #333;\n}\n\n#vomnibar li .vomnibarTopHalf,\n#vomnibar li .vomnibarBottomHalf {\n  padding: 3px 0;\n}\n\n#vomnibar li .vomnibarSource {\n  color: #aaa;\n}\n\n#vomnibar li em,\n#vomnibar li .vomnibarTitle {\n  color: #aaa;\n}\n\n#vomnibar li .vomnibarUrl {\n  color: #777;\n}\n\n#vomnibar li .vomnibarMatch {\n  color: #d8a657;\n  font-weight: normal;\n}\n\n#vomnibar li .vomnibarTitle .vomnibarMatch {\n  color: #d8a657;\n}\n\n#vomnibar li.vomnibarSelected {\n  background-color: #333;\n}\n\ndiv.vimiumHUD {\n  background: #444;\n  border: none;\n  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);\n}\n\ndiv.vimiumHUD span#hud-find-input,\ndiv.vimiumHUD .vimiumHUDSearchAreaInner {\n  color: #fff;\n}\n\ndiv.vimiumHUD .hud-find {\n  background-color: transparent;\n  border: none;\n}\n\ndiv.vimiumHUD .vimiumHUDSearchArea {\n  background-color: transparent;\n}",
+  "exclusionRules": [
+    {
+      "passKeys": "",
+      "pattern": "https?://mail.google.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://usevia.app/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://monkeytype.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://connect.ixon.cloud/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://web.whatsapp.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://krunker.io/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://todoist.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://teams.microsoft.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://euc-powerpoint.officeapps.live.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://192.168.8.1/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://portal.ixon.cloud/*"
+    }
+  ]
+}

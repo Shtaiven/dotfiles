@@ -39,7 +39,6 @@ require('packer').startup(function(use)
   -- Package manager
   use 'wbthomason/packer.nvim'
 
-  
   use { -- Pin fidget to legacy branch until rewrite
     'j-hui/fidget.nvim', tag='legacy'
   }
@@ -276,9 +275,10 @@ require('nvim-highlight-colors').setup {
 
 -- Enable `lukas-reineke/indent-blankline.nvim`
 -- See `:help indent_blankline.txt`
-require('indent_blankline').setup {
-  char = '┊',
-  show_trailing_blankline_indent = false,
+require('ibl').setup {
+  indent = {
+    char = '┊',
+  },
 }
 
 -- Gitsigns
@@ -341,7 +341,7 @@ vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { de
 -- See `:help nvim-treesitter`
 require('nvim-treesitter.configs').setup {
   -- Add languages to be installed here that you want installed for treesitter
-  ensure_installed = { 'bash', 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'typescript', 'vim', 'help' },
+  ensure_installed = { 'bash', 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'typescript', 'vim', 'vimdoc' },
 
   highlight = { enable = true },
   indent = { enable = true, disable = { 'python' } },
