@@ -172,6 +172,8 @@ vim.wo.signcolumn = 'yes'
 
 -- Set colorscheme
 vim.o.termguicolors = true
+vim.g.gruvbox_material_background = 'hard'
+vim.g.gruvbox_material_better_performance = 1
 vim.cmd [[colorscheme gruvbox-material]]
 
 -- Set completeopt to have a better completion experience
@@ -184,7 +186,7 @@ vim.o.clipboard = 'unnamedplus'
 vim.o.showmode = false
 
 -- Show a line for max line length
-vim.opt.colorcolumn = '80,120'
+vim.opt.colorcolumn = '100'
 
 -- [[ Basic Keymaps ]]
 -- Set <space> as the leader key
