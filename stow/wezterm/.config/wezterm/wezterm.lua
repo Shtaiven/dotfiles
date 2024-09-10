@@ -17,6 +17,8 @@ config.window_padding = {
   bottom = '0cell',
 }
 
+config.window_decorations = "RESIZE"
+
 -- Define common colors
 local INACTIVE_BG_COLOR = '#101010'
 local INACTIVE_FG_COLOR = '#5a524c'
