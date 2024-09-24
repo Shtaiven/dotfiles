@@ -1,6 +1,9 @@
 local wezterm = require 'wezterm'
 local config = {}
 
+-- General
+config.pane_focus_follows_mouse = true
+
 -- Startup
 config.check_for_updates = false
 
@@ -22,7 +25,7 @@ config.window_decorations = "RESIZE"
 -- Define common colors
 local INACTIVE_BG_COLOR = '#101010'
 local INACTIVE_FG_COLOR = '#5a524c'
-local ACTIVE_BG_COLOR = '#282828'
+local ACTIVE_BG_COLOR = '#202020'
 local ACTIVE_FG_COLOR = '#d4be98'
 local HOVER_BG_COLOR = '#101010'
 local HOVER_FG_COLOR = '#928374'
@@ -38,7 +41,7 @@ config.window_frame = {
 
   -- The size of the font in the tab bar.
   -- Default to 10.0 on Windows but 12.0 on other systems
-  font_size = 10.0,
+  font_size = 9.0,
 
   -- The overall background color of the tab bar when
   -- the window is focused
@@ -49,6 +52,7 @@ config.window_frame = {
   inactive_titlebar_bg = INACTIVE_BG_COLOR,
 }
 
+-- Tab bar
 config.colors = {
   tab_bar = {
     -- The color of the inactive tab bar edge/divider
@@ -99,16 +103,17 @@ config.colors = {
   },
 }
 
--- Tab bar
 config.hide_tab_bar_if_only_one_tab = true
-config.tab_bar_at_bottom = true
+config.tab_bar_at_bottom = false
 config.use_fancy_tab_bar = false
 
 -- Triangle in the upper right used for terminal tabs 
 local UPPER_RIGHT_TRIANGLE = wezterm.nerdfonts.ple_upper_right_triangle
+local LOWER_RIGHT_TRIANGLE = wezterm.nerdfonts.ple_lower_right_triangle
 
 -- Triangle in the upper left used for terminal tabs
 local UPPER_LEFT_TRIANGLE = wezterm.nerdfonts.ple_upper_left_triangle
+local LOWER_LEFT_TRIANGLE = wezterm.nerdfonts.ple_lower_left_triangle
 
 -- This function returns the suggested title for a tab.
 -- It prefers the title that was set via `tab:set_title()`
@@ -152,13 +157,13 @@ wezterm.on(
     return {
       { Background = { Color = edge_background } },
       { Foreground = { Color = edge_foreground } },
-      { Text = UPPER_RIGHT_TRIANGLE },
+      { Text = LOWER_RIGHT_TRIANGLE },
       { Background = { Color = background } },
       { Foreground = { Color = foreground } },
       { Text = title },
       { Background = { Color = edge_background } },
       { Foreground = { Color = edge_foreground } },
-      { Text = UPPER_LEFT_TRIANGLE },
+      { Text = LOWER_LEFT_TRIANGLE },
     }
   end
 )
