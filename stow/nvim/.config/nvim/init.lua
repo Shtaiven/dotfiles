@@ -35,10 +35,7 @@ if vim.fn.empty(vim.fn.glob(install_path)) > 0 then
   vim.cmd [[packadd packer.nvim]]
 end
 
-local function not_using_vscode()
-  local using_vscode = vim.g.vscode ~= nil
-  return not using_vscode
-end
+local using_vscode = vim.g.vscode ~= nil
 
 require('packer').startup(function(use)
   -- Package manager
@@ -101,6 +98,7 @@ require('packer').startup(function(use)
   use 'tpope/vim-sleuth' -- Detect tabstop and shiftwidth automatically
   use 'danilamihailov/beacon.nvim' -- Highlight cursor jumps
   use 'brenoprata10/nvim-highlight-colors' -- Highlight hexcodes and CSS colors
+  use 'lukas-reineke/virt-column.nvim'
 
   -- Jump to any position with 2 characters
   use { 'ggandor/leap.nvim', requires = { 'tpope/vim-repeat' } }
@@ -178,6 +176,7 @@ vim.wo.signcolumn = 'yes'
 -- Set colorscheme
 vim.o.termguicolors = true
 vim.g.gruvbox_material_background = 'hard'
+vim.g.gruvbox_material_transparent_background = 2 -- make the backgroud transparent
 vim.g.gruvbox_material_better_performance = 1
 vim.cmd [[colorscheme gruvbox-material]]
 
@@ -188,7 +187,7 @@ vim.o.completeopt = 'menuone,noselect'
 vim.o.clipboard = 'unnamedplus'
 
 -- Remove mode from command line (already shown in lualine)
-vim.o.showmode = not not_using_vscode()
+vim.o.showmode = using_vscode
 
 -- Show a line for max line length
 vim.opt.colorcolumn = '100'
@@ -242,7 +241,7 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 
 -- Set lualine as statusline
 -- See `:help lualine.txt`
-if not_using_vscode() then
+if not using_vscode then
 require('lualine').setup {
   options = {
     icons_enabled = true,
@@ -284,7 +283,7 @@ require('nvim-highlight-colors').setup {
 
 -- Enable `lukas-reineke/indent-blankline.nvim`
 -- See `:help indent_blankline.txt`
-if not_using_vscode() then
+if not using_vscode then
 require('ibl').setup {
   indent = {
     char = '│',
@@ -564,6 +563,29 @@ cmp.setup {
 
 -- Enable leap
 require('leap').add_default_mappings()
+
+-- Enable virt-column
+require("virt-column").setup()
+
+-- VSCode settings
+if using_vscode then
+local vscode = require('vscode')
+
+-- make editor.action.addSelectionToNextFindMatch work correctly in any mode
+vim.keymap.set({ "n", "x", "i" }, "<C-d>", function()
+  vscode.with_insert(function()
+    vscode.action("editor.action.addSelectionToNextFindMatch")
+  end)
+end)
+
+-- make editor.action.refactor work correctly on the selection and support snippet manipulation after entering VSCode snippet mode
+vim.keymap.set({ "n", "x" }, "<leader>r", function()
+  vscode.with_insert(function()
+    vscode.action("editor.action.refactor")
+  end)
+end)
+
+end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
