@@ -35,6 +35,11 @@ if vim.fn.empty(vim.fn.glob(install_path)) > 0 then
   vim.cmd [[packadd packer.nvim]]
 end
 
+local function not_using_vscode()
+  local using_vscode = vim.g.vscode ~= nil
+  return not using_vscode
+end
+
 require('packer').startup(function(use)
   -- Package manager
   use 'wbthomason/packer.nvim'
@@ -91,11 +96,7 @@ require('packer').startup(function(use)
 
   use 'sainnhe/gruvbox-material' -- Theme
   use 'nvim-lualine/lualine.nvim' -- Fancier statusline
-  use { 'lukas-reineke/indent-blankline.nvim',
-    cond = function()
-      return vim.g.vscode == nil
-    end,
-  } -- Add indentation guides even on blank lines
+  use 'lukas-reineke/indent-blankline.nvim' -- Add indentation guides even on blank lines
   use 'numToStr/Comment.nvim' -- "gc" to comment visual regions/lines
   use 'tpope/vim-sleuth' -- Detect tabstop and shiftwidth automatically
   use 'danilamihailov/beacon.nvim' -- Highlight cursor jumps
@@ -187,7 +188,7 @@ vim.o.completeopt = 'menuone,noselect'
 vim.o.clipboard = 'unnamedplus'
 
 -- Remove mode from command line (already shown in lualine)
-vim.o.showmode = vim.g.vscode ~= nil
+vim.o.showmode = not not_using_vscode()
 
 -- Show a line for max line length
 vim.opt.colorcolumn = '100'
@@ -241,7 +242,7 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 
 -- Set lualine as statusline
 -- See `:help lualine.txt`
-if vim.g.vscode == nil then
+if not_using_vscode() then
 require('lualine').setup {
   options = {
     icons_enabled = true,
@@ -283,7 +284,7 @@ require('nvim-highlight-colors').setup {
 
 -- Enable `lukas-reineke/indent-blankline.nvim`
 -- See `:help indent_blankline.txt`
-if vim.g.vscode == nil then
+if not_using_vscode() then
 require('ibl').setup {
   indent = {
     char = '│',
