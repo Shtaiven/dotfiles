@@ -40,6 +40,15 @@
     },
     {
       "class": "LoST"
+    },
+    {
+      "class": "Org.gnome.Nautilus"
+    },
+    {
+      "class": "xdg-desktop-portal-gnome"
+    },
+    {
+      "class": "File-roller"
     }
   ],
   "skiptaskbarhidden": [],

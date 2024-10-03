@@ -41,9 +41,7 @@ require('packer').startup(function(use)
   -- Package manager
   use 'wbthomason/packer.nvim'
 
-  use { -- Pin fidget to legacy branch until rewrite
-    'j-hui/fidget.nvim', tag='legacy'
-  }
+  use 'j-hui/fidget.nvim'
 
   use { -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
@@ -175,7 +173,11 @@ vim.wo.signcolumn = 'yes'
 
 -- Set colorscheme
 vim.o.termguicolors = true
+vim.g.gruvbox_material_disable_italic_comment = 1
 vim.g.gruvbox_material_background = 'hard'
+vim.g.gruvbox_material_dim_inactive_windows = 1
+vim.g.gruvbox_material_diagnostic_text_highlight = 1
+vim.g.gruvbox_material_disable_terminal_colors = 1
 vim.g.gruvbox_material_transparent_background = 2 -- make the backgroud transparent
 vim.g.gruvbox_material_better_performance = 1
 vim.cmd [[colorscheme gruvbox-material]]
@@ -330,14 +332,7 @@ pcall(require('telescope').load_extension, 'fzf')
 -- See `:help telescope.builtin`
 vim.keymap.set('n', '<leader>?', require('telescope.builtin').oldfiles, { desc = '[?] Find recently opened files' })
 vim.keymap.set('n', '<leader><space>', require('telescope.builtin').buffers, { desc = '[ ] Find existing buffers' })
-vim.keymap.set('n', '<leader>/', function()
-  -- You can pass additional configuration to telescope to change theme, layout, etc.
-  require('telescope.builtin').current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
-    winblend = 10,
-    previewer = false,
-  })
-end, { desc = '[/] Fuzzily search in current buffer]' })
-
+vim.keymap.set('n', '<leader>/', require('telescope.builtin').current_buffer_fuzzy_find, { desc = '[/] Fuzzily search in current buffer]' })
 vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
 vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
@@ -510,8 +505,10 @@ mason_lspconfig.setup_handlers {
 
 -- Turn on lsp status information
 require('fidget').setup {
-  text = {
-    spinner = "dots",
+  notification = {
+    window = {
+      winblend = 0,
+    },
   },
 }
 
@@ -567,6 +564,9 @@ require("virt-column").setup()
 -- VSCode settings
 if using_vscode then
 local vscode = require('vscode')
+
+-- use vscode notification subsystem
+vim.notify = vscode.notify
 
 -- make editor.action.addSelectionToNextFindMatch work correctly in any mode
 vim.keymap.set({ "n", "x", "i" }, "<C-d>", function()
