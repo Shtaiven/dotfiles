@@ -9,6 +9,7 @@ config.check_for_updates = false
 
 -- Style
 config.font = wezterm.font 'FiraCode Nerd Font Mono'
+config.underline_position = '200%'
 config.color_scheme = 'Gruvbox Material Dark'
 config.default_cursor_style = 'SteadyBar'
 config.allow_square_glyphs_to_overflow_width = "Always"
