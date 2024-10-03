@@ -199,9 +199,6 @@ vim.opt.colorcolumn = '100'
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- Theme options
--- vim.g.gruvbox_material_better_performance = 1
-
 -- Options reccomended for nvim-tree
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
