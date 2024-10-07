@@ -26,6 +26,7 @@ cursor_fg = '#202020'
 foreground = '#d4be98'
 selection_bg = '#45403d'
 selection_fg = 'none'
+split = '#070808'
 
 [colors.indexed]
 

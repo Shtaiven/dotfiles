@@ -24,12 +24,13 @@ config.window_padding = {
 config.window_decorations = "RESIZE"
 
 -- Define common colors
-local INACTIVE_BG_COLOR = '#101010'
+local INACTIVE_BG_COLOR = '#070808'
 local INACTIVE_FG_COLOR = '#5a524c'
 local ACTIVE_BG_COLOR = '#202020'
 local ACTIVE_FG_COLOR = '#d4be98'
-local HOVER_BG_COLOR = '#101010'
+local HOVER_BG_COLOR = '#070808'
 local HOVER_FG_COLOR = '#928374'
+local COMMAND_PALETTE_BG_COLOR = '#131414'
 
 config.window_frame = {
   -- The font used in the tab bar.
@@ -38,11 +39,11 @@ config.window_frame = {
   -- Whatever font is selected here, it will have the
   -- main font setting appended to it to pick up any
   -- fallback fonts you may have used there.
-  font = wezterm.font { family = 'Fira Sans', weight = 'Bold' },
+  font = wezterm.font { family = 'Fira Sans', weight = 'Regular' },
 
   -- The size of the font in the tab bar.
   -- Default to 10.0 on Windows but 12.0 on other systems
-  font_size = 9.0,
+  font_size = 12.0,
 
   -- The overall background color of the tab bar when
   -- the window is focused
@@ -52,6 +53,12 @@ config.window_frame = {
   -- the window is not focused
   inactive_titlebar_bg = INACTIVE_BG_COLOR,
 }
+
+-- Command Palette
+config.command_palette_bg_color = COMMAND_PALETTE_BG_COLOR
+config.command_palette_fg_color = ACTIVE_FG_COLOR
+config.command_palette_font_size = 12.0
+config.command_palette_rows = 24
 
 -- Tab bar
 config.colors = {
