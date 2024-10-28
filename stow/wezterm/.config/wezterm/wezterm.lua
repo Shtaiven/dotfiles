@@ -2,7 +2,7 @@ local wezterm = require 'wezterm'
 local config = {}
 
 -- General
-config.pane_focus_follows_mouse = true
+config.pane_focus_follows_mouse = false
 
 -- Startup
 config.check_for_updates = false
@@ -116,11 +116,9 @@ config.tab_bar_at_bottom = false
 config.use_fancy_tab_bar = false
 
 -- Triangle in the upper right used for terminal tabs 
-local UPPER_RIGHT_TRIANGLE = wezterm.nerdfonts.ple_upper_right_triangle
 local LOWER_RIGHT_TRIANGLE = wezterm.nerdfonts.ple_lower_right_triangle
 
 -- Triangle in the upper left used for terminal tabs
-local UPPER_LEFT_TRIANGLE = wezterm.nerdfonts.ple_upper_left_triangle
 local LOWER_LEFT_TRIANGLE = wezterm.nerdfonts.ple_lower_left_triangle
 
 -- This function returns the suggested title for a tab.
