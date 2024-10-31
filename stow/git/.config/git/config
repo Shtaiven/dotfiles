@@ -36,7 +36,7 @@
     p = pull
     u = push
     c = commit
-    a = add 
+    a = add
     d = diff
     s = status
     r = rebase
@@ -45,6 +45,7 @@
     t = tag
     f = fetch
     l = log
+    ll = dirs
     ch = checkout
 
     # Show activity on the changes to the repository
@@ -60,7 +61,7 @@
     hash = rev-parse --short HEAD
 
     # Get the branches of all 1st level subdirs
-    subdirs = "!sh -c 'for i in */; do (cd $i && echo -n \"${i}: \" && git rev-parse --abbrev-ref HEAD); done'"
+    dirs = "!sh -c 'for i in */; do (cd $i && echo -n \"${i}: \" && echo -n $(git rev-parse --abbrev-ref HEAD) && test -n \"$(git status --porcelain 2> /dev/null)\" && echo -n \" *\"); echo; done'"
 
 [page]
     diff = delta
