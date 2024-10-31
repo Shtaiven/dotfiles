@@ -61,7 +61,7 @@
     hash = rev-parse --short HEAD
 
     # Get the branches of all 1st level subdirs
-    dirs = "!sh -c 'for i in */; do (cd $i && echo -n \"${i}: \" && echo -n $(git rev-parse --abbrev-ref HEAD) && test -n \"$(git status --porcelain 2> /dev/null)\" && echo -n \" *\"); echo; done'"
+    dirs = "!sh -c 'for i in */; do (cd $i && echo -n \"${i}: \" && echo -n $(git rev-parse --abbrev-ref HEAD 2> /dev/null) && test -n \"$(git status --porcelain 2> /dev/null)\" && echo -n \" *\"); echo; done'"
 
 [page]
     diff = delta
