@@ -140,6 +140,7 @@ local function tab_title(tab_info)
   return index .. ":" .. tab_info.active_pane.title
 end
 
+-- Tab coloration and shape
 wezterm.on(
   'format-tab-title',
   function(tab, tabs, panes, config, hover, max_width)
@@ -177,6 +178,22 @@ wezterm.on(
   end
 )
 
+-- Make scrollbar invisible when terminal in alt mode (e.g. vim)
+wezterm.on(
+  'update-status',
+  function(window, pane)
+    local overrides = window:get_config_overrides() or {}
+    if not overrides.colors then
+      overrides.colors = {}
+    end
+    if pane:is_alt_screen_active() then
+      overrides.colors.scrollbar_thumb = 'transparent'
+    else
+      overrides.colors.scrollbar_thumb = nil
+    end
+    window:set_config_overrides(overrides)
+  end
+)
 -- Keybindings
 
 
