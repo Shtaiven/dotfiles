@@ -183,9 +183,6 @@ wezterm.on(
   'update-status',
   function(window, pane)
     local overrides = window:get_config_overrides() or {}
-    if not overrides.colors then
-      overrides.colors = {}
-    end
     if pane:is_alt_screen_active() then
       overrides.colors.scrollbar_thumb = 'transparent'
     else
