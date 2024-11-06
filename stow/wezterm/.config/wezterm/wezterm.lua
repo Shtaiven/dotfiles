@@ -9,6 +9,7 @@ config.check_for_updates = false
 
 -- Style
 config.font = wezterm.font 'FiraCode Nerd Font Mono'
+config.font_size = 11.0
 config.underline_position = '200%'
 config.color_scheme = 'Gruvbox Material Dark'
 config.default_cursor_style = 'SteadyBar'
@@ -20,6 +21,8 @@ config.window_padding = {
   top = '0cell',
   bottom = '0cell',
 }
+
+config.enable_scroll_bar = true
 
 config.window_decorations = "RESIZE"
 

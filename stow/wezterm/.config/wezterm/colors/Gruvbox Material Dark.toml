@@ -27,6 +27,7 @@ foreground = '#d4be98'
 selection_bg = '#45403d'
 selection_fg = 'none'
 split = '#070808'
+scrollbar_thumb = '#504945'
 
 [colors.indexed]
 
