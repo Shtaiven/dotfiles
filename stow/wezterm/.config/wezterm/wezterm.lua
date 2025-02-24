@@ -24,7 +24,8 @@ config.window_padding = {
 
 config.enable_scroll_bar = true
 
-config.window_decorations = "RESIZE"
+-- Uncomment to remove titlebar
+-- config.window_decorations = "RESIZE"
 
 -- Define common colors
 local INACTIVE_BG_COLOR = '#070808'
@@ -68,7 +69,6 @@ config.colors = {
   tab_bar = {
     -- The color of the inactive tab bar edge/divider
     inactive_tab_edge = 'none',
-
     -- The color of the strip that goes along the top of the window
     -- (does not apply when fancy tab bar is in use)
     background = INACTIVE_BG_COLOR,

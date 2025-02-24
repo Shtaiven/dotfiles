@@ -10,7 +10,7 @@ ansi = [
     '#d4be98',
 ]
 background = '#202020'
-brights = [ 
+brights = [
     '#5a524c',
     '#ea6962',
     '#a9b665',
@@ -26,7 +26,7 @@ cursor_fg = '#202020'
 foreground = '#d4be98'
 selection_bg = '#45403d'
 selection_fg = 'none'
-split = '#070808'
+split = '#504945'
 scrollbar_thumb = '#504945'
 
 [colors.indexed]
