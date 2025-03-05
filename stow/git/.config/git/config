@@ -5,26 +5,64 @@
 [core]
     pager = delta
 
+[column]
+    ui = auto
+
+[branch]
+    sort = -committerdate
+
+[tag]
+    sort = version:refname
+
+[init]
+    defaultBranch = main
+
 [advice]
     detachedHead = false
 
 [push]
+    default = simple
     autoSetupRemote = true
+    followTags = true
+
+[fetch]
+    prune = true
+    pruneTags = true
+    all = true
 
 [interactive]
     diffFilter = delta --color-only
 
 [delta]
     syntax-theme = base16   # color theme
-    side-by-side = true     # show diff side-by-side
+    line-numbers = true
     navigate = true         # use n and N to move between diff sections
-    light = false           # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
+    dark = true
+    map-styles = bold purple => syntax magenta, bold cyan => syntax blue
 
 [merge]
     conflictstyle = diff3
 
 [diff]
-    colorMoved = default
+    algorithm = histogram
+    colorMoved = plain
+    mnemonicPrefix = true
+    renames = true
+
+[help]
+    autocorrect = prompt
+
+[commit]
+    verbose = true
+
+[rerere]
+    enabled = true
+    autoupdate = true
+
+[rebase]
+    autoSquash = true
+    autoStash = true
+    updateRefs = true
 
 [filter "lfs"]
     clean = git-lfs clean -- %f
