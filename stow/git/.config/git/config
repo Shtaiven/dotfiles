@@ -38,7 +38,7 @@
     line-numbers = true
     navigate = true         # use n and N to move between diff sections
     dark = true
-    map-styles = bold purple => syntax magenta, bold cyan => syntax blue
+    map-styles = bold purple => syntax darkmagenta, bold cyan => syntax darkblue  # for diff.colorMoved
 
 [merge]
     conflictstyle = diff3
