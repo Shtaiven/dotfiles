@@ -1,11 +1,10 @@
 [/]
-activate-launcher=@as []
 active-hint=true
-active-hint-border-radius=uint32 14
+active-hint-border-radius=uint32 8
 fullscreen-launcher=true
-gap-inner=uint32 2
-gap-outer=uint32 2
-hint-color-rgba='rgb(234,105,98)'
+gap-inner=uint32 4
+gap-outer=uint32 4
+hint-color-rgba='rgb(212,190,152)'
 mouse-cursor-focus-location=uint32 0
 mouse-cursor-follows-active-window=false
 show-title=true

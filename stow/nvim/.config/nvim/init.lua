@@ -80,7 +80,7 @@ require('packer').startup(function(use)
     requires = { 'nvim-tree/nvim-web-devicons' },
   }
 
-  use { -- Pull up a terminal 
+  use { -- Pull up a terminal
     "akinsho/toggleterm.nvim", tag = '*'
   }
 
