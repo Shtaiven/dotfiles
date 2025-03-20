@@ -11,9 +11,9 @@
 
 format = """
 $time\
-[░▒▓](bg:bright-blue)\
+[░▒▓](fg:bright-yellow bg:bright-purple)\
 $jobs\
-[]()\
+[](bright-yellow)\
 $nix_shell\
 $docker_context\
 $conda\
@@ -23,14 +23,14 @@ $username\
 $hostname\
 $singularity\
 $directory\
-[░▒▓](bg:bright-blue)\
+[░▒▓](fg:bright-yellow bg:bright-purple)\
 $vcsh\
 $git_branch\
 $git_commit\
 $git_status\
 $git_state\
 $hg_branch\
-[]()\
+[](bright-yellow)\
 $line_break\
 $character"""
 
@@ -47,24 +47,24 @@ symbol = " "
 [username]
 show_always = false
 format = "[ $user ]($style)"
-style_root = "fg:bold bright-red bg:bright-blue"
-style_user = "inverted fg:bold bright-blue"
+style_root = "fg:bold bright-red bg:bright-purple"
+style_user = "inverted fg:bold bright-purple"
 
 [hostname]
 ssh_only = true
 format = "[ $hostname ]($style)"
-style = "inverted fg:bold bright-blue"
+style = "inverted fg:bold bright-purple"
 
 [singularity]
 format = '[ \[$env\] ]($style)'
-style = "inverted fg:bold bright-blue"
+style = "inverted fg:bold bright-purple"
 
 [directory]
 format = "[ $read_only$path ]($style)"
 read_only = " "
-style = "inverted fg:bold bright-blue"
+style = "inverted fg:bold bright-purple"
 truncation_length = 3
-truncation_symbol = ".../"
+truncation_symbol = ""
 
 #
 # Left prompt 2
@@ -73,29 +73,29 @@ truncation_symbol = ".../"
 [vcsh]
 format = "[ $symbol$repo ]($style)"
 symbol = " "
-style = "bold inverted"
+style = "bold inverted bright-yellow"
 
 [git_branch]
 format = "[ $symbol$branch ]($style)"
 symbol = " "
-style = "bold inverted"
+style = "bold inverted bright-yellow"
 
 [git_commit]
 format = "[ \\($hash$tag\\) ]($style)"
-style = "bold inverted"
+style = "bold inverted bright-yellow"
 
 [git_status]
 format = '[ \[$all_status$ahead_behind\] ]($style)'
-style = "bold inverted"
+style = "bold inverted bright-yellow"
 
 [git_state]
 format = '[ \($state( $progress_current/$progress_total)\) ]($style)'
-style = "bold inverted"
+style = "bold inverted bright-yellow"
 
 [hg_branch]
 format = "[ $symbol$branch ]($style)"
 symbol = " "
-style = "bold inverted"
+style = "bold inverted bright-yellow"
 disabled = false
 
 #
@@ -126,11 +126,11 @@ detect_files = []
 
 [cmd_duration]
 format = "[ took $duration ]($style)"
-style = "bold inverted"
+style = "bold inverted bright-yellow"
 
 [jobs]
 format = "[ $symbol$number ]($style)"
-style = "bold inverted"
+style = "bold inverted bright-yellow"
 
 #
 # Right prompt 2
@@ -139,14 +139,14 @@ style = "bold inverted"
 [time]
 disabled = false
 format = "[ $time ]($style)"
-style = "inverted fg:bold bright-blue"
+style = "inverted fg:bold bright-purple"
 
 #
 # Second line
 #
 
 [character]
-success_symbol = "[●](bright-blue)"
+success_symbol = "[●](bright-purple)"
 error_symbol = "[●](bright-red)"
-vicmd_symbol = "[○](bright-blue)"
+vicmd_symbol = "[○](bright-purple)"
 
