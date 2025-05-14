@@ -10,7 +10,7 @@
 #
 
 format = """
-[ ](fg:bright-purple)\
+[](fg:bright-purple)\
 $time\
 [░▒▓](fg:bright-yellow bg:bright-purple)\
 $jobs\
@@ -20,7 +20,7 @@ $docker_context\
 $conda\
 $python\
 $line_break\
-[](fg:bright-purple)\
+[ ](fg:bright-purple)\
 $username\
 $hostname\
 $singularity\
@@ -87,7 +87,7 @@ format = "[ \\($hash$tag\\)]($style)"
 style = "bold inverted bright-yellow"
 
 [git_status]
-format = '[$all_status$ahead_behind]($style)'
+format = '[ $all_status$ahead_behind]($style)'
 style = "bold inverted bright-yellow"
 
 [git_state]
