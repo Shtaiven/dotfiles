@@ -10,6 +10,7 @@
 #
 
 format = """
+[ ](fg:bright-purple)\
 $time\
 [░▒▓](fg:bright-yellow bg:bright-purple)\
 $jobs\
@@ -19,6 +20,7 @@ $docker_context\
 $conda\
 $python\
 $line_break\
+[](fg:bright-purple)\
 $username\
 $hostname\
 $singularity\
@@ -129,8 +131,9 @@ format = "[ took $duration ]($style)"
 style = "bold inverted bright-yellow"
 
 [jobs]
-format = "[ $symbol$number ]($style)"
+format = "[ $number$symbol]($style)"
 style = "bold inverted bright-yellow"
+symbol = ""
 
 #
 # Right prompt 2
