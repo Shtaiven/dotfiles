@@ -48,7 +48,7 @@ symbol = " "
 
 [username]
 show_always = false
-format = "[ $user]($style)"
+format = "[$user]($style)"
 style_root = "fg:bold bright-red bg:bright-purple"
 style_user = "inverted fg:bold bright-purple"
 
@@ -58,11 +58,11 @@ format = "[@$hostname]($style)"
 style = "inverted fg:bold bright-purple"
 
 [singularity]
-format = '[ \[$env\] ]($style)'
+format = '[$env]($style)'
 style = "inverted fg:bold bright-purple"
 
 [directory]
-format = "[ $read_only$path ]($style)"
+format = "[$read_only$path]($style)"
 read_only = " "
 style = "inverted fg:bold bright-purple"
 truncation_length = 3
@@ -73,29 +73,29 @@ truncation_symbol = ""
 #
 
 [vcsh]
-format = "[ $symbol$repo ]($style)"
+format = "[$symbol$repo]($style)"
 symbol = " "
 style = "bold inverted bright-yellow"
 
 [git_branch]
-format = "[ $symbol$branch ]($style)"
+format = "[$symbol$branch]($style)"
 symbol = " "
 style = "bold inverted bright-yellow"
 
 [git_commit]
-format = "[ \\($hash$tag\\) ]($style)"
+format = "[ \\($hash$tag\\)]($style)"
 style = "bold inverted bright-yellow"
 
 [git_status]
-format = '[ \[$all_status$ahead_behind\] ]($style)'
+format = '[$all_status$ahead_behind]($style)'
 style = "bold inverted bright-yellow"
 
 [git_state]
-format = '[ \($state( $progress_current/$progress_total)\) ]($style)'
+format = '[ \($state( $progress_current/$progress_total)\)]($style)'
 style = "bold inverted bright-yellow"
 
 [hg_branch]
-format = "[ $symbol$branch ]($style)"
+format = "[$symbol$branch]($style)"
 symbol = " "
 style = "bold inverted bright-yellow"
 disabled = false
@@ -105,19 +105,19 @@ disabled = false
 #
 
 [nix_shell]
-format = "[](inverted $style)[ $state(:$name) ](inverted $style)[]($style)"
+format = "[](inverted $style)[ $state(:$name)](inverted $style)[]($style)"
 style = "bold bright-white"
 
 [docker_context]
-format = "[](inverted $style)[ $context ](inverted $style)[]($style)"
+format = "[](inverted $style)[ $context](inverted $style)[]($style)"
 style = "bold bright-blue"
 
 [conda]
-format = "[](inverted $style)[ $environment ](inverted $style)[]($style)"
+format = "[](inverted $style)[ $environment](inverted $style)[]($style)"
 style = "bold bright-green"
 
 [python]
-format = "[](inverted $style)[ $virtualenv ](inverted $style)[]($style)"
+format = "[](inverted $style)[ $virtualenv](inverted $style)[]($style)"
 style = "bold bright-yellow"
 detect_extensions = []
 detect_files = []
@@ -127,11 +127,11 @@ detect_files = []
 #
 
 [cmd_duration]
-format = "[ took $duration ]($style)"
+format = "[ took $duration]($style)"
 style = "bold inverted bright-yellow"
 
 [jobs]
-format = "[ $number$symbol]($style)"
+format = "[$number$symbol]($style)"
 style = "bold inverted bright-yellow"
 symbol = ""
 
@@ -141,7 +141,7 @@ symbol = ""
 
 [time]
 disabled = false
-format = "[ $time ]($style)"
+format = "[$time]($style)"
 style = "inverted fg:bold bright-purple"
 
 #
