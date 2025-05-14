@@ -46,13 +46,13 @@ symbol = " "
 
 [username]
 show_always = false
-format = "[ $user ]($style)"
+format = "[ $user]($style)"
 style_root = "fg:bold bright-red bg:bright-purple"
 style_user = "inverted fg:bold bright-purple"
 
 [hostname]
 ssh_only = true
-format = "[ $hostname ]($style)"
+format = "[@$hostname]($style)"
 style = "inverted fg:bold bright-purple"
 
 [singularity]
@@ -103,20 +103,20 @@ disabled = false
 #
 
 [nix_shell]
-format = " []($style)[ $state(:$name) ](fg:bold bright-white bg:$style)[]($style)"
-style = "black"
+format = "[](inverted $style)[ $state(:$name) ](inverted $style)[]($style)"
+style = "bold bright-white"
 
 [docker_context]
-format = " []($style)[ $context ](fg:bold bright-blue bg:$style)[]($style)"
-style = "black"
+format = "[](inverted $style)[ $context ](inverted $style)[]($style)"
+style = "bold bright-blue"
 
 [conda]
-format = " []($style)[ $environment ](fg:bold bright-green bg:$style)[]($style)"
-style = "black"
+format = "[](inverted $style)[ $environment ](inverted $style)[]($style)"
+style = "bold bright-green"
 
 [python]
-format = " []($style)[ $virtualenv ](fg:bold bright-yellow bg:$style)[]($style)"
-style = "black"
+format = "[](inverted $style)[ $virtualenv ](inverted $style)[]($style)"
+style = "bold bright-yellow"
 detect_extensions = []
 detect_files = []
 
