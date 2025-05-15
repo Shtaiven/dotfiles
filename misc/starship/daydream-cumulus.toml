@@ -13,6 +13,9 @@ format = """
 [](fg:bright-purple)\
 $time\
 [░▒▓](fg:bright-yellow bg:bright-purple)\
+$username\
+$hostname\
+$singularity\
 $jobs\
 [](bright-yellow)\
 $nix_shell\
@@ -21,9 +24,6 @@ $conda\
 $python\
 $line_break\
 [ ](fg:bright-purple)\
-$username\
-$hostname\
-$singularity\
 $directory\
 [░▒▓](fg:bright-yellow bg:bright-purple)\
 $vcsh\
@@ -47,19 +47,19 @@ symbol = " "
 #
 
 [username]
-show_always = false
+show_always = true
 format = "[$user]($style)"
-style_root = "fg:bold bright-red bg:bright-purple"
-style_user = "inverted fg:bold bright-purple"
+style_root = "fg:bold bright-red bg:bright-yellow"
+style_user = "inverted fg:bold bright-yellow"
 
 [hostname]
-ssh_only = true
+ssh_only = false
 format = "[@$hostname]($style)"
-style = "inverted fg:bold bright-purple"
+style = "inverted fg:bold bright-yellow"
 
 [singularity]
-format = '[$env]($style)'
-style = "inverted fg:bold bright-purple"
+format = '[ $env]($style)'
+style = "inverted fg:bold bright-yellow"
 
 [directory]
 format = "[$read_only$path]($style)"
@@ -131,7 +131,7 @@ format = "[ took $duration]($style)"
 style = "bold inverted bright-yellow"
 
 [jobs]
-format = "[$number$symbol]($style)"
+format = "[ $number$symbol]($style)"
 style = "bold inverted bright-yellow"
 symbol = ""
 
