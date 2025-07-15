@@ -133,7 +133,7 @@ style = "bold inverted bright-yellow"
 [jobs]
 format = "[ $number$symbol]($style)"
 style = "bold inverted bright-yellow"
-symbol = ""
+symbol = ""
 
 #
 # Right prompt 2

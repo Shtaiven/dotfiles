@@ -5,9 +5,6 @@
 [core]
     pager = delta
 
-[column]
-    ui = auto
-
 [branch]
     sort = -committerdate
 
