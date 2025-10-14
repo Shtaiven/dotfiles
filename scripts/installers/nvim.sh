@@ -2,7 +2,7 @@
 
 DOWNLOAD_DEST="${HOME}/.local"
 INSTALL_DEST="${HOME}/.local/bin"
-TARBALL_NAME="nvim-linux64"
+TARBALL_NAME="nvim-linux-x86_64"
 TARBALL_EXT=".tar.gz"
 TAR_ARGS="xzvf"
 BIN_PATH="${TARBALL_NAME}/bin/nvim"

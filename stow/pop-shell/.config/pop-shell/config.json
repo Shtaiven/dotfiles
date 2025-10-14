@@ -49,6 +49,13 @@
     },
     {
       "class": "File-roller"
+    },
+    {
+      "class": "FileZilla"
+    },
+    {
+      "class": "robot-client",
+      "title": "robot-client"
     }
   ],
   "skiptaskbarhidden": [],
