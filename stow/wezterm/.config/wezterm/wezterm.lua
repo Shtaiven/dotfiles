@@ -51,7 +51,7 @@ config.window_frame = {
 
   -- The overall background color of the tab bar when
   -- the window is focused
-  active_titlebar_bg = ACTIVE_BG_COLOR,
+  active_titlebar_bg = INACTIVE_BG_COLOR,
 
   -- The overall background color of the tab bar when
   -- the window is not focused
@@ -70,7 +70,8 @@ config.integrated_title_button_color = ACTIVE_FG_COLOR
 config.colors = {
   tab_bar = {
     -- The color of the inactive tab bar edge/divider
-    -- inactive_tab_edge = 'none',
+    inactive_tab_edge = 'none',
+
     -- The color of the strip that goes along the top of the window
     -- (does not apply when fancy tab bar is in use)
     background = INACTIVE_BG_COLOR,
