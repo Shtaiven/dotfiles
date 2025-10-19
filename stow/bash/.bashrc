@@ -128,11 +128,8 @@ if [ -x "$(command -v bat)" ]; then
 fi
 
 #
-# mujoco
+# fd
 #
-
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/steven/.mujoco/mujoco200/bin
-export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so
 
 if [ -x "$(command -v fd)" ]; then
   export FZF_CTRL_T_COMMAND="fd --hidden --follow --exclude \".git\" . $HOME"

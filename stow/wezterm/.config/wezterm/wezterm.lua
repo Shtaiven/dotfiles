@@ -25,7 +25,7 @@ config.window_padding = {
 config.enable_scroll_bar = true
 
 -- Uncomment to remove titlebar
--- config.window_decorations = "RESIZE"
+config.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
 
 -- Define common colors
 local INACTIVE_BG_COLOR = '#070808'
@@ -65,6 +65,8 @@ config.command_palette_font_size = 12.0
 config.command_palette_rows = 24
 
 -- Tab bar
+config.integrated_title_button_style = "Gnome"
+config.integrated_title_button_color = ACTIVE_FG_COLOR
 config.colors = {
   tab_bar = {
     -- The color of the inactive tab bar edge/divider
@@ -114,11 +116,11 @@ config.colors = {
   },
 }
 
-config.hide_tab_bar_if_only_one_tab = true
+config.hide_tab_bar_if_only_one_tab = false
 config.tab_bar_at_bottom = false
-config.use_fancy_tab_bar = false
+config.use_fancy_tab_bar = true
 
--- Triangle in the upper right used for terminal tabs 
+-- Triangle in the upper right used for terminal tabs
 local LOWER_RIGHT_TRIANGLE = wezterm.nerdfonts.ple_lower_right_triangle
 
 -- Triangle in the upper left used for terminal tabs
@@ -141,42 +143,42 @@ local function tab_title(tab_info)
 end
 
 -- Tab coloration and shape
-wezterm.on(
-  'format-tab-title',
-  function(tab, tabs, panes, config, hover, max_width)
-    local edge_background = INACTIVE_BG_COLOR
-    local background = INACTIVE_BG_COLOR
-    local foreground = INACTIVE_FG_COLOR
+-- wezterm.on(
+--   'format-tab-title',
+--   function(tab, tabs, panes, config, hover, max_width)
+--     local edge_background = INACTIVE_BG_COLOR
+--     local background = INACTIVE_BG_COLOR
+--     local foreground = INACTIVE_FG_COLOR
 
-    if tab.is_active then
-      background = ACTIVE_BG_COLOR
-      foreground = ACTIVE_FG_COLOR
-    elseif hover then
-      background = HOVER_BG_COLOR
-      foreground = HOVER_FG_COLOR
-    end
+--     if tab.is_active then
+--       background = ACTIVE_BG_COLOR
+--       foreground = ACTIVE_FG_COLOR
+--     elseif hover then
+--       background = HOVER_BG_COLOR
+--       foreground = HOVER_FG_COLOR
+--     end
 
-    local edge_foreground = background
+--     local edge_foreground = background
 
-    local title = tab_title(tab)
+--     local title = tab_title(tab)
 
-    -- ensure that the titles fit in the available space,
-    -- and that we have room for the edges.
-    title = wezterm.truncate_right(title, max_width - 2)
+--     -- ensure that the titles fit in the available space,
+--     -- and that we have room for the edges.
+--     title = wezterm.truncate_right(title, max_width - 2)
 
-    return {
-      { Background = { Color = edge_background } },
-      { Foreground = { Color = edge_foreground } },
-      { Text = LOWER_RIGHT_TRIANGLE },
-      { Background = { Color = background } },
-      { Foreground = { Color = foreground } },
-      { Text = title },
-      { Background = { Color = edge_background } },
-      { Foreground = { Color = edge_foreground } },
-      { Text = LOWER_LEFT_TRIANGLE },
-    }
-  end
-)
+--     return {
+--       { Background = { Color = edge_background } },
+--       { Foreground = { Color = edge_foreground } },
+--       { Text = LOWER_RIGHT_TRIANGLE },
+--       { Background = { Color = background } },
+--       { Foreground = { Color = foreground } },
+--       { Text = title },
+--       { Background = { Color = edge_background } },
+--       { Foreground = { Color = edge_foreground } },
+--       { Text = LOWER_LEFT_TRIANGLE },
+--     }
+--   end
+-- )
 
 -- Make scrollbar invisible when terminal in alt mode (e.g. vim)
 wezterm.on(
