@@ -18,7 +18,7 @@ config.allow_square_glyphs_to_overflow_width = "Always"
 config.window_padding = {
   left = '0cell',
   right = '0cell',
-  top = '0cell',
+  top = '0.5cell',
   bottom = '0cell',
 }
 
