@@ -463,7 +463,7 @@ local servers = {
   clangd = {},
   cmake = {},
   jsonls = {},
-  ruff_lsp = {},
+  ruff = {},
   rust_analyzer = {},
   taplo = {},
   yamlls = {},
@@ -491,16 +491,15 @@ local mason_lspconfig = require 'mason-lspconfig'
 
 mason_lspconfig.setup {
   ensure_installed = vim.tbl_keys(servers),
-}
-
-mason_lspconfig.setup_handlers {
-  function(server_name)
-    require('lspconfig')[server_name].setup {
-      capabilities = capabilities,
-      on_attach = on_attach,
-      settings = servers[server_name],
-    }
-  end,
+  handlers = {
+    function(server_name)
+      require('lspconfig')[server_name].setup {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = servers[server_name],
+      }
+    end,
+  },
 }
 
 -- Turn on lsp status information
@@ -556,7 +555,9 @@ cmp.setup {
 }
 
 -- Enable leap
-require('leap').add_default_mappings()
+vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
+vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
+vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 
 -- Enable virt-column
 require("virt-column").setup()
