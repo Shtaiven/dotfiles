@@ -98,6 +98,9 @@
     # Get the branches of all 1st level subdirs
     dirs = "!sh -c 'for i in */; do (cd $i && echo -n \"${i}: \" && echo -n $(git rev-parse --abbrev-ref HEAD 2> /dev/null) && test -n \"$(git status --porcelain 2> /dev/null)\" && echo -n \" *\"); echo; done'"
 
+    # Delete merged branches
+    delete-merged = "!f() { git branch --merged ${1:-main} | grep -v '\\*\\|master\\|main' | xargs -n 1 git branch -d; }; f"
+
 [page]
     diff = delta
     show = delta
