@@ -28,11 +28,11 @@ config.enable_scroll_bar = true
 config.window_decorations = "TITLE|RESIZE"
 
 -- Define common colors
-local INACTIVE_BG_COLOR = '#070808'
+local INACTIVE_BG_COLOR = '#101010'
 local INACTIVE_FG_COLOR = '#5a524c'
 local ACTIVE_BG_COLOR = '#202020'
 local ACTIVE_FG_COLOR = '#d4be98'
-local HOVER_BG_COLOR = '#070808'
+local HOVER_BG_COLOR = '#101010'
 local HOVER_FG_COLOR = '#928374'
 local COMMAND_PALETTE_BG_COLOR = '#131414'
 
