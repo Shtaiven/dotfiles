@@ -18,14 +18,14 @@ config.allow_square_glyphs_to_overflow_width = "Always"
 config.window_padding = {
   left = '0cell',
   right = '0cell',
-  top = '0.5cell',
+  top = '0cell',
   bottom = '0cell',
 }
 
 config.enable_scroll_bar = true
 
 -- Uncomment to remove titlebar
-config.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
+config.window_decorations = "TITLE|RESIZE"
 
 -- Define common colors
 local INACTIVE_BG_COLOR = '#070808'
@@ -47,7 +47,7 @@ config.window_frame = {
 
   -- The size of the font in the tab bar.
   -- Default to 10.0 on Windows but 12.0 on other systems
-  font_size = 12.0,
+  font_size = 11.0,
 
   -- The overall background color of the tab bar when
   -- the window is focused
@@ -117,7 +117,7 @@ config.colors = {
   },
 }
 
-config.hide_tab_bar_if_only_one_tab = false
+config.hide_tab_bar_if_only_one_tab = true
 config.tab_bar_at_bottom = false
 config.use_fancy_tab_bar = true
 
@@ -181,19 +181,6 @@ end
 --   end
 -- )
 
--- Make scrollbar invisible when terminal in alt mode (e.g. vim)
-wezterm.on(
-  'update-status',
-  function(window, pane)
-    local overrides = window:get_config_overrides() or {}
-    if pane:is_alt_screen_active() then
-      overrides.colors.scrollbar_thumb = 'transparent'
-    else
-      overrides.colors.scrollbar_thumb = nil
-    end
-    window:set_config_overrides(overrides)
-  end
-)
 -- Keybindings
 
 
