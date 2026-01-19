@@ -20,6 +20,7 @@ $jobs\
 [](bright-yellow)\
 $nix_shell\
 $docker_context\
+$pixi\
 $conda\
 $python\
 $line_break\
@@ -111,6 +112,10 @@ style = "bold bright-white"
 [docker_context]
 format = "[](inverted $style)[ $context](inverted $style)[]($style)"
 style = "bold bright-blue"
+
+[pixi]
+format = "[](inverted $style)[ $environment](inverted $style)[]($style)"
+style = "bold bright-yellow"
 
 [conda]
 format = "[](inverted $style)[ $environment](inverted $style)[]($style)"
