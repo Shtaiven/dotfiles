@@ -1,0 +1,35 @@
+{
+  "theme": {
+    "name": "Bonofix Theme",
+    "url": "assets:///home/steven/.logseq/plugins/logseq-bonofix-theme/custom.css",
+    "description": "A clean theme",
+    "pid": "logseq-bonofix-theme"
+  },
+  "themes": {
+    "mode": "dark",
+    "light": {
+      "name": "Default Light Theme",
+      "url": null,
+      "description": "Logseq default light theme.",
+      "mode": "light",
+      "selected": true,
+      "group-first": true,
+      "group-desc": "light themes"
+    },
+    "dark": {
+      "name": "Awesome Styler Dark",
+      "url": "lsp://logseq.io/logseq-awesome-styler/dist/assets/awesomeStylerExt.css",
+      "description": "Dark customizable theme theme with extra stuff",
+      "mode": "dark",
+      "pid": "logseq-awesome-styler",
+      "selected": false
+    }
+  },
+  "externals": [],
+  "pinnedToolbarItems": [
+    "logseq-journals-calendar:goto-today",
+    "logseq-todo-plugin:logseq-plugin-todo",
+    "logseq-journals-calendar:open-calendar",
+    "logseq-pdf-export-plugin:logseq-pdf-export-plugin"
+  ]
+}
