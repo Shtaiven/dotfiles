@@ -16,10 +16,10 @@ config.default_cursor_style = 'SteadyBar'
 config.allow_square_glyphs_to_overflow_width = "Always"
 
 config.window_padding = {
-  left = '0cell',
-  right = '0cell',
-  top = '0cell',
-  bottom = '0cell',
+  left = '0.5cell',
+  right = '0.5cell',
+  top = '0.5cell',
+  bottom = '0.5cell',
 }
 
 config.enable_scroll_bar = true
