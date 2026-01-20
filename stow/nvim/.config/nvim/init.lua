@@ -181,6 +181,7 @@ vim.g.gruvbox_material_disable_terminal_colors = 1
 vim.g.gruvbox_material_transparent_background = 2 -- make the backgroud transparent
 vim.g.gruvbox_material_better_performance = 1
 vim.cmd [[colorscheme gruvbox-material]]
+vim.api.nvim_set_hl(0, 'TabLineFill', { bg = 'NONE' })
 
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
@@ -251,15 +252,19 @@ require('lualine').setup {
   },
   sections = {
     lualine_a = {
-      { 'mode', separator = { right='▓▒░' } },
+      { 'mode', separator = { left = '', right='▓▒░' } },
     },
     lualine_z = {
-      { 'location', separator = { left='░▒▓' } },
+      { 'location', separator = { left='░▒▓', right = '' } },
     },
   },
   tabline = {
-    lualine_a = {'buffers'},
-    lualine_z = {'tabs'},
+    lualine_a = {
+        { 'buffers', separator = { left = '', right='▓▒░'  }, draw_empty = true, },
+    },
+    lualine_z = {
+        { 'tabs', separator = {  left='░▒▓', right =  '' } },
+    }
   },
   extensions = {
     'fugitive',
