@@ -6,6 +6,9 @@
 #   Steven Eisinger <steven.a.eisinger@gmail.com>
 #
 
+# Source pixi at the top since there are programs added to our path that may be initialized below
+export PATH="/home/steven/.pixi/bin:$PATH"
+
 # Source Prezto.
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
@@ -67,15 +70,6 @@ if (( $+commands[zoxide] )); then
 fi
 
 #
-# mujoco
-#
-
-if [[ -f /usr/lib/x86_64-linux-gnu/libGLEW.so ]]; then
-  # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/steven/.mujoco/mujoco200/bin
-  export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so
-fi
-
-#
 # pyenv and pyenv-virtualenv
 #
 
@@ -108,4 +102,4 @@ fi
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-export PATH="/home/steven/.pixi/bin:$PATH"
+
