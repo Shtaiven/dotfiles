@@ -116,6 +116,7 @@ style = "bold bright-blue"
 [pixi]
 format = "[](inverted $style)[ $environment](inverted $style)[]($style)"
 style = "bold bright-yellow"
+detect_files = []
 
 [conda]
 format = "[](inverted $style)[ $environment](inverted $style)[]($style)"
