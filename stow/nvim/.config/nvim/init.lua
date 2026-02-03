@@ -261,7 +261,21 @@ require('lualine').setup {
   },
   tabline = {
     lualine_a = {
-        { 'buffers', separator = { left = '', right='▓▒░'  }, draw_empty = true, },
+        { 'buffers', separator = { left = '', right='▓▒░'  }, draw_empty = true,
+            buffers_color = {
+                active = (function()
+                    local c = vim.fn['gruvbox_material#get_configuration']()
+                    local p = vim.fn['gruvbox_material#get_palette'](c.background, c.foreground, c.colors_override)
+                    return { fg = p.bg0[1], bg = p.blue[1], gui = 'bold' }
+                end)(),
+                inactive = (function()
+                    local c = vim.fn['gruvbox_material#get_configuration']()
+                    local p = vim.fn['gruvbox_material#get_palette'](c.background, c.foreground, c.colors_override)
+                    return { fg = p.bg0[1], bg = p.grey2[1] }
+                end)(),
+            },
+            symbols = { alternate_file = '' },
+        },
     },
     lualine_z = {
         { 'tabs', separator = {  left='░▒▓', right =  '' } },
