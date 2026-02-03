@@ -182,6 +182,7 @@ vim.g.gruvbox_material_transparent_background = 2 -- make the backgroud transpar
 vim.g.gruvbox_material_better_performance = 1
 vim.cmd [[colorscheme gruvbox-material]]
 vim.api.nvim_set_hl(0, 'TabLineFill', { bg = 'NONE' })
+vim.api.nvim_set_hl(0, 'WinSeparator', { bg = 'NONE' })
 
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
