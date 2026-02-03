@@ -58,6 +58,12 @@ config.window_frame = {
   inactive_titlebar_bg = INACTIVE_BG_COLOR,
 }
 
+-- Focus behavior
+-- With the below set to `true`, clicking on a window will only focus wezterm
+-- Behaviors like (accidentally) clicking on a link will be swallowed
+config.swallow_mouse_click_on_pane_focus = true
+config.swallow_mouse_click_on_window_focus = true
+
 -- Command Palette
 config.command_palette_bg_color = COMMAND_PALETTE_BG_COLOR
 config.command_palette_fg_color = ACTIVE_FG_COLOR
