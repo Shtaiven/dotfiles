@@ -1,0 +1,161 @@
+#
+# Daydream Cumulus theme for starship prompt, base16 compatible
+#
+# Authors:
+#   Steven Eisinger <steven.a.eisinger@gmail.com>
+#
+
+#
+# Prompt common
+#
+
+format = """
+[](fg:bright-blue)\
+$time\
+[░▒▓](fg:#e78a4e bg:bright-blue)\
+$username\
+$hostname\
+$singularity\
+$jobs\
+[](#e78a4e)\
+$nix_shell\
+$docker_context\
+$pixi\
+$conda\
+$python\
+$line_break\
+[ ](fg:bright-blue)\
+$directory\
+[░▒▓](fg:#e78a4e bg:bright-blue)\
+$vcsh\
+$git_branch\
+$git_commit\
+$git_status\
+$git_state\
+$hg_branch\
+[](#e78a4e)\
+$line_break\
+$character"""
+
+scan_timeout = 100
+command_timeout = 700
+
+[fill]
+symbol = " "
+
+#
+# Left prompt 1
+#
+
+[username]
+show_always = true
+format = "[$user]($style)"
+style_root = "fg:bold bright-red bg:#e78a4e"
+style_user = "inverted fg:bold #e78a4e"
+
+[hostname]
+ssh_only = false
+format = "[@$hostname]($style)"
+style = "inverted fg:bold #e78a4e"
+
+[singularity]
+format = '[ $env]($style)'
+style = "inverted fg:bold #e78a4e"
+
+[directory]
+format = "[$read_only$path]($style)"
+read_only = " "
+style = "inverted fg:bold bright-blue"
+truncation_length = 3
+truncation_symbol = ""
+
+#
+# Left prompt 2
+#
+
+[vcsh]
+format = "[$symbol$repo]($style)"
+symbol = " "
+style = "bold inverted #e78a4e"
+
+[git_branch]
+format = "[$symbol$branch]($style)"
+symbol = " "
+style = "bold inverted #e78a4e"
+
+[git_commit]
+format = "[ \\($hash$tag\\)]($style)"
+style = "bold inverted #e78a4e"
+
+[git_status]
+format = '[ $all_status$ahead_behind]($style)'
+style = "bold inverted #e78a4e"
+
+[git_state]
+format = '[ \($state( $progress_current/$progress_total)\)]($style)'
+style = "bold inverted #e78a4e"
+
+[hg_branch]
+format = "[$symbol$branch]($style)"
+symbol = " "
+style = "bold inverted #e78a4e"
+disabled = false
+
+#
+# Middle prompt
+#
+
+[nix_shell]
+format = "[](inverted $style)[ $state(:$name)](inverted $style)[]($style)"
+style = "bold bright-white"
+
+[docker_context]
+format = "[](inverted $style)[ $context](inverted $style)[]($style)"
+style = "bold bright-blue"
+
+[pixi]
+format = "[](inverted $style)[ $environment](inverted $style)[]($style)"
+style = "bold bright-yellow"
+detect_files = []
+
+[conda]
+format = "[](inverted $style)[ $environment](inverted $style)[]($style)"
+style = "bold bright-green"
+
+[python]
+format = "[](inverted $style)[ $virtualenv](inverted $style)[]($style)"
+style = "bold bright-yellow"
+detect_extensions = []
+detect_files = []
+
+#
+# Right prompt 1
+#
+
+[cmd_duration]
+format = "[ took $duration]($style)"
+style = "bold inverted #e78a4e"
+
+[jobs]
+format = "[ $number$symbol]($style)"
+style = "bold inverted #e78a4e"
+symbol = ""
+
+#
+# Right prompt 2
+#
+
+[time]
+disabled = false
+format = "[$time]($style)"
+style = "inverted fg:bold bright-blue"
+
+#
+# Second line
+#
+
+[character]
+success_symbol = "[●](bright-blue)"
+error_symbol = "[●](bright-red)"
+vicmd_symbol = "[○](bright-blue)"
+
