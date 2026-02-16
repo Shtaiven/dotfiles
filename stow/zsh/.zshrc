@@ -17,6 +17,11 @@ fi
 # please alias
 alias please='sudo $(fc -ln -1)'
 
+# gearlever alias
+if (( $+commands[flatpak] )) && flatpak info it.mijorus.gearlever &>/dev/null; then
+  alias gearlever='flatpak run it.mijorus.gearlever'
+fi
+
 #
 # exa
 #
