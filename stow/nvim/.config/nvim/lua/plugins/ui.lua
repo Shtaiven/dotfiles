@@ -50,7 +50,6 @@ return {
           'fugitive',
           'fzf',
           'nvim-tree',
-          'toggleterm',
         },
       }
     end,
