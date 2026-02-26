@@ -17,5 +17,22 @@ return {
       signature = { enabled = false },
     },
     messages = { enabled = true },
+    views = {
+      cmdline_popup = {
+        border = { style = 'rounded' },
+      },
+      hover = {
+        border = { style = 'rounded' },
+      },
+      mini = {
+        border = { style = 'rounded' },
+      },
+      notify = {
+        border = { style = 'rounded' },
+      },
+      popup = {
+        border = { style = 'rounded' },
+      },
+    },
   },
 }
