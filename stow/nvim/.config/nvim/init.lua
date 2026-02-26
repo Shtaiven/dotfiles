@@ -54,7 +54,7 @@ require('packer').startup(function(use)
       'j-hui/fidget.nvim',
 
       -- Additional lua configuration, makes nvim stuff amazing
-      'folke/neodev.nvim',
+      { 'folke/lazydev.nvim', ft = 'lua' },
     },
   }
 
@@ -99,7 +99,7 @@ require('packer').startup(function(use)
   use 'lukas-reineke/virt-column.nvim'
 
   -- Jump to any position with 2 characters
-  use { 'ggandor/leap.nvim', requires = { 'tpope/vim-repeat' } }
+  use { 'https://codeberg.org/andyg/leap.nvim', requires = { 'tpope/vim-repeat' } }
 
   -- Fuzzy Finder (files, lsp, etc)
   use { 'nvim-telescope/telescope.nvim', branch = '0.1.x', requires = { 'nvim-lua/plenary.nvim' } }
@@ -496,8 +496,7 @@ local servers = {
   },
 }
 
--- Setup neovim lua configuration
-require('neodev').setup()
+-- lazydev.nvim configures itself automatically when ft=lua, no setup call needed
 --
 -- nvim-cmp supports additional completion capabilities, so broadcast that to servers
 local capabilities = vim.lsp.protocol.make_client_capabilities()
@@ -511,16 +510,20 @@ local mason_lspconfig = require 'mason-lspconfig'
 
 mason_lspconfig.setup {
   ensure_installed = vim.tbl_keys(servers),
-  handlers = {
-    function(server_name)
-      require('lspconfig')[server_name].setup {
-        capabilities = capabilities,
-        on_attach = on_attach,
-        settings = servers[server_name],
-      }
-    end,
-  },
 }
+
+-- Set defaults for all servers using native 0.11 API
+vim.lsp.config('*', {
+  capabilities = capabilities,
+  on_attach = on_attach,
+})
+
+-- Apply per-server settings (only lua_ls has non-empty settings)
+for server_name, server_settings in pairs(servers) do
+  if next(server_settings) ~= nil then
+    vim.lsp.config(server_name, { settings = server_settings })
+  end
+end
 
 -- Turn on lsp status information
 require('fidget').setup {
@@ -575,8 +578,7 @@ cmp.setup {
 }
 
 -- Enable leap
-vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
-vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
+vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap)')
 vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 
 -- Enable virt-column
