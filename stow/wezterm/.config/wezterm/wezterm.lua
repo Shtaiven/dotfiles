@@ -188,6 +188,9 @@ end
 -- )
 
 -- Keybindings
-
+local ok, smart_splits = pcall(wezterm.plugin.require, 'https://github.com/mrjones2014/smart-splits.nvim')
+if ok then
+  smart_splits.apply_to_config(config)
+end
 
 return config
