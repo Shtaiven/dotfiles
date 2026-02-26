@@ -10,16 +10,13 @@ return {
     { '<leader>b', '<cmd>Neotree toggle<cr>', desc = 'Toggle File [B]rowser' },
   },
   opts = {
-    window = {
-      position = 'float',
-      popup = {
-        size = { height = '80%', width = '50%' },
-        position = '50%',
-        border = 'rounded',
-      },
-    },
     filesystem = {
       hijack_netrw_behavior = 'open_default',
+      filtered_items = {
+        visible = true,
+        hide_dotfiles = false,
+        hide_gitignored = false,
+      },
     },
   },
 }
