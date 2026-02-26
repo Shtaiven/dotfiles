@@ -1,12 +1,25 @@
 return {
-  'nvim-tree/nvim-tree.lua',
-  dependencies = { 'nvim-tree/nvim-web-devicons' },
-  init = function()
-    vim.g.loaded_netrw = 1
-    vim.g.loaded_netrwPlugin = 1
-  end,
-  keys = {
-    { '<leader>b', function() require('nvim-tree.api').tree.toggle() end, desc = 'Toggle File [B]rowser' },
+  'nvim-neo-tree/neo-tree.nvim',
+  branch = 'v3.x',
+  dependencies = {
+    'nvim-lua/plenary.nvim',
+    'nvim-tree/nvim-web-devicons',
+    'MunifTanjim/nui.nvim',
   },
-  opts = {},
+  keys = {
+    { '<leader>b', '<cmd>Neotree toggle<cr>', desc = 'Toggle File [B]rowser' },
+  },
+  opts = {
+    window = {
+      position = 'float',
+      popup = {
+        size = { height = '80%', width = '50%' },
+        position = '50%',
+        border = 'rounded',
+      },
+    },
+    filesystem = {
+      hijack_netrw_behavior = 'open_default',
+    },
+  },
 }

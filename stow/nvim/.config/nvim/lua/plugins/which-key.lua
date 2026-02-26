@@ -2,6 +2,9 @@ return {
   'folke/which-key.nvim',
   event = 'VeryLazy',
   opts = {
+    win = {
+      border = 'rounded',
+    },
     spec = {
       { '<leader>s', group = 'Search' },
       { '<leader>d', group = 'Document' },

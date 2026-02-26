@@ -16,7 +16,12 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 -- Setup lazy.nvim (auto-imports lua/plugins/*.lua)
-require('lazy').setup('plugins')
+require('lazy').setup('plugins', {
+  ui = {
+    border = 'rounded',
+    backdrop = 100,
+  },
+})
 
 local using_vscode = vim.g.vscode ~= nil
 
@@ -76,6 +81,15 @@ vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 -- Remap for dealing with word wrap
 vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
+
+-- Rounded borders for LSP floating windows
+vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(
+  vim.lsp.handlers.hover, { border = 'rounded' }
+)
+vim.lsp.handlers['textDocument/signatureHelp'] = vim.lsp.with(
+  vim.lsp.handlers.signature_help, { border = 'rounded' }
+)
+vim.diagnostic.config({ float = { border = 'rounded' } })
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev)

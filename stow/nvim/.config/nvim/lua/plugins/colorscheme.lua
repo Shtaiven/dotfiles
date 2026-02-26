@@ -13,5 +13,8 @@ return {
     vim.cmd [[colorscheme gruvbox-material]]
     vim.api.nvim_set_hl(0, 'TabLineFill', { bg = 'NONE' })
     vim.api.nvim_set_hl(0, 'WinSeparator', { bg = 'NONE' })
+    vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'NONE' })
+    vim.api.nvim_set_hl(0, 'FloatBorder', { bg = 'NONE' })
+    vim.api.nvim_set_hl(0, 'LazyNormal', { bg = 'NONE', fg = 'NONE' })
   end,
 }
