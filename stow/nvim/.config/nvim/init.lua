@@ -121,6 +121,11 @@ vim.keymap.set("n", "<leader>qw", "<cmd>q<cr>", { desc = "[Q]uit [W]indow" })
 vim.keymap.set("n", "<leader>tn", "<cmd>tabnew<cr>", { desc = "[T]ab [N]ew" })
 vim.keymap.set("n", "<leader>tc", "<cmd>tabc<cr>", { desc = "[T]ab [C]lose" })
 vim.keymap.set("n", "<leader>to", "<cmd>tabonly<cr>", { desc = "[T]ab close [O]thers" })
+vim.keymap.set("n", "<leader>tl", "<cmd>tabnext<cr>", { desc = "[T]ab next [L]" })
+vim.keymap.set("n", "<leader>th", "<cmd>tabprev<cr>", { desc = "[T]ab prev [H]" })
+for i = 1, 9 do
+	vim.keymap.set("n", "<leader>t" .. i, "<cmd>tabn " .. i .. "<cr>", { desc = "[T]ab " .. i })
+end
 
 -- Buffer keymaps
 vim.keymap.set("n", "<leader>bc", "<cmd>bd<cr>", { desc = "[B]uffer [C]lose" })
