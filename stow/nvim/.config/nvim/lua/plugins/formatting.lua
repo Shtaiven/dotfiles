@@ -1,6 +1,7 @@
 return {
 	{
 		"stevearc/conform.nvim",
+		cond = not vim.g.vscode,
 		dependencies = { "williamboman/mason.nvim" },
 		opts = {
 			formatters_by_ft = {
@@ -14,6 +15,7 @@ return {
 	},
 	{
 		"williamboman/mason.nvim",
+		cond = not vim.g.vscode,
 		opts = {
 			ensure_installed = { "stylua" },
 		},

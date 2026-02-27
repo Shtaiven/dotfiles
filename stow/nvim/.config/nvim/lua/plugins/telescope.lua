@@ -6,6 +6,7 @@ end
 return {
 	{
 		"nvim-telescope/telescope.nvim",
+		cond = not vim.g.vscode,
 		branch = "0.1.x",
 		dependencies = { "nvim-lua/plenary.nvim" },
 		keys = {
@@ -93,10 +94,10 @@ return {
 	},
 	{
 		"nvim-telescope/telescope-fzf-native.nvim",
-		build = "make",
 		cond = function()
-			return vim.fn.executable("make") == 1
+			return not vim.g.vscode and vim.fn.executable("make") == 1
 		end,
+		build = "make",
 		dependencies = { "nvim-telescope/telescope.nvim" },
 		config = function()
 			require("telescope").load_extension("fzf")
@@ -104,6 +105,7 @@ return {
 	},
 	{
 		"nvim-telescope/telescope-file-browser.nvim",
+		cond = not vim.g.vscode,
 		dependencies = { "nvim-telescope/telescope.nvim", "nvim-lua/plenary.nvim" },
 		keys = {
 			{

@@ -1,5 +1,6 @@
 return {
 	"mrjones2014/smart-splits.nvim",
+	cond = not vim.g.vscode,
 	lazy = false,
 	keys = {
 		{
