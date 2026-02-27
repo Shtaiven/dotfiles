@@ -2,6 +2,10 @@ return {
 	"folke/noice.nvim",
 	event = "VeryLazy",
 	dependencies = { "MunifTanjim/nui.nvim" },
+	keys = {
+		{ "<leader>nh", "<cmd>Noice history<cr>", desc = "[N]otification [H]istory" },
+		{ "<leader>nl", "<cmd>Noice last<cr>", desc = "[N]otification [L]ast" },
+	},
 	opts = {
 		cmdline = {
 			view = "cmdline_popup",

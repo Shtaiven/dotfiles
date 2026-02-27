@@ -16,6 +16,7 @@ return {
 			{ "<leader>c", group = "Code" },
 			{ "<leader>q", group = "Quit" },
 			{ "<leader>u", group = "UI Toggles" },
+			{ "<leader>n", group = "Notifications" },
 		},
 	},
 }
