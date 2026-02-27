@@ -64,7 +64,10 @@ vim.o.termguicolors = true
 vim.o.completeopt = 'menuone,noselect'
 
 -- Set vim to always use system clipboard if available for y, p, etc.
-vim.o.clipboard = 'unnamedplus'
+-- Deferred to avoid slow clipboard provider detection blocking startup
+vim.schedule(function()
+  vim.o.clipboard = 'unnamedplus'
+end)
 
 -- Remove mode from command line (already shown in lualine)
 vim.o.showmode = using_vscode

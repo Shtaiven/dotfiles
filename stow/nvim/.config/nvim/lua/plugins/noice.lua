@@ -26,6 +26,7 @@ return {
       },
       mini = {
         border = { style = 'rounded' },
+        position = { row = -2 },
       },
       notify = {
         border = { style = 'rounded' },
