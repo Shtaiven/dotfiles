@@ -94,11 +94,59 @@ vim.lsp.handlers['textDocument/signatureHelp'] = vim.lsp.with(
 )
 vim.diagnostic.config({ float = { border = 'rounded' } })
 
+-- Change directory to current file
+vim.keymap.set('n', '<leader>cd', '<cmd>cd %:h<cr>', { desc = '[C]hange [D]irectory to current file' })
+
+-- Save
+vim.keymap.set({ 'n', 'i', 'v' }, '<C-s>', '<cmd>w<cr>', { desc = 'Save file' })
+
+-- Buffer navigation
+vim.keymap.set('n', '<S-h>', '<cmd>bprev<cr>', { desc = 'Prev buffer' })
+vim.keymap.set('n', '<S-l>', '<cmd>bnext<cr>', { desc = 'Next buffer' })
+
+-- UI toggles
+vim.keymap.set('n', '<leader>us', function() vim.o.spell = not vim.o.spell end, { desc = '[U]I toggle [S]pell' })
+vim.keymap.set('n', '<leader>uw', function() vim.o.wrap = not vim.o.wrap end, { desc = '[U]I toggle [W]rap' })
+vim.keymap.set('n', '<leader>ul', function() vim.o.number = not vim.o.number end, { desc = '[U]I toggle [L]ine numbers' })
+
+-- Quit keymaps
+vim.keymap.set('n', '<leader>qq', '<cmd>qa<cr>', { desc = '[Q]uit all' })
+vim.keymap.set('n', '<leader>qw', '<cmd>q<cr>', { desc = '[Q]uit [W]indow' })
+
+-- Tab keymaps
+vim.keymap.set('n', '<leader>tn', '<cmd>tabnew<cr>', { desc = '[T]ab [N]ew' })
+vim.keymap.set('n', '<leader>tc', '<cmd>tabc<cr>', { desc = '[T]ab [C]lose' })
+vim.keymap.set('n', '<leader>to', '<cmd>tabonly<cr>', { desc = '[T]ab close [O]thers' })
+
+-- Buffer keymaps
+vim.keymap.set('n', '<leader>bc', '<cmd>bd<cr>', { desc = '[B]uffer [C]lose' })
+vim.keymap.set('n', '<leader>bw', '<cmd>w<cr>', { desc = '[B]uffer [W]rite' })
+
+-- Lazy keymaps
+vim.keymap.set('n', '<leader>ll', '<cmd>Lazy<cr>', { desc = '[L]azy open' })
+vim.keymap.set('n', '<leader>lu', '<cmd>Lazy update<cr>', { desc = '[L]azy [U]pdate' })
+vim.keymap.set('n', '<leader>ls', '<cmd>Lazy sync<cr>', { desc = '[L]azy [S]ync' })
+vim.keymap.set('n', '<leader>lc', '<cmd>Lazy clean<cr>', { desc = '[L]azy [C]lean' })
+
+-- Window keymaps
+vim.keymap.set('n', '<leader>wv', '<C-w>v', { desc = '[W]indow split [V]ertical' })
+vim.keymap.set('n', '<leader>wh', '<C-w>s', { desc = '[W]indow split [H]orizontal' })
+vim.keymap.set('n', '<leader>wc', '<C-w>c', { desc = '[W]indow [C]lose' })
+vim.keymap.set('n', '<leader>wo', '<C-w>o', { desc = '[W]indow close [O]thers' })
+
 -- Diagnostic keymaps
-vim.keymap.set('n', '[d', vim.diagnostic.goto_prev)
-vim.keymap.set('n', ']d', vim.diagnostic.goto_next)
-vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Open floating diagnostic' })
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic list' })
+vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Prev diagnostic' })
+vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Next diagnostic' })
+vim.keymap.set('n', '[e', function() vim.diagnostic.goto_prev({ severity = vim.diagnostic.severity.ERROR }) end,
+  { desc = 'Prev error' })
+vim.keymap.set('n', ']e', function() vim.diagnostic.goto_next({ severity = vim.diagnostic.severity.ERROR }) end,
+  { desc = 'Next error' })
+vim.keymap.set('n', '[w', function() vim.diagnostic.goto_prev({ severity = vim.diagnostic.severity.WARN }) end,
+  { desc = 'Prev warning' })
+vim.keymap.set('n', ']w', function() vim.diagnostic.goto_next({ severity = vim.diagnostic.severity.WARN }) end,
+  { desc = 'Next warning' })
+vim.keymap.set('n', '<leader>de', vim.diagnostic.open_float, { desc = '[D]iagnostic float' })
+vim.keymap.set('n', '<leader>dq', vim.diagnostic.setloclist, { desc = '[D]iagnostic [Q]uickfix list' })
 
 
 -- [[ Highlight on yank ]]

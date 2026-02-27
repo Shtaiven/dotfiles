@@ -1,17 +1,24 @@
+local function git_root()
+  local root = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
+  return root ~= '' and root or vim.fn.getcwd()
+end
+
 return {
   {
     'nvim-telescope/telescope.nvim',
     branch = '0.1.x',
     dependencies = { 'nvim-lua/plenary.nvim' },
     keys = {
-      { '<leader>?', function() require('telescope.builtin').oldfiles() end, desc = '[?] Find recently opened files' },
-      { '<leader><space>', function() require('telescope.builtin').buffers() end, desc = '[ ] Find existing buffers' },
+      { '<leader><space>', function() require('telescope.builtin').find_files({ cwd = git_root(), hidden = true }) end, desc = 'Find Files' },
       { '<leader>/', function() require('telescope.builtin').current_buffer_fuzzy_find() end, desc = '[/] Fuzzily search in current buffer' },
-      { '<leader>sf', function() require('telescope.builtin').find_files() end, desc = '[S]earch [F]iles' },
-      { '<leader>sh', function() require('telescope.builtin').help_tags() end, desc = '[S]earch [H]elp' },
-      { '<leader>sw', function() require('telescope.builtin').grep_string() end, desc = '[S]earch current [W]ord' },
-      { '<leader>sg', function() require('telescope.builtin').live_grep() end, desc = '[S]earch by [G]rep' },
-      { '<leader>sd', function() require('telescope.builtin').diagnostics() end, desc = '[S]earch [D]iagnostics' },
+      { '<leader>ff', function() require('telescope.builtin').find_files({ cwd = git_root(), hidden = true }) end, desc = '[F]ind [F]iles' },
+      { '<leader>fF', function() require('telescope.builtin').find_files({ cwd = '~', hidden = true }) end, desc = '[F]ind [F]iles from home' },
+      { '<leader>fr', function() require('telescope.builtin').oldfiles() end, desc = '[F]ind [R]ecent files' },
+      { '<leader>fb', function() require('telescope.builtin').buffers() end, desc = '[F]ind [B]uffers' },
+      { '<leader>fh', function() require('telescope.builtin').help_tags() end, desc = '[F]ind [H]elp' },
+      { '<leader>fw', function() require('telescope.builtin').grep_string({ cwd = git_root() }) end, desc = '[F]ind current [W]ord' },
+      { '<leader>fg', function() require('telescope.builtin').live_grep({ cwd = git_root() }) end, desc = '[F]ind by [G]rep' },
+      { '<leader>fd', function() require('telescope.builtin').diagnostics() end, desc = '[F]ind [D]iagnostics' },
     },
     opts = {
       defaults = {
@@ -37,7 +44,7 @@ return {
     'nvim-telescope/telescope-file-browser.nvim',
     dependencies = { 'nvim-telescope/telescope.nvim', 'nvim-lua/plenary.nvim' },
     keys = {
-      { '<leader>b', function() require('telescope').extensions.file_browser.file_browser() end, desc = 'Toggle File [B]rowser' },
+      { '<leader>fe', function() require('telescope').extensions.file_browser.file_browser() end, desc = '[F]ile [E]xplorer' },
     },
     config = function()
       require('telescope').setup({

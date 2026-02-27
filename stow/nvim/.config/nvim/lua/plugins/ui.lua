@@ -17,6 +17,9 @@ return {
           lualine_a = {
             { 'mode', separator = { left = '', right = '▓▒░' } },
           },
+          lualine_c = {
+            { function() return vim.fn.fnamemodify(vim.fn.getcwd(), ':~') end },
+          },
           lualine_z = {
             { 'location', separator = { left = '░▒▓', right = '' } },
           },
