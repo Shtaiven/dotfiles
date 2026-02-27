@@ -17,12 +17,15 @@ return {
 					lualine_a = {
 						{ "mode", separator = { left = "", right = "▓▒░" } },
 					},
-					lualine_c = {
+					lualine_b = {
 						{
 							function()
 								return vim.fn.fnamemodify(vim.fn.getcwd(), ":~")
 							end,
 						},
+					},
+					lualine_c = {
+						{ "branch" },
 					},
 					lualine_z = {
 						{ "location", separator = { left = "░▒▓", right = "" } },

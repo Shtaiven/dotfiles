@@ -5,6 +5,9 @@ return {
 			{ "<leader>gs", "<cmd>Git<cr>", desc = "[G]it [S]tatus" },
 			{ "<leader>gb", "<cmd>Git blame<cr>", desc = "[G]it [B]lame" },
 			{ "<leader>gd", "<cmd>Gvdiffsplit<cr>", desc = "[G]it [D]iff" },
+			{ "<leader>gc", "<cmd>Telescope git_branches<cr>", desc = "[G]it [C]heckout branch" },
+			{ "<leader>ga", "<cmd>Telescope git_stash<cr>", desc = "[G]it stash [A]pply" },
+			{ "<leader>gp", "<cmd>Git stash pop<cr>", desc = "[G]it stash [P]op" },
 		},
 	},
 	"tpope/vim-rhubarb",
@@ -26,8 +29,8 @@ return {
 
 				map("]h", gs.next_hunk, "Next [H]unk")
 				map("[h", gs.prev_hunk, "Prev [H]unk")
-				map("<leader>gp", gs.preview_hunk, "[G]it [P]review hunk")
-				map("<leader>ga", gs.stage_hunk, "[G]it [A]dd (stage) hunk")
+				map("<leader>gl", gs.preview_hunk, "[G]it [L]ine diff")
+				map("<leader>gh", gs.stage_hunk, "[G]it stage [H]unk")
 				map("<leader>gu", gs.undo_stage_hunk, "[G]it [U]ndo stage hunk")
 			end,
 		},
