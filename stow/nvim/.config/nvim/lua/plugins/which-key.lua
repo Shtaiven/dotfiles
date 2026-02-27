@@ -12,7 +12,7 @@ return {
 			{ "<leader>f", group = "Find/Files" },
 			{ "<leader>l", group = "Lazy" },
 			{ "<leader>g", group = "Git" },
-			{ "<leader>d", group = "Document" },
+			{ "<leader>d", group = "Diagnostics" },
 			{ "<leader>w", group = "Window/Workspace" },
 			{ "<leader>c", group = "Code" },
 			{ "<leader>q", group = "Quit" },
