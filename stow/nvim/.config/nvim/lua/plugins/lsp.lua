@@ -65,6 +65,9 @@ return {
 			local capabilities = vim.lsp.protocol.make_client_capabilities()
 			capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
 
+			vim.keymap.set("n", "<leader>mm", "<cmd>Mason<cr>", { desc = "[M]ason open" })
+			vim.keymap.set("n", "<leader>mu", "<cmd>MasonUpdate<cr>", { desc = "[M]ason [U]pdate" })
+
 			require("mason").setup()
 
 			local mason_lspconfig = require("mason-lspconfig")
