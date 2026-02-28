@@ -36,7 +36,7 @@ return {
 						{
 							"buffers",
 							separator = { left = "", right = "" },
-							padding = 0,
+							padding = { left = 0, right = 1 },
 							draw_empty = true,
 							buffers_color = {
 								active = (function()
@@ -55,7 +55,7 @@ return {
 										c.foreground,
 										c.colors_override
 									)
-									return { fg = p.bg0[1], bg = p.grey2[1] }
+									return { fg = p.fg1[1], bg = p.bg_statusline3[1] }
 								end)(),
 							},
 							symbols = { alternate_file = "" },
@@ -82,7 +82,7 @@ return {
 										c.foreground,
 										c.colors_override
 									)
-									return { fg = p.bg0[1], bg = p.grey2[1] }
+									return { fg = p.fg1[1], bg = p.bg_statusline3[1] }
 								end)(),
 							},
 						},
