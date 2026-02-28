@@ -36,6 +36,7 @@ return {
 						{
 							"buffers",
 							separator = { left = "", right = "" },
+							padding = 0,
 							draw_empty = true,
 							buffers_color = {
 								active = (function()
