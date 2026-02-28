@@ -23,4 +23,13 @@ return {
     },
     "danilamihailov/beacon.nvim",
     { "lukas-reineke/virt-column.nvim", opts = {} },
+    {
+        "folke/todo-comments.nvim",
+        dependencies = { "nvim-lua/plenary.nvim" },
+        event = "VimEnter",
+        keys = {
+            { "<leader>ft", "<cmd>TodoTelescope<cr>", desc = "[F]ind [T]odos" },
+        },
+        opts = {},
+    },
 }
