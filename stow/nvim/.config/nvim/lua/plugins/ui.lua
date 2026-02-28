@@ -5,6 +5,11 @@ return {
 		"nvim-lualine/lualine.nvim",
 		cond = not using_vscode,
 		config = function()
+			local c = vim.fn["gruvbox_material#get_configuration"]()
+			local p = vim.fn["gruvbox_material#get_palette"](c.background, c.foreground, c.colors_override)
+
+			local mid = { bg = p.bg_statusline2[1], fg = p.fg1[1] }
+
 			require("lualine").setup({
 				options = {
 					icons_enabled = true,
@@ -25,7 +30,12 @@ return {
 						},
 					},
 					lualine_c = {
-						{ "branch" },
+						{ "branch", color = mid, separator = { right = "" } },
+					},
+					lualine_x = {
+						{ "encoding", color = mid, separator = { left = "" } },
+						{ "fileformat", color = mid },
+						{ "filetype", color = mid },
 					},
 					lualine_z = {
 						{ "location", separator = { left = "░▒▓", right = "" } },
@@ -39,24 +49,8 @@ return {
 							padding = { left = 0, right = 1 },
 							draw_empty = true,
 							buffers_color = {
-								active = (function()
-									local c = vim.fn["gruvbox_material#get_configuration"]()
-									local p = vim.fn["gruvbox_material#get_palette"](
-										c.background,
-										c.foreground,
-										c.colors_override
-									)
-									return { fg = p.bg0[1], bg = p.blue[1], gui = "bold" }
-								end)(),
-								inactive = (function()
-									local c = vim.fn["gruvbox_material#get_configuration"]()
-									local p = vim.fn["gruvbox_material#get_palette"](
-										c.background,
-										c.foreground,
-										c.colors_override
-									)
-									return { fg = p.fg1[1], bg = p.bg_statusline3[1] }
-								end)(),
+								active = { fg = p.bg0[1], bg = p.blue[1], gui = "bold" },
+								inactive = { fg = p.fg1[1], bg = p.bg_statusline3[1] },
 							},
 							symbols = { alternate_file = "" },
 						},
@@ -66,24 +60,8 @@ return {
 							"tabs",
 							separator = { left = "", right = "" },
 							tabs_color = {
-								active = (function()
-									local c = vim.fn["gruvbox_material#get_configuration"]()
-									local p = vim.fn["gruvbox_material#get_palette"](
-										c.background,
-										c.foreground,
-										c.colors_override
-									)
-									return { fg = p.bg0[1], bg = p.blue[1], gui = "bold" }
-								end)(),
-								inactive = (function()
-									local c = vim.fn["gruvbox_material#get_configuration"]()
-									local p = vim.fn["gruvbox_material#get_palette"](
-										c.background,
-										c.foreground,
-										c.colors_override
-									)
-									return { fg = p.fg1[1], bg = p.bg_statusline3[1] }
-								end)(),
+								active = { fg = p.bg0[1], bg = p.blue[1], gui = "bold" },
+								inactive = { fg = p.fg1[1], bg = p.bg_statusline3[1] },
 							},
 						},
 					},
