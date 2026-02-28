@@ -9,6 +9,7 @@ config.check_for_updates = false
 
 -- Style
 config.font = wezterm.font("FiraCode Nerd Font Mono")
+config.harfbuzz_features = { "calt=0", "clig=0", "liga=0" }
 config.font_size = 11.0
 config.underline_position = "200%"
 config.color_scheme = "Gruvbox Material Dark"
