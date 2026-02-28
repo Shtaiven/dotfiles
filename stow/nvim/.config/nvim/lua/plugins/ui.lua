@@ -10,7 +10,7 @@ return {
 					icons_enabled = true,
 					theme = "gruvbox-material",
 					globalstatus = true,
-					component_separators = "",
+					component_separators = { left = "   ", right = "   " },
 					section_separators = { left = "▓▒░", right = "░▒▓" },
 				},
 				sections = {
@@ -35,7 +35,7 @@ return {
 					lualine_a = {
 						{
 							"buffers",
-							separator = { left = "", right = "▓▒░" },
+							separator = { left = "", right = "" },
 							draw_empty = true,
 							buffers_color = {
 								active = (function()
@@ -61,7 +61,30 @@ return {
 						},
 					},
 					lualine_z = {
-						{ "tabs", separator = { left = "░▒▓", right = "" } },
+						{
+							"tabs",
+							separator = { left = "", right = "" },
+							tabs_color = {
+								active = (function()
+									local c = vim.fn["gruvbox_material#get_configuration"]()
+									local p = vim.fn["gruvbox_material#get_palette"](
+										c.background,
+										c.foreground,
+										c.colors_override
+									)
+									return { fg = p.bg0[1], bg = p.blue[1], gui = "bold" }
+								end)(),
+								inactive = (function()
+									local c = vim.fn["gruvbox_material#get_configuration"]()
+									local p = vim.fn["gruvbox_material#get_palette"](
+										c.background,
+										c.foreground,
+										c.colors_override
+									)
+									return { fg = p.bg0[1], bg = p.grey2[1] }
+								end)(),
+							},
+						},
 					},
 				},
 				extensions = {
