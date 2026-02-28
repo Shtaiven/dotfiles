@@ -32,6 +32,7 @@ return {
                 map("<leader>gl", gs.preview_hunk, "[G]it [L]ine diff")
                 map("<leader>gh", gs.stage_hunk, "[G]it stage [H]unk")
                 map("<leader>gu", gs.undo_stage_hunk, "[G]it [U]ndo stage hunk")
+                map("<leader>gr", gs.reset_hunk, "[G]it [R]eset hunk")
             end,
         },
     },
