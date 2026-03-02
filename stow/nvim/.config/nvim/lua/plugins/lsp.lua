@@ -54,6 +54,10 @@ return {
                     print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
                 end, "[W]orkspace [L]ist Folders")
 
+                nmap("<leader>ch", function()
+                    vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = bufnr }), { bufnr = bufnr })
+                end, "[C]ode Inlay [H]ints")
+
                 nmap("<leader>cf", function()
                     vim.lsp.buf.format()
                 end, "[C]ode [F]ormat")
@@ -68,7 +72,11 @@ return {
             vim.keymap.set("n", "<leader>mm", "<cmd>Mason<cr>", { desc = "[M]ason open" })
             vim.keymap.set("n", "<leader>mu", "<cmd>MasonUpdate<cr>", { desc = "[M]ason [U]pdate" })
 
-            require("mason").setup()
+            require("mason").setup({
+                ui = {
+                    border = "rounded",
+                },
+            })
 
             local mason_lspconfig = require("mason-lspconfig")
             mason_lspconfig.setup({
@@ -77,7 +85,12 @@ return {
 
             vim.lsp.config("*", {
                 capabilities = capabilities,
-                on_attach = on_attach,
+            })
+
+            vim.api.nvim_create_autocmd("LspAttach", {
+                callback = function(args)
+                    on_attach(vim.lsp.get_client_by_id(args.data.client_id), args.buf)
+                end,
             })
 
             for server_name, server_settings in pairs(servers) do
