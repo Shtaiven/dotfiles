@@ -80,6 +80,48 @@ return {
                 end,
                 desc = "[F]ind [D]iagnostics",
             },
+            {
+                "<leader>fk",
+                function()
+                    require("telescope.builtin").keymaps()
+                end,
+                desc = "[F]ind [K]eymaps",
+            },
+            {
+                "<leader>f:",
+                function()
+                    require("telescope.builtin").command_history()
+                end,
+                desc = "[F]ind command history",
+            },
+            {
+                "<leader>f\"",
+                function()
+                    require("telescope.builtin").registers()
+                end,
+                desc = "[F]ind registers",
+            },
+            {
+                "<leader>fp",
+                function()
+                    require("telescope.builtin").resume()
+                end,
+                desc = "[F]ind [P]revious (resume)",
+            },
+            {
+                "<leader>gc",
+                function()
+                    require("telescope.builtin").git_commits()
+                end,
+                desc = "[G]it [C]ommits",
+            },
+            {
+                "<leader>gS",
+                function()
+                    require("telescope.builtin").git_status()
+                end,
+                desc = "[G]it [S]tatus (telescope)",
+            },
         },
         opts = {
             defaults = {

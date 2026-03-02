@@ -6,6 +6,7 @@ return {
     keys = {
         { "<leader>nh", "<cmd>Noice history<cr>", desc = "[N]otification [H]istory" },
         { "<leader>nl", "<cmd>Noice last<cr>", desc = "[N]otification [L]ast" },
+        { "<leader>nd", "<cmd>Noice dismiss<cr>", desc = "[N]otification [D]ismiss" },
     },
     opts = {
         cmdline = {

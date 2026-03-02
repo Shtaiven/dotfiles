@@ -162,8 +162,11 @@ end, { desc = "Prev warning" })
 vim.keymap.set("n", "]w", function()
     vim.diagnostic.goto_next({ severity = vim.diagnostic.severity.WARN })
 end, { desc = "Next warning" })
-vim.keymap.set("n", "<leader>de", vim.diagnostic.open_float, { desc = "[D]iagnostic float" })
-vim.keymap.set("n", "<leader>dq", vim.diagnostic.setloclist, { desc = "[D]iagnostic [Q]uickfix list" })
+vim.keymap.set("n", "<leader>ce", vim.diagnostic.open_float, { desc = "[C]ode [E]rror float" })
+vim.keymap.set("n", "<leader>cq", vim.diagnostic.setloclist, { desc = "[C]ode [Q]uickfix list" })
+vim.keymap.set("n", "<leader>ci", function()
+    vim.diagnostic.config({ virtual_text = not vim.diagnostic.config().virtual_text })
+end, { desc = "[C]ode [I]nline diagnostics toggle" })
 
 -- [[ Highlight on yank ]]
 -- See `:help vim.highlight.on_yank()`

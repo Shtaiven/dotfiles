@@ -5,7 +5,7 @@ return {
             { "<leader>gs", "<cmd>Git<cr>", desc = "[G]it [S]tatus" },
             { "<leader>gb", "<cmd>Git blame<cr>", desc = "[G]it [B]lame" },
             { "<leader>gd", "<cmd>Gvdiffsplit<cr>", desc = "[G]it [D]iff" },
-            { "<leader>gc", "<cmd>Telescope git_branches<cr>", desc = "[G]it [C]heckout branch" },
+            { "<leader>go", "<cmd>Telescope git_branches<cr>", desc = "[G]it check[O]ut branch" },
             { "<leader>ga", "<cmd>Telescope git_stash<cr>", desc = "[G]it stash [A]pply" },
             { "<leader>gp", "<cmd>Git stash pop<cr>", desc = "[G]it stash [P]op" },
         },
@@ -33,6 +33,10 @@ return {
                 map("<leader>gh", gs.stage_hunk, "[G]it stage [H]unk")
                 map("<leader>gu", gs.undo_stage_hunk, "[G]it [U]ndo stage hunk")
                 map("<leader>gr", gs.reset_hunk, "[G]it [R]eset hunk")
+                map("<leader>gR", gs.reset_buffer, "[G]it [R]eset buffer")
+                map("<leader>gB", gs.blame_line, "[G]it [B]lame line")
+                map("<leader>gt", gs.toggle_current_line_blame, "[G]it [T]oggle line blame")
+                map("<leader>gD", gs.diffthis, "[G]it [D]iff this")
             end,
         },
     },
