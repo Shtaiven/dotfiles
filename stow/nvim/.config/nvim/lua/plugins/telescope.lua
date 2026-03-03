@@ -1,6 +1,9 @@
 local function git_root()
     local root = vim.fn.systemlist("git rev-parse --show-toplevel")[1]
-    return root ~= "" and root or vim.fn.getcwd()
+    if vim.v.shell_error ~= 0 then
+        return vim.fn.getcwd()
+    end
+    return root
 end
 
 return {

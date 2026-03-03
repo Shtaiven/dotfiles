@@ -30,10 +30,10 @@ return {
                         },
                     },
                     lualine_c = {
-                        { "branch", color = mid, separator = { right = "" } },
+                        { "branch", color = mid, separator = { right = "" }, draw_empty = true },
                     },
                     lualine_x = {
-                        { "encoding", color = mid, separator = { left = "" } },
+                        { "encoding", color = mid, separator = { left = "" }, draw_empty = true },
                         { "fileformat", color = mid },
                         { "filetype", color = mid },
                     },
