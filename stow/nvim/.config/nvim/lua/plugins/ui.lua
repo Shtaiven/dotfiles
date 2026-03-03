@@ -72,6 +72,12 @@ return {
                     "nvim-tree",
                 },
             })
+
+            vim.api.nvim_create_autocmd("DirChanged", {
+                callback = function()
+                    require("lualine").refresh()
+                end,
+            })
         end,
     },
     {
