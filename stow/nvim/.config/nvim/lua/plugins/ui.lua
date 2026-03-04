@@ -47,12 +47,12 @@ return {
                             "buffers",
                             separator = { left = "", right = "" },
                             padding = { left = 0, right = 1 },
-                            draw_empty = true,
                             buffers_color = {
                                 active = { fg = p.bg0[1], bg = p.blue[1], gui = "bold" },
                                 inactive = { fg = p.fg1[1], bg = p.bg_statusline3[1] },
                             },
                             symbols = { alternate_file = "" },
+                            filetype_names = { oil = "Oil" },
                         },
                     },
                     lualine_z = {
@@ -68,8 +68,6 @@ return {
                 },
                 extensions = {
                     "fugitive",
-                    "fzf",
-                    "nvim-tree",
                 },
             })
 
