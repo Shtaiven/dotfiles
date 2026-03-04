@@ -10,10 +10,3 @@ if [[ ( "$SHLVL" -eq 1 && ! -o LOGIN ) && -s "${ZDOTDIR:-$HOME}/.zprofile" ]]; t
   source "${ZDOTDIR:-$HOME}/.zprofile"
 fi
 
-#
-# cargo sourcing
-#
-
-if [[ -f "$HOME/.cargo/env" ]]; then
-  . "$HOME/.cargo/env"
-fi

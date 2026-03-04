@@ -65,30 +65,8 @@ if (( $#commands[(i)lesspipe(|.sh)] )); then
   export LESSOPEN="| /usr/bin/env $commands[(i)lesspipe(|.sh)] %s 2>&-"
 fi
 
-#
-# pyenv
-#
-
-if (( $+commands[pyenv] )); then
-  export PYENV_ROOT="$HOME/.pyenv"
-  export PATH="$PYENV_ROOT/bin:$PATH"
-  eval "$(pyenv init --path)"
-fi
-
-#
-# Vulkan fix for nvidia gpu
-#
-
-export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/nvidia_icd.json"
-
-#
-# Use Kvantum for Qt theme
-#
-
-# export QT_STYLE_OVERRIDE=kvantum
-
-#
-# Use gtk style for Qt theme
-#
-
-export QT_QPA_PLATFORMTHEME=qt5ct
+# Shared login environment (portable sh)
+for f in "$HOME"/.profile.d/*.sh(N); do
+  source "$f"
+done
+unset f
