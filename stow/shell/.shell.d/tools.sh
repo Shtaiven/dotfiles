@@ -19,6 +19,7 @@ fi
 # fzf shell integration (key bindings + completion fallback)
 # Must run before carapace so carapace's complete -D takes precedence when present
 if command -v fzf >/dev/null 2>&1; then
+  export FZF_DEFAULT_OPTS="--color=16"
   if [ -n "$ZSH_VERSION" ]; then
     eval "$(fzf --zsh 2>/dev/null)"
   elif [ -n "$BASH_VERSION" ]; then
