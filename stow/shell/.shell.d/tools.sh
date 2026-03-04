@@ -22,8 +22,16 @@ command -v starship >/dev/null 2>&1 && eval "$(starship init $_shell)"
 # zoxide
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init $_shell)"
 
-# carapace
-command -v carapace >/dev/null 2>&1 && source <(carapace _carapace "$_shell")
+# carapace (cached)
+if command -v carapace >/dev/null 2>&1; then
+  _carapace_cache="${XDG_CACHE_HOME:-$HOME/.cache}/carapace_init.$_shell"
+  if [ ! -f "$_carapace_cache" ] || [ "$(command -v carapace)" -nt "$_carapace_cache" ]; then
+    mkdir -p "${_carapace_cache%/*}"
+    carapace _carapace "$_shell" > "$_carapace_cache"
+  fi
+  . "$_carapace_cache"
+  unset _carapace_cache
+fi
 
 unset _shell
 
@@ -39,7 +47,11 @@ if command -v conda >/dev/null 2>&1; then
   eval "$(conda config --set changeps1 False)"
 fi
 
-# nvm
+# nvm (lazy-loaded)
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  nvm()  { unset -f nvm node npm npx; . "$NVM_DIR/nvm.sh"; nvm "$@"; }
+  node() { unset -f nvm node npm npx; . "$NVM_DIR/nvm.sh"; node "$@"; }
+  npm()  { unset -f nvm node npm npx; . "$NVM_DIR/nvm.sh"; npm "$@"; }
+  npx()  { unset -f nvm node npm npx; . "$NVM_DIR/nvm.sh"; npx "$@"; }
+fi
