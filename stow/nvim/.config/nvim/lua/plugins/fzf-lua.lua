@@ -41,6 +41,7 @@ return {
 
             require("fzf-lua").setup({
                 "telescope",
+                fzf_colors = true,
                 files = {
                     actions = {
                         ["default"] = dir_or_edit,
