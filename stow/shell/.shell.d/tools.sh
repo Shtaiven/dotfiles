@@ -16,6 +16,16 @@ if command -v fd >/dev/null 2>&1; then
   }
 fi
 
+# fzf shell integration (key bindings + completion fallback)
+# Must run before carapace so carapace's complete -D takes precedence when present
+if command -v fzf >/dev/null 2>&1; then
+  if [ -n "$ZSH_VERSION" ]; then
+    eval "$(fzf --zsh 2>/dev/null)"
+  elif [ -n "$BASH_VERSION" ]; then
+    eval "$(fzf --bash 2>/dev/null)"
+  fi
+fi
+
 # starship
 command -v starship >/dev/null 2>&1 && eval "$(starship init $_shell)"
 

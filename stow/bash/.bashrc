@@ -23,11 +23,6 @@ xterm-kitty)
   ;;
 esac
 
-# Alias definitions
-if [[ -f "$HOME/.bash_aliases" ]]; then
-  source "$HOME/.bash_aliases"
-fi
-
 # Programmable completion
 if ! shopt -oq posix; then
   if [[ -f /usr/share/bash-completion/bash_completion ]]; then
