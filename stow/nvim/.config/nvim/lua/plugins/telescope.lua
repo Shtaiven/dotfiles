@@ -59,6 +59,9 @@ return {
         lazy = false,
         opts = {
             default_file_explorer = true,
+            buf_options = {
+                buflisted = true,
+            },
         },
     },
 }
