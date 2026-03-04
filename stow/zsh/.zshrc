@@ -11,8 +11,12 @@ setopt NO_NOMATCH
 
 # Bootstrap Prezto if not present
 if [[ ! -d "${ZDOTDIR:-$HOME}/.zprezto" ]]; then
-  echo "Prezto not found. Installing..."
-  git clone --recursive https://github.com/sorin-ionescu/prezto.git "${ZDOTDIR:-$HOME}/.zprezto"
+  if ! command -v git &>/dev/null; then
+    echo "Prezto not found and git is not installed. Please install git to bootstrap Prezto."
+  else
+    echo "Prezto not found. Installing..."
+    git clone --recursive https://github.com/sorin-ionescu/prezto.git "${ZDOTDIR:-$HOME}/.zprezto"
+  fi
 fi
 
 # Source Prezto

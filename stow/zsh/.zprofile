@@ -15,11 +15,9 @@ if [[ "$OSTYPE" == darwin* ]]; then
 fi
 
 #
-# Editors
+# Pager
 #
 
-export EDITOR='nvim'
-export VISUAL='nvim'
 export PAGER='less'
 
 #

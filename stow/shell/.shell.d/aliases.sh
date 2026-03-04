@@ -26,13 +26,11 @@ if [ "$TERM" = "xterm-kitty" ]; then
 fi
 
 # peon-ping quick controls
-alias peon="bash /home/steven/.claude/hooks/peon-ping/peon.sh"
+[ -f /home/steven/.claude/hooks/peon-ping/peon.sh ] && alias peon="bash /home/steven/.claude/hooks/peon-ping/peon.sh"
 [ -f /home/steven/.claude/hooks/peon-ping/completions.bash ] && source /home/steven/.claude/hooks/peon-ping/completions.bash
 
 # nvim
 if command -v nvim >/dev/null 2>&1; then
-  export EDITOR=nvim
-  export VISUAL=nvim
   alias vi=nvim
   alias vim=nvim
 fi

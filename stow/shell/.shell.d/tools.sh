@@ -39,7 +39,7 @@ if command -v pyenv >/dev/null 2>&1; then
   _pyenv_cache="${XDG_CACHE_HOME:-$HOME/.cache}/pyenv_init.$_shell"
   if [ ! -f "$_pyenv_cache" ] || [ "$(command -v pyenv)" -nt "$_pyenv_cache" ]; then
     mkdir -p "${_pyenv_cache%/*}"
-    { pyenv init -; pyenv virtualenv-init -; } > "$_pyenv_cache"
+    { pyenv init -; command pyenv virtualenv-init - 2>/dev/null; } > "$_pyenv_cache"
   fi
   . "$_pyenv_cache"
   unset _pyenv_cache

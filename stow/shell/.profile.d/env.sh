@@ -8,6 +8,15 @@
 [ -d "$HOME/bin" ] && PATH="$HOME/bin:$PATH"
 export PATH
 
+# Editor
+if command -v nvim >/dev/null 2>&1; then
+  export EDITOR=nvim
+  export VISUAL=nvim
+else
+  export EDITOR=vi
+  export VISUAL=vi
+fi
+
 # pyenv
 if [ -d "$HOME/.pyenv" ]; then
   export PYENV_ROOT="$HOME/.pyenv"
