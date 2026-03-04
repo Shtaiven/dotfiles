@@ -20,11 +20,39 @@ fi
 # Must run before carapace so carapace's complete -D takes precedence when present
 if command -v fzf >/dev/null 2>&1; then
   export FZF_DEFAULT_OPTS="--color=16"
+  export FZF_ALT_C_OPTS="--preview 'ls -la {}'"
+
+  # bat preview for CTRL+T file browsing
+  if command -v bat >/dev/null 2>&1; then
+    export FZF_CTRL_T_OPTS="--preview 'bat --color=always --plain {}'"
+  elif command -v batcat >/dev/null 2>&1; then
+    export FZF_CTRL_T_OPTS="--preview 'batcat --color=always --plain {}'"
+  fi
+
   if [ -n "$ZSH_VERSION" ]; then
     eval "$(fzf --zsh 2>/dev/null)"
   elif [ -n "$BASH_VERSION" ]; then
     eval "$(fzf --bash 2>/dev/null)"
   fi
+fi
+
+# rgf — interactive ripgrep + fzf with bat preview
+if command -v rg >/dev/null 2>&1 && command -v fzf >/dev/null 2>&1; then
+  rgf() {
+    local _preview
+    if command -v bat >/dev/null 2>&1; then
+      _preview='bat --color=always --plain --highlight-line {2} {1}'
+    elif command -v batcat >/dev/null 2>&1; then
+      _preview='batcat --color=always --plain --highlight-line {2} {1}'
+    else
+      _preview='sed -n {2}p {1}'
+    fi
+    rg --color=always --line-number --no-heading "${@:-}" |
+      fzf --ansi \
+          --delimiter=: \
+          --preview "$_preview" \
+          --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
+  }
 fi
 
 # starship

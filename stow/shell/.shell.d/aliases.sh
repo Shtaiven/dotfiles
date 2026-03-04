@@ -12,12 +12,15 @@ if command -v flatpak >/dev/null 2>&1 && flatpak info it.mijorus.gearlever >/dev
   alias gearlever='flatpak run it.mijorus.gearlever'
 fi
 
-# bat
+# bat — normalize to 'bat' (Debian/Ubuntu ship it as batcat)
+command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1 && alias bat=batcat
+
 if command -v bat >/dev/null 2>&1 || command -v batcat >/dev/null 2>&1; then
+  if command -v bat >/dev/null 2>&1; then _bat_bin=bat; else _bat_bin=batcat; fi
   export BAT_PAGER="less $LESS"
   alias cat="bat --plain"
-  # Debian/Ubuntu ship bat as batcat
-  command -v bat >/dev/null 2>&1 || alias bat=batcat
+  export MANPAGER="sh -c 'col -bx | $_bat_bin --language=man --plain'"
+  unset _bat_bin
 fi
 
 # kitty ssh
