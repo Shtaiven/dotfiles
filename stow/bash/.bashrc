@@ -32,6 +32,9 @@ if ! shopt -oq posix; then
   fi
 fi
 
+# Secrets (not tracked in dotfiles)
+[[ -f "$HOME/.secrets" ]] && source "$HOME/.secrets"
+
 # Shared shell config (portable bash/zsh)
 if [[ -d "$HOME/.shell.d" ]]; then
   for f in "$HOME"/.shell.d/*.sh; do

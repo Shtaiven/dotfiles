@@ -1,0 +1,82 @@
+# Ensure pixi bin is on PATH (may not be set in non-login shells)
+[[ -d "$HOME/.pixi/bin" && ":$PATH:" != *":$HOME/.pixi/bin:"* ]] && export PATH="$HOME/.pixi/bin:$PATH"
+
+# sr bash completion
+eval "$(_SR_COMPLETE=bash_source sr)"
+
+# sr dotfiles
+source ~/dots/setup.bash
+
+# alias for sr
+SR_DOTS_DIR="$HOME/dots"
+SR_INSTALLATION_TOOLS_DIR="$HOME/src/sr_installation_tools"
+alias sr-update="( cd $SR_DOTS_DIR && git pull );pixi global install --force-reinstall caty sr_installation_tools -c https://conda.smart-robotics.nl/get/smart-robotics -c conda-forge"
+
+# aliases for sr ides
+alias sr-clion='tmux new -d sr run clion \$CONDA_DEFAULT_ENV'
+alias sr-code='tmux new -d sr run code \$CONDA_DEFAULT_ENV'
+alias sr-pycharm='tmux new -d sr run pycharm \$CONDA_DEFAULT_ENV'
+
+# >>> mamba initialize >>>
+# !! Contents within this block are managed by 'mamba init' !!
+export MAMBA_EXE="/home/steven/.local/bin/micromamba";
+export MAMBA_ROOT_PREFIX="/home/steven/micromamba";
+__mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__mamba_setup"
+else
+    if [ -f "/home/steven/micromamba/etc/profile.d/micromamba.sh" ]; then
+        . "/home/steven/micromamba/etc/profile.d/micromamba.sh"
+    else
+        export  PATH="/home/steven/micromamba/bin:$PATH"  # extra space after export prevents interference from conda init
+    fi
+fi
+unset __mamba_setup
+# <<< mamba initialize <<<
+
+function yes_or_no {
+    if [[ -n "$SKIP_ASK" ]] ; then return 0; fi
+    while true; do
+        echo -e "$* [y/n]: "
+        read -r yn
+        case $yn in
+            [Yy]*) return 0  ;;
+            [Nn]*) echo "No" ; return  1 ;;
+        esac
+    done
+}
+
+publish-rn-link ()
+{
+    local TAG;
+    local FILE;
+    local remote;
+    local text;
+    TAG=$(git describe --exact-match --tags);
+    FILE=$(git show --name-only HEAD~ | tail -n1);
+    commit=0
+    while ! yes_or_no "Is ${FILE} the changelog"; do
+        FILE=$(git show --name-only HEAD~${commit} | tail -n1);
+        commit=$(($commit + 1))
+    done
+    remote=$(git remote get-url origin);
+    remote=${remote/git@git.smart-robotics.nl:/https:\/\/git.smart-robotics.nl\/};
+    remote=${remote%.git};
+
+    text="<${remote}/-/blob/${TAG}/${FILE} | ${remote##*/}@${TAG}>"
+    if [[ -n "$1" ]] ; then
+       text="${text} ($1)"
+    fi
+    text="${text} by $(git config user.name)"
+    if yes_or_no "Post ${text} to #release_tags?"
+        then
+          curl -X POST -H 'Content-type: application/json' --data "{'text' : '${text}'  } " "$SR_SLACK_WEBHOOK_URL"
+    fi
+}
+
+# sr-studio-analyzer
+SR_STUDIO_ANALYZER_DIR="$HOME/workspaces/sr-studio"
+sr-studio-analyzer () (
+    cd "$SR_STUDIO_ANALYZER_DIR"
+    sr run rosrun sr_studio analyzer "$@"
+)

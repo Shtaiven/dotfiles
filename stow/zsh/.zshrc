@@ -24,6 +24,9 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
 
+# Secrets (not tracked in dotfiles)
+[[ -f "$HOME/.secrets" ]] && source "$HOME/.secrets"
+
 # Source shared shell config (portable bash/zsh)
 for f in "$HOME"/.shell.d/*.sh(N); do
   source "$f"

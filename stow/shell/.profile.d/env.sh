@@ -10,18 +10,18 @@ export PATH
 
 # Editor
 if command -v nvim >/dev/null 2>&1; then
-  export EDITOR=nvim
-  export VISUAL=nvim
+	export EDITOR=nvim
+	export VISUAL=nvim
 else
-  export EDITOR=vi
-  export VISUAL=vi
+	export EDITOR=vi
+	export VISUAL=vi
 fi
 
 # pyenv
 if [ -d "$HOME/.pyenv" ]; then
-  export PYENV_ROOT="$HOME/.pyenv"
-  export PATH="$PYENV_ROOT/bin:$PATH"
-  command -v pyenv >/dev/null 2>&1 && eval "$(pyenv init --path)"
+	export PYENV_ROOT="$HOME/.pyenv"
+	export PATH="$PYENV_ROOT/bin:$PATH"
+	command -v pyenv >/dev/null 2>&1 && eval "$(pyenv init --path)"
 fi
 
 # cargo
