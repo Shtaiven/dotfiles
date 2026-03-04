@@ -27,7 +27,7 @@ if command -v carapace >/dev/null 2>&1; then
   _carapace_cache="${XDG_CACHE_HOME:-$HOME/.cache}/carapace_init.$_shell"
   if [ ! -f "$_carapace_cache" ] || [ "$(command -v carapace)" -nt "$_carapace_cache" ]; then
     mkdir -p "${_carapace_cache%/*}"
-    carapace _carapace "$_shell" > "$_carapace_cache"
+    carapace _carapace "$_shell" >"$_carapace_cache"
   fi
   . "$_carapace_cache"
   unset _carapace_cache
@@ -39,7 +39,10 @@ if command -v pyenv >/dev/null 2>&1; then
   _pyenv_cache="${XDG_CACHE_HOME:-$HOME/.cache}/pyenv_init.$_shell"
   if [ ! -f "$_pyenv_cache" ] || [ "$(command -v pyenv)" -nt "$_pyenv_cache" ]; then
     mkdir -p "${_pyenv_cache%/*}"
-    { pyenv init -; command pyenv virtualenv-init - 2>/dev/null; } > "$_pyenv_cache"
+    {
+      pyenv init -
+      command pyenv virtualenv-init - 2>/dev/null
+    } >"$_pyenv_cache"
   fi
   . "$_pyenv_cache"
   unset _pyenv_cache
@@ -55,8 +58,24 @@ fi
 # nvm (lazy-loaded)
 export NVM_DIR="$HOME/.nvm"
 if [ -s "$NVM_DIR/nvm.sh" ]; then
-  nvm()  { unset -f nvm node npm npx; . "$NVM_DIR/nvm.sh"; nvm "$@"; }
-  node() { unset -f nvm node npm npx; . "$NVM_DIR/nvm.sh"; node "$@"; }
-  npm()  { unset -f nvm node npm npx; . "$NVM_DIR/nvm.sh"; npm "$@"; }
-  npx()  { unset -f nvm node npm npx; . "$NVM_DIR/nvm.sh"; npx "$@"; }
+  nvm() {
+    unset -f nvm node npm npx
+    . "$NVM_DIR/nvm.sh"
+    nvm "$@"
+  }
+  node() {
+    unset -f nvm node npm npx
+    . "$NVM_DIR/nvm.sh"
+    node "$@"
+  }
+  npm() {
+    unset -f nvm node npm npx
+    . "$NVM_DIR/nvm.sh"
+    npm "$@"
+  }
+  npx() {
+    unset -f nvm node npm npx
+    . "$NVM_DIR/nvm.sh"
+    npx "$@"
+  }
 fi
