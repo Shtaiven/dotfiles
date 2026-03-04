@@ -6,27 +6,16 @@ local function git_root()
     return root
 end
 
-local home = vim.fn.expand("~")
-
-local function fzf_files(opts)
-    opts = opts or {}
-    local cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
-    if cwd == home then
-        opts.cmd = "fd --type f --max-depth 5"
-    end
-    require("fzf-lua").files(opts)
-end
-
 return {
     {
         "ibhagwan/fzf-lua",
         cond = not vim.g.vscode,
         dependencies = { "nvim-tree/nvim-web-devicons" },
         keys = {
-            { "<leader><space>", function() fzf_files({ cwd = git_root(), fd_opts = "--hidden" }) end, desc = "Find Files" },
+            { "<leader><space>", function() require("fzf-lua").files({ cwd = git_root(), fd_opts = "--hidden" }) end, desc = "Find Files" },
             { "<leader>/", function() require("fzf-lua").lgrep_curbuf() end, desc = "[/] Fuzzily search in current buffer" },
-            { "<leader>ff", function() fzf_files({ cwd = git_root(), fd_opts = "--hidden" }) end, desc = "[F]ind [F]iles" },
-            { "<leader>fF", function() fzf_files({ cwd = "~", fd_opts = "--hidden" }) end, desc = "[F]ind [F]iles from home" },
+            { "<leader>ff", function() require("fzf-lua").files({ cwd = git_root(), fd_opts = "--hidden" }) end, desc = "[F]ind [F]iles" },
+            { "<leader>fF", function() require("fzf-lua").files({ cwd = "~", fd_opts = "--hidden" }) end, desc = "[F]ind [F]iles from home" },
             { "<leader>fr", function() require("fzf-lua").oldfiles() end, desc = "[F]ind [R]ecent files" },
             { "<leader>fb", function() require("fzf-lua").buffers() end, desc = "[F]ind [B]uffers" },
             { "<leader>fh", function() require("fzf-lua").helptags() end, desc = "[F]ind [H]elp" },
@@ -41,7 +30,23 @@ return {
             { "<leader>gS", function() require("fzf-lua").git_status() end, desc = "[G]it [S]tatus" },
         },
         config = function()
-            require("fzf-lua").setup({ "telescope" })
+            local function dir_or_edit(selected, opts)
+                local path = require("fzf-lua").path.entry_to_file(selected[1], opts).path
+                if vim.fn.isdirectory(path) == 1 then
+                    require("oil").open(path)
+                else
+                    require("fzf-lua").actions.file_edit(selected, opts)
+                end
+            end
+
+            require("fzf-lua").setup({
+                "telescope",
+                files = {
+                    actions = {
+                        ["default"] = dir_or_edit,
+                    },
+                },
+            })
         end,
     },
     {
