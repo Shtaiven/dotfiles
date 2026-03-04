@@ -10,6 +10,7 @@ This file tracks all work to be done
 * check for zprezto updates (or pin in in the repo)
 * Install locally using pixi
 * show images in nvim, nnn, fzf when in wezterm
+* update README installation
 
 ## Installable applications
 
