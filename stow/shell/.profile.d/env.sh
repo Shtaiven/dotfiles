@@ -1,6 +1,13 @@
 # Portable login environment — sourced by both .profile and .zprofile
 # Must be POSIX sh compliant
 
+# Common PATH
+[ -d "$HOME/.pixi/bin" ] && PATH="$HOME/.pixi/bin:$PATH"
+[ -d "$HOME/.local/bin" ] && PATH="$HOME/.local/bin:$PATH"
+[ -d "$HOME/local/bin" ] && PATH="$HOME/local/bin:$PATH"
+[ -d "$HOME/bin" ] && PATH="$HOME/bin:$PATH"
+export PATH
+
 # pyenv
 if [ -d "$HOME/.pyenv" ]; then
   export PYENV_ROOT="$HOME/.pyenv"
@@ -13,9 +20,6 @@ fi
 
 # Vulkan fix for nvidia gpu
 export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/nvidia_icd.json"
-
-# Qt theme
-export QT_QPA_PLATFORMTHEME=qt5ct
 
 # envman
 [ -s "$HOME/.config/envman/load.sh" ] && . "$HOME/.config/envman/load.sh"

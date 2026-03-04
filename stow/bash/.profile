@@ -7,15 +7,6 @@ if [ -n "$BASH_VERSION" ]; then
     fi
 fi
 
-# set PATH so it includes user's private bin if it exists
-if [ -d "$HOME/bin" ]; then
-    PATH="$HOME/bin:$PATH"
-fi
-
-if [ -d "$HOME/.local/bin" ]; then
-    PATH="$HOME/.local/bin:$PATH"
-fi
-
 # Shared login environment (portable sh)
 if [ -d "$HOME/.profile.d" ]; then
   for f in "$HOME"/.profile.d/*.sh; do

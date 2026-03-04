@@ -6,8 +6,8 @@
 #   Steven Eisinger <steven.a.eisinger@gmail.com>
 #
 
-# pixi
-export PATH="/home/steven/.pixi/bin:$PATH"
+# Bash-style globbing: pass unmatched globs through as literals
+setopt NO_NOMATCH
 
 # Bootstrap Prezto if not present
 if [[ ! -d "${ZDOTDIR:-$HOME}/.zprezto" ]]; then

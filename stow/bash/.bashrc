@@ -37,9 +37,6 @@ if ! shopt -oq posix; then
   fi
 fi
 
-# Custom user scripts
-PATH=$PATH:~/local/bin
-
 # Shared shell config (portable bash/zsh)
 if [[ -d "$HOME/.shell.d" ]]; then
   for f in "$HOME"/.shell.d/*.sh; do
