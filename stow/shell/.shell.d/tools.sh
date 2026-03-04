@@ -33,14 +33,19 @@ if command -v carapace >/dev/null 2>&1; then
   unset _carapace_cache
 fi
 
-unset _shell
-
-# pyenv + pyenv-virtualenv
+# pyenv + pyenv-virtualenv (cached)
 if command -v pyenv >/dev/null 2>&1; then
   export PYENV_VIRTUALENV_DISABLE_PROMPT=1
-  eval "$(pyenv init -)"
-  eval "$(pyenv virtualenv-init -)"
+  _pyenv_cache="${XDG_CACHE_HOME:-$HOME/.cache}/pyenv_init.$_shell"
+  if [ ! -f "$_pyenv_cache" ] || [ "$(command -v pyenv)" -nt "$_pyenv_cache" ]; then
+    mkdir -p "${_pyenv_cache%/*}"
+    { pyenv init -; pyenv virtualenv-init -; } > "$_pyenv_cache"
+  fi
+  . "$_pyenv_cache"
+  unset _pyenv_cache
 fi
+
+unset _shell
 
 # conda
 if command -v conda >/dev/null 2>&1; then
