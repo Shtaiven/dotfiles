@@ -38,11 +38,11 @@ return {
                 nmap("<leader>cl", "<cmd>LspInfo<cr>", "[C]ode [L]SP info")
 
                 nmap("gd", vim.lsp.buf.definition, "[G]oto [D]efinition")
-                nmap("gr", require("telescope.builtin").lsp_references, "[G]oto [R]eferences")
+                nmap("gr", require("fzf-lua").lsp_references, "[G]oto [R]eferences")
                 nmap("gI", vim.lsp.buf.implementation, "[G]oto [I]mplementation")
                 nmap("<leader>D", vim.lsp.buf.type_definition, "Type [D]efinition")
-                nmap("<leader>cs", require("telescope.builtin").lsp_document_symbols, "[C]ode [S]ymbols")
-                nmap("<leader>ws", require("telescope.builtin").lsp_dynamic_workspace_symbols, "[W]orkspace [S]ymbols")
+                nmap("<leader>cs", require("fzf-lua").lsp_document_symbols, "[C]ode [S]ymbols")
+                nmap("<leader>ws", require("fzf-lua").lsp_workspace_symbols, "[W]orkspace [S]ymbols")
 
                 nmap("K", vim.lsp.buf.hover, "Hover Documentation")
                 nmap("<leader>ck", vim.lsp.buf.signature_help, "[C]ode Signature Help")

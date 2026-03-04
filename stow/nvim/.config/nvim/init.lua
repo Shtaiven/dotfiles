@@ -243,7 +243,7 @@ if using_vscode then
         vscode.action("editor.action.marker.prevInFiles")
     end, { desc = "Prev error" })
 
-    -- Find (telescope equivalents)
+    -- Find (fzf-lua equivalents)
     vim.keymap.set("n", "<leader><space>", function()
         vscode.action("workbench.action.quickOpen")
     end, { desc = "Find Files" })
