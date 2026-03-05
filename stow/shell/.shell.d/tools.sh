@@ -87,6 +87,11 @@ if command -v pyenv >/dev/null 2>&1; then
 	unset _pyenv_cache
 fi
 
+# pixi
+if command -v pixi >/dev/null 2>&1; then
+	eval "$(pixi completion --shell $_shell)"
+fi
+
 unset _shell
 
 # conda
