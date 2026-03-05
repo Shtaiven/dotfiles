@@ -74,9 +74,3 @@ publish-rn-link ()
     fi
 }
 
-# sr-studio-analyzer
-SR_STUDIO_ANALYZER_DIR="$HOME/workspaces/sr-studio"
-sr-studio-analyzer () (
-    cd "$SR_STUDIO_ANALYZER_DIR"
-    sr run rosrun sr_studio analyzer "$@"
-)
