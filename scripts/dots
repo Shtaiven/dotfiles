@@ -1,0 +1,330 @@
+#!/usr/bin/env python3
+"""Unified dotfiles management script wrapping GNU Stow."""
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+DOTFILES_DIR = Path(__file__).resolve().parent.parent
+STOW_DIR = DOTFILES_DIR / "stow"
+TARGET_DIR = Path.home()
+
+
+def run_stow(args: list[str], capture: bool = False) -> subprocess.CompletedProcess:
+    cmd = ["stow", "-d", str(STOW_DIR), "-t", str(TARGET_DIR)] + args
+    return subprocess.run(cmd, cwd=DOTFILES_DIR, capture_output=capture, text=True)
+
+
+def get_stowed_packages() -> dict[str, list[Path]]:
+    """Scan TARGET_DIR for symlinks pointing into STOW_DIR, grouped by package."""
+    stow_resolved = STOW_DIR.resolve()
+    packages: dict[str, list[Path]] = {}
+
+    for pkg_dir in sorted(STOW_DIR.iterdir()):
+        if not pkg_dir.is_dir():
+            continue
+        pkg_name = pkg_dir.name
+        pkg_prefix = str(stow_resolved / pkg_name)
+        links: list[Path] = []
+
+        for root, dirs, files in os.walk(pkg_dir):
+            for name in list(dirs) + files:
+                stow_entry = Path(root) / name
+                rel = stow_entry.relative_to(pkg_dir)
+                target_entry = TARGET_DIR / rel
+                if target_entry.is_symlink():
+                    try:
+                        resolved = target_entry.resolve()
+                        if str(resolved).startswith(pkg_prefix):
+                            links.append(target_entry)
+                            # If a directory is a symlink (tree folding),
+                            # don't descend into it on the target side
+                            if name in dirs:
+                                dirs.remove(name)
+                    except OSError:
+                        pass
+        if links:
+            packages[pkg_name] = links
+
+    return packages
+
+
+def has_conflicts(pkg: str) -> bool:
+    """Dry-run stow to check for conflicts."""
+    result = run_stow(["--simulate", "-S", pkg], capture=True)
+    return result.returncode != 0
+
+
+def cmd_install(args: argparse.Namespace) -> int:
+    for pkg in args.packages:
+        pkg_path = STOW_DIR / pkg
+        if not pkg_path.is_dir():
+            print(f"Error: package '{pkg}' not found in {STOW_DIR}", file=sys.stderr)
+            return 1
+
+        conflicts = has_conflicts(pkg)
+
+        if not conflicts:
+            result = run_stow(["-S", pkg])
+            if result.returncode == 0:
+                print(f"Installed: {pkg}")
+            else:
+                print(f"Failed to install: {pkg}", file=sys.stderr)
+                return result.returncode
+            continue
+
+        if args.force:
+            result = run_stow(["-R", pkg])
+            if result.returncode == 0:
+                print(f"Installed (restowed): {pkg}")
+            else:
+                print(f"Failed to restow: {pkg}", file=sys.stderr)
+                return result.returncode
+        elif args.adopt:
+            result = run_stow(["--adopt", "-S", pkg])
+            if result.returncode == 0:
+                print(f"Installed (adopted existing files): {pkg}")
+            else:
+                print(f"Failed to adopt: {pkg}", file=sys.stderr)
+                return result.returncode
+        else:
+            print(f"Conflicts detected for '{pkg}'.")
+            print("  [a]dopt existing files into dotfiles")
+            print("  [o]verwrite with dotfiles versions (restow)")
+            print("  [s]kip")
+            choice = input("  Choice [a/o/s]: ").strip().lower()
+            if choice == "a":
+                result = run_stow(["--adopt", "-S", pkg])
+                if result.returncode == 0:
+                    print(f"Installed (adopted): {pkg}")
+                else:
+                    return result.returncode
+            elif choice == "o":
+                result = run_stow(["-R", pkg])
+                if result.returncode == 0:
+                    print(f"Installed (restowed): {pkg}")
+                else:
+                    return result.returncode
+            else:
+                print(f"Skipped: {pkg}")
+
+    return 0
+
+
+def cmd_remove(args: argparse.Namespace) -> int:
+    stowed = get_stowed_packages()
+
+    for pkg in args.packages:
+        pkg_path = STOW_DIR / pkg
+        if not pkg_path.is_dir():
+            print(f"Error: package '{pkg}' not found in {STOW_DIR}", file=sys.stderr)
+            return 1
+
+        if pkg not in stowed:
+            print(f"Package '{pkg}' is not currently stowed, skipping.")
+            continue
+
+        # Replace symlinks with copies of the actual files
+        for symlink in stowed[pkg]:
+            target = symlink.resolve()
+            if target.is_file():
+                symlink.unlink()
+                shutil.copy2(target, symlink)
+            elif target.is_dir():
+                symlink.unlink()
+                shutil.copytree(target, symlink)
+
+        # Run stow -D to clean up any remaining state
+        run_stow(["-D", pkg])
+        print(f"Removed: {pkg} (files copied back to {TARGET_DIR})")
+
+    return 0
+
+
+def cmd_list(args: argparse.Namespace) -> int:
+    stowed = get_stowed_packages()
+    if not stowed:
+        print("No packages currently stowed.")
+        return 0
+
+    for pkg, links in stowed.items():
+        print(f"{pkg} ({len(links)} files)")
+
+    return 0
+
+
+def cmd_new(args: argparse.Namespace) -> int:
+    pkg_path = STOW_DIR / args.package
+
+    if pkg_path.exists() and not args.force:
+        print(
+            f"Error: package '{args.package}' already exists. Use --force to overwrite.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if pkg_path.exists() and args.force:
+        shutil.rmtree(pkg_path)
+
+    pkg_path.mkdir(parents=True, exist_ok=True)
+
+    for file_path in args.files:
+        src = Path(file_path).resolve()
+        if not src.exists():
+            print(f"Warning: '{file_path}' does not exist, skipping.", file=sys.stderr)
+            continue
+
+        try:
+            rel = src.relative_to(TARGET_DIR)
+        except ValueError:
+            print(
+                f"Warning: '{file_path}' is not under {TARGET_DIR}, skipping.",
+                file=sys.stderr,
+            )
+            continue
+
+        dest = pkg_path / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+
+        if src.is_dir():
+            shutil.copytree(src, dest)
+        else:
+            shutil.copy2(src, dest)
+
+        print(f"  Added: {rel}")
+
+    print(f"Created package: {args.package}")
+
+    # Decide whether to install
+    if args.install:
+        do_install = True
+    elif args.no_install:
+        do_install = False
+    else:
+        choice = input("Install this package now? [y/N]: ").strip().lower()
+        do_install = choice in ("y", "yes")
+
+    if do_install:
+        result = run_stow(["-S", args.package])
+        if result.returncode == 0:
+            print(f"Installed: {args.package}")
+        else:
+            print(f"Failed to install: {args.package}", file=sys.stderr)
+            return result.returncode
+
+    return 0
+
+
+def cmd_edit(args: argparse.Namespace) -> int:
+    pkg_path = STOW_DIR / args.package
+    if not pkg_path.is_dir():
+        print(
+            f"Error: package '{args.package}' not found in {STOW_DIR}", file=sys.stderr
+        )
+        return 1
+
+    editor = os.environ.get("EDITOR", "vi")
+    return subprocess.run([editor, str(pkg_path)], cwd=pkg_path).returncode
+
+
+def cmd_dir(args: argparse.Namespace) -> int:
+    if args.package:
+        pkg_path = STOW_DIR / args.package
+        if not pkg_path.is_dir():
+            print(
+                f"Error: package '{args.package}' not found in {STOW_DIR}",
+                file=sys.stderr,
+            )
+            return 1
+        print(pkg_path)
+    else:
+        print(DOTFILES_DIR)
+    return 0
+
+
+def cmd_packages(args: argparse.Namespace) -> int:
+    for entry in sorted(STOW_DIR.iterdir()):
+        if entry.is_dir():
+            print(entry.name)
+    return 0
+
+
+def check_stow() -> None:
+    if shutil.which("stow") is None:
+        print("Error: GNU Stow is not installed. Install it with:", file=sys.stderr)
+        print("  sudo apt install stow", file=sys.stderr)
+        sys.exit(1)
+
+
+def main() -> int:
+    check_stow()
+
+    parser = argparse.ArgumentParser(
+        prog="dots", description="Unified dotfiles management with GNU Stow"
+    )
+    sub = parser.add_subparsers(dest="command")
+
+    # install
+    p_install = sub.add_parser("install", help="Install (stow) packages")
+    p_install.add_argument("packages", nargs="+", help="Package names to install")
+    p_install.add_argument(
+        "-f", "--force", action="store_true", help="Overwrite existing files (restow)"
+    )
+    p_install.add_argument(
+        "-a", "--adopt", action="store_true", help="Adopt existing files into dotfiles"
+    )
+    p_install.set_defaults(func=cmd_install)
+
+    # remove
+    p_remove = sub.add_parser("remove", help="Remove (unstow) packages")
+    p_remove.add_argument("packages", nargs="+", help="Package names to remove")
+    p_remove.set_defaults(func=cmd_remove)
+
+    # list
+    p_list = sub.add_parser("list", help="List currently stowed packages")
+    p_list.set_defaults(func=cmd_list)
+
+    # new
+    p_new = sub.add_parser("new", help="Create a new stow package from existing files")
+    p_new.add_argument("package", help="Package name")
+    p_new.add_argument("files", nargs="+", help="Files/directories to include")
+    p_new.add_argument(
+        "-f", "--force", action="store_true", help="Overwrite existing package"
+    )
+    install_group = p_new.add_mutually_exclusive_group()
+    install_group.add_argument(
+        "-i", "--install", action="store_true", help="Install after creating"
+    )
+    install_group.add_argument(
+        "-n", "--no-install", action="store_true", help="Don't install after creating"
+    )
+    p_new.set_defaults(func=cmd_new)
+
+    # dir
+    p_dir = sub.add_parser("dir", help="Print path to dotfiles dir or a package dir")
+    p_dir.add_argument(
+        "package", nargs="?", help="Package name (omit for dotfiles root)"
+    )
+    p_dir.set_defaults(func=cmd_dir)
+
+    # edit
+    p_edit = sub.add_parser("edit", help="Open a package directory in $EDITOR")
+    p_edit.add_argument("package", help="Package name to edit")
+    p_edit.set_defaults(func=cmd_edit)
+
+    # packages
+    p_packages = sub.add_parser("packages", help="List available packages")
+    p_packages.set_defaults(func=cmd_packages)
+
+    args = parser.parse_args()
+    if args.command is None:
+        parser.print_help()
+        return 0
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
