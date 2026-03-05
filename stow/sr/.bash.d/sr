@@ -2,8 +2,14 @@
 # Ensure pixi bin is on PATH (may not be set in non-login shells)
 [[ -d "$HOME/.pixi/bin" && ":$PATH:" != *":$HOME/.pixi/bin:"* ]] && export PATH="$HOME/.pixi/bin:$PATH"
 
-# sr bash completion
-eval "$(_SR_COMPLETE=bash_source sr)"
+# sr bash completion (cached for fast startup)
+_sr_completion_cache="$HOME/.cache/sr-bash-completion.bash"
+if [[ ! -f "$_sr_completion_cache" ]] || [[ "$(command -v sr)" -nt "$_sr_completion_cache" ]]; then
+	mkdir -p "${_sr_completion_cache%/*}"
+	_SR_COMPLETE=bash_source sr > "$_sr_completion_cache" 2>/dev/null
+fi
+source "$_sr_completion_cache"
+unset _sr_completion_cache
 
 # sr dotfiles
 source ~/dots/setup.bash
