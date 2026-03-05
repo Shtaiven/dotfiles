@@ -79,8 +79,8 @@ if command -v pyenv >/dev/null 2>&1; then
 	if [ ! -f "$_pyenv_cache" ] || [ "$(command -v pyenv)" -nt "$_pyenv_cache" ]; then
 		mkdir -p "${_pyenv_cache%/*}"
 		{
-			pyenv init -
-			command pyenv virtualenv-init - 2>/dev/null
+			pyenv init - "$_shell"
+			command pyenv virtualenv-init - "$_shell" 2>/dev/null
 		} >"$_pyenv_cache"
 	fi
 	. "$_pyenv_cache"
