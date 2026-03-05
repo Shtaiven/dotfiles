@@ -49,9 +49,19 @@ case "$TERM" in
 xterm* | rxvt* | screen* | tmux*)
 	__set_title() { printf '\e]0;%s\a' "$1"; }
 	__title_prefix() { [[ -n "$SSH_TTY" ]] && printf '%s' "${USER}@${HOSTNAME%%.*}: "; }
+	__truncate_path() {
+		local p="${1/#$HOME/\~}"
+		(( ${#p} > 15 )) && p="...${p: -12}"
+		printf '%s' "$p"
+	}
+	__truncate_cmd() {
+		local c="$1"
+		(( ${#c} > 15 )) && c="${c:0:12}..."
+		printf '%s' "$c"
+	}
 	__prompt_title() {
 		__title_skip=true
-		__set_title "$(__title_prefix)${PWD/#$HOME/\~}"
+		__set_title "$(__title_prefix)$(__truncate_path "$PWD")"
 		__title_skip=false
 	}
 	__title_skip=true
@@ -60,7 +70,7 @@ xterm* | rxvt* | screen* | tmux*)
 		[[ "${COMP_LINE+x}" ]] && return
 		local cmd="${BASH_COMMAND}"
 		[[ "$cmd" == __* || "$cmd" == trap* || "$cmd" == printf* ]] && return
-		__set_title "$(__title_prefix)${cmd}"
+		__set_title "$(__title_prefix)$(__truncate_cmd "$cmd")"
 	}
 	PROMPT_COMMAND="__prompt_title;${PROMPT_COMMAND:-:}"
 	trap '__preexec_title' DEBUG
