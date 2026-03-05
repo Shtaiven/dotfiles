@@ -1,11 +1,15 @@
 # Portable login environment — sourced by both .profile and .zprofile
 # Must be POSIX sh compliant
 
+# Deduplicated PATH helpers (POSIX sh)
+path_prepend() { case ":$PATH:" in *:"$1":*) ;; *) PATH="$1:$PATH" ;; esac; }
+path_append()  { case ":$PATH:" in *:"$1":*) ;; *) PATH="$PATH:$1" ;; esac; }
+
 # Common PATH
-[ -d "$HOME/.pixi/bin" ] && PATH="$HOME/.pixi/bin:$PATH"
-[ -d "$HOME/.local/bin" ] && PATH="$HOME/.local/bin:$PATH"
-[ -d "$HOME/local/bin" ] && PATH="$HOME/local/bin:$PATH"
-[ -d "$HOME/bin" ] && PATH="$HOME/bin:$PATH"
+[ -d "$HOME/.pixi/bin" ] && path_prepend "$HOME/.pixi/bin"
+[ -d "$HOME/.local/bin" ] && path_prepend "$HOME/.local/bin"
+[ -d "$HOME/local/bin" ] && path_prepend "$HOME/local/bin"
+[ -d "$HOME/bin" ] && path_prepend "$HOME/bin"
 export PATH
 
 # Editor
@@ -20,7 +24,7 @@ fi
 # pyenv
 if [ -d "$HOME/.pyenv" ]; then
 	export PYENV_ROOT="$HOME/.pyenv"
-	export PATH="$PYENV_ROOT/bin:$PATH"
+	path_prepend "$PYENV_ROOT/bin"
 	command -v pyenv >/dev/null 2>&1 && eval "$(pyenv init --path)"
 fi
 
