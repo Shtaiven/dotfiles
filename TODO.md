@@ -12,24 +12,3 @@ This file tracks all work to be done
 * show images in nvim, nnn, fzf when in wezterm
 * update README installation
 
-## Installable applications
-
-* bat
-* carapace
-* cargo
-* curl
-* fd
-* firacode nerd font
-* fzf
-* git
-* nnn
-* nvim
-* pixi
-* prezto
-* ripgrep
-* starship
-* stow
-* tmux
-* wezterm
-* zoxide
-* zsh

@@ -1,58 +1,54 @@
 # dotfiles
 
-Personal dotfiles for *nix.
+Personal dotfiles for unix-like systems.
 
 ## Installation
 
-1. Ensure dependencies are installed and on the path.
+Clone this repository or copy its contents to your home folder as `~/.dotfiles`
 
-    ```zsh
-    # install dependencies with your package manager, e.g.
-    # Debian/Ubuntu
-    sudo apt install zsh git stow curl fonts-firacode
-    # Arch
-    sudo pacman -S zsh git stow curl ttf-fira-code
-    # Fedora
-    sudo dnf install zsh git stow curl fira-code-fonts
+```sh
+git clone git@github.com:Shtaiven/dotfiles.git ~/.dotfiles
+```
 
-    # install rustup
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+then bootstrap the installation
 
-    # install starship
-    sh -c "$(curl -fsSL https://starship.rs/install.sh)" -- -y
+```sh
+cd ~/.dotfiles
+./bootstrap.sh
+```
 
-    # install prezto
-    git clone --recursive https://github.com/sorin-ionescu/prezto.git "~/.zprezto"
-    ```
+This will install pixi, stow, and curl for you if you don't already have them (you will be asked permission first)
 
-1. Clone the dotfiles directory and `cd` into it.
+The `dots` script will also become available for installing dotfiles. Try
 
-    ```sh
-    cd ~
-    git clone git@github.com:Shtaiven/dotfiles.git .dotfiles
-    cd ~/.dotfiles
-    ```
+```sh
+dots packages
+```
 
-1. For each package you want to install:
+to list available packages or
 
-    ```sh
-    stow -d stow -t $HOME -S <package>
-    ```
-
-    where `<package>` is the name of the package folder you would like to install, e.g. `stow -d stow -t $HOME -S zsh`.
-
-    To install all packages, run:
-
-    ```sh
-    ./scripts/stow-all.sh
-    ```
-
-    The scripts `stow-all.sh` and `unstow-all.sh` are provided to perform this operation (and undo it).
+```sh
+dots install shell bash
+```
+to install my bash config
 
 ## Recommended installs
-    * ripgrep
-    * fzf
-    * bat
-    * zoxide
-    * tmux
-    * exa
+
+* bat
+* carapace
+* cargo
+* fd
+* firacode nerd font (a nerd font is required for many configs)
+* fzf
+* git
+* nnn
+* nvim
+* pixi
+* prezto (will be auto installed)
+* ripgrep
+* starship
+* tmux
+* wezterm
+* zoxide
+* zsh
+

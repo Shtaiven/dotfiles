@@ -4,7 +4,8 @@ set -eu
 DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 confirm() {
-    printf "%s [y/N]: " "$1"
+    printf "    Run: %s\n" "$1"
+    printf "    Proceed? [y/N]: "
     read -r answer
     case "$answer" in
         y|Y|yes|YES) return 0 ;;
@@ -16,13 +17,14 @@ echo "==> Installing pixi"
 if command -v pixi >/dev/null 2>&1; then
     echo "    pixi already installed"
 else
-    confirm "    pixi not found. Install it?"
     if command -v curl >/dev/null 2>&1; then
+        confirm "curl -fsSL https://pixi.sh/install.sh | sh"
         curl -fsSL https://pixi.sh/install.sh | sh
     else
         echo "    curl not found, installing via apt first"
-        confirm "    Install curl via apt?"
+        confirm "sudo apt-get update && sudo apt-get install -y curl"
         sudo apt-get update -qq && sudo apt-get install -y -qq curl
+        confirm "curl -fsSL https://pixi.sh/install.sh | sh"
         curl -fsSL https://pixi.sh/install.sh | sh
     fi
     export PATH="$HOME/.pixi/bin:$PATH"
@@ -32,7 +34,7 @@ echo "==> Installing stow"
 if command -v stow >/dev/null 2>&1; then
     echo "    stow already installed"
 else
-    confirm "    stow not found. Install it globally via pixi?"
+    confirm "pixi global install stow"
     pixi global install stow
 fi
 
@@ -40,7 +42,7 @@ echo "==> Installing curl"
 if command -v curl >/dev/null 2>&1; then
     echo "    curl already installed"
 else
-    confirm "    curl not found. Install it globally via pixi?"
+    confirm "pixi global install curl"
     pixi global install curl
 fi
 
