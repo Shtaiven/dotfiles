@@ -66,8 +66,99 @@ fi
 
 # tmux wrapper: restore terminal state after tmux exits
 if command -v tmux >/dev/null 2>&1; then
-	tmux() { command tmux "$@"; stty sane 2>/dev/null; }
+	tmux() {
+		command tmux "$@"
+		stty sane 2>/dev/null
+	}
+
+	# ssht — ssh with tmux config copied to remote (plugins stripped)
+	ssht() {
+		if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+			echo "Usage: ssht user@host"
+			echo ""
+			echo "SSH into a remote host and attach to (or create) a tmux session using"
+			echo "your local tmux config. TPM plugins are stripped before copying so the"
+			echo "remote does not attempt to bootstrap the plugin manager."
+			return 0
+		fi
+		if [ -z "$1" ]; then
+			echo "Usage: ssht user@host" >&2
+			return 1
+		fi
+		local config hash remote_conf
+		config=$(sed '/# plugins (TPM)/,$d' "$HOME/.tmux.conf")
+		hash=$(printf '%s' "$config" | sha1sum | cut -c1-8)
+		remote_conf="/tmp/.tmux-${hash}.conf"
+		ssh "$1" "test -f $remote_conf" || printf '%s' "$config" | ssh "$1" "cat > $remote_conf"
+		ssh -t "$1" "tmux -f $remote_conf new-session -A -s main"
+	}
 fi
+
+# distant-install — install distant on a remote host for distant.nvim
+# Usage: distant-install [--online] user@host
+distant-install() {
+	local online=0 host
+	if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+		echo "Usage: distant-install [--online] user@host"
+		echo ""
+		echo "Install the distant server binary on a remote host for use with distant.nvim."
+		echo ""
+		echo "Options:"
+		echo "  --online    Run the official install script on the remote (requires internet on remote)."
+		echo "              Supports all architectures."
+		echo ""
+		echo "Default (no --online): detects remote OS/arch, downloads the correct prebuilt"
+		echo "binary locally, and copies it over via scp. The remote needs no internet access."
+		echo "Supports x86_64 and aarch64 on Linux and macOS."
+		echo ""
+		echo "Run once per remote, then use :DistantLaunch user@host from nvim to connect."
+		return 0
+	fi
+	if [ "$1" = "--online" ]; then
+		online=1
+		shift
+	fi
+	host="$1"
+	if [ -z "$host" ]; then
+		echo "Usage: distant-install [--online] user@host" >&2
+		return 1
+	fi
+
+	if [ "$online" = 1 ]; then
+		ssh "$host" "curl -L https://sh.distant.dev | sh"
+		return
+	fi
+
+	local os arch triple tmpfile
+	os=$(ssh "$host" "uname -s" | tr '[:upper:]' '[:lower:]')
+	arch=$(ssh "$host" "uname -m")
+	case "$arch" in
+	x86_64) arch="x86_64" ;;
+	aarch64 | arm64) arch="aarch64" ;;
+	*)
+		echo "distant-install: $arch has no prebuilt binary — try: distant-install --online $host" >&2
+		return 1
+		;;
+	esac
+	case "$os" in
+	linux) triple="${arch}-unknown-linux-musl" ;;
+	darwin) triple="${arch}-apple-darwin" ;;
+	*)
+		echo "distant-install: unsupported OS: $os — try: distant-install --online $host" >&2
+		return 1
+		;;
+	esac
+	tmpfile=$(mktemp)
+	curl -fsSL "https://github.com/chipsenkbeil/distant/releases/latest/download/distant-${triple}" -o "$tmpfile" || {
+		rm "$tmpfile"
+		return 1
+	}
+	ssh "$host" "mkdir -p ~/.local/bin"
+	scp "$tmpfile" "$host:~/.local/bin/distant"
+	ssh "$host" "chmod +x ~/.local/bin/distant"
+	rm "$tmpfile"
+	echo "distant installed on $host (~/.local/bin/distant)"
+}
 
 # starship
 command -v starship >/dev/null 2>&1 && eval "$(starship init $_shell)"

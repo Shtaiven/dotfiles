@@ -59,12 +59,9 @@ xterm* | rxvt* | screen* | tmux*)
 		(( ${#c} > 15 )) && c="${c:0:12}..."
 		printf '%s' "$c"
 	}
-	__prompt_title() {
-		__title_skip=true
-		__set_title "$(__title_prefix)$(__truncate_path "$PWD")"
-		__title_skip=false
-	}
 	__title_skip=true
+	__prompt_begin() { __title_skip=true; }
+	__prompt_end()   { __set_title "$(__title_prefix)$(__truncate_path "$PWD")"; __title_skip=false; }
 	__preexec_title() {
 		[[ "$__title_skip" == true ]] && return
 		[[ "${COMP_LINE+x}" ]] && return
@@ -72,7 +69,7 @@ xterm* | rxvt* | screen* | tmux*)
 		[[ "$cmd" == __* || "$cmd" == trap* || "$cmd" == printf* ]] && return
 		__set_title "$(__title_prefix)$(__truncate_cmd "$cmd")"
 	}
-	PROMPT_COMMAND="__prompt_title;${PROMPT_COMMAND:-:}"
+	PROMPT_COMMAND="__prompt_begin;${PROMPT_COMMAND:-:};__prompt_end"
 	trap '__preexec_title' DEBUG
 	;;
 esac
