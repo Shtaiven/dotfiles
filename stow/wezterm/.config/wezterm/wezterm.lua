@@ -7,6 +7,9 @@ config.pane_focus_follows_mouse = false
 -- Startup
 config.check_for_updates = false
 
+-- Persistent sessions via unix domain
+config.unix_domains = { { name = "unix" } }
+
 -- Style
 config.font = wezterm.font("FiraCode Nerd Font Mono")
 config.harfbuzz_features = { "calt=0", "clig=0", "liga=0" }

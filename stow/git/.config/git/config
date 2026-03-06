@@ -101,9 +101,10 @@
     # Delete merged branches
     delete-merged = "!f() { git branch --merged ${1:-main} | grep -v '\\*\\|master\\|main' | xargs -n 1 git branch -d; }; f"
 
-[page]
+[pager]
     diff = delta
     show = delta
     log = delta
     blame = delta
     reflog = delta
+    grep = delta

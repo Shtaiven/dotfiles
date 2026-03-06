@@ -12,6 +12,15 @@ path_append()  { case ":$PATH:" in *:"$1":*) ;; *) PATH="$PATH:$1" ;; esac; }
 [ -d "$HOME/bin" ] && path_prepend "$HOME/bin"
 export PATH
 
+# Pager
+export PAGER='less'
+export LESS='-g -i -M -R -S -w -z-4'
+if command -v lesspipe >/dev/null 2>&1; then
+	export LESSOPEN="| lesspipe %s"
+elif command -v lesspipe.sh >/dev/null 2>&1; then
+	export LESSOPEN="| lesspipe.sh %s"
+fi
+
 # Editor
 if command -v nvim >/dev/null 2>&1; then
 	export EDITOR=nvim

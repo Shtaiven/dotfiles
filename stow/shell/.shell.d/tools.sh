@@ -3,6 +3,15 @@
 # Detect current shell once
 if [ -n "$ZSH_VERSION" ]; then _shell=zsh; elif [ -n "$BASH_VERSION" ]; then _shell=bash; fi
 
+# bat as manpager
+if command -v bat >/dev/null 2>&1; then
+	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+	export MANROFFOPT="-c"
+elif command -v batcat >/dev/null 2>&1; then
+	export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
+	export MANROFFOPT="-c"
+fi
+
 # fd / fzf
 if command -v fd >/dev/null 2>&1; then
 	export FZF_CTRL_T_COMMAND="fd --hidden --follow --exclude \".git\" . $HOME"
