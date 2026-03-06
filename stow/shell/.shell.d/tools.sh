@@ -64,6 +64,11 @@ if command -v rg >/dev/null 2>&1 && command -v fzf >/dev/null 2>&1; then
 	}
 fi
 
+# tmux wrapper: restore terminal state after tmux exits
+if command -v tmux >/dev/null 2>&1; then
+	tmux() { command tmux "$@"; stty sane 2>/dev/null; }
+fi
+
 # starship
 command -v starship >/dev/null 2>&1 && eval "$(starship init $_shell)"
 
