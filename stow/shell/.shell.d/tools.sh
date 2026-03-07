@@ -164,14 +164,16 @@ options:
 	esac
 	tmpfile=$(mktemp)
 	curl -fsSL "https://github.com/chipsenkbeil/distant/releases/latest/download/distant-${triple}" -o "$tmpfile" || {
-		rm "$tmpfile"
+		rm -f "$tmpfile"
 		return 1
 	}
-	ssh "$host" "mkdir -p ~/.local/bin" || { rm "$tmpfile"; return 1; }
-	scp "$tmpfile" "$host:~/.local/bin/distant" || { rm "$tmpfile"; return 1; }
-	rm "$tmpfile"
-	ssh "$host" "chmod +x ~/.local/bin/distant"
-	echo "distant installed on $host (~/.local/bin/distant)"
+	local remote_bin
+	remote_bin=$(ssh "$host" 'echo $HOME/.local/bin') || { rm -f "$tmpfile"; return 1; }
+	ssh "$host" "mkdir -p '$remote_bin'; pkill -f distant 2>/dev/null; rm -f '$remote_bin/distant'" || true
+	scp "$tmpfile" "$host:$remote_bin/distant" || { rm -f "$tmpfile"; return 1; }
+	rm -f "$tmpfile"
+	ssh "$host" "chmod +x '$remote_bin/distant'"
+	echo "distant installed on $host ($remote_bin/distant)"
 }
 
 # starship
