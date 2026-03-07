@@ -31,12 +31,22 @@ if command -v fzf >/dev/null 2>&1; then
 	export FZF_DEFAULT_OPTS="--color=16"
 	export FZF_ALT_C_OPTS="--preview 'ls -la {}'"
 
-	# bat preview for CTRL+T file browsing
-	if command -v bat >/dev/null 2>&1; then
-		export FZF_CTRL_T_OPTS="--preview 'bat --color=always --plain {}'"
-	elif command -v batcat >/dev/null 2>&1; then
-		export FZF_CTRL_T_OPTS="--preview 'batcat --color=always --plain {}'"
+	# preview for CTRL+T file browsing (images via wezterm imgcat, text via bat)
+	if command -v bat >/dev/null 2>&1; then _bat=bat
+	elif command -v batcat >/dev/null 2>&1; then _bat=batcat
+	else _bat=""; fi
+
+	if command -v wezterm >/dev/null 2>&1 && [ -n "$_bat" ]; then
+		export FZF_CTRL_T_OPTS="--preview '
+			case {} in
+				*.png|*.jpg|*.jpeg|*.gif|*.bmp|*.webp|*.svg|*.ico|*.tiff|*.tif)
+					wezterm imgcat --width 60 {} 2>/dev/null || $_bat --color=always --plain {} ;;
+				*) $_bat --color=always --plain {} ;;
+			esac'"
+	elif [ -n "$_bat" ]; then
+		export FZF_CTRL_T_OPTS="--preview '$_bat --color=always --plain {}'"
 	fi
+	unset _bat
 
 	if [ -n "$ZSH_VERSION" ]; then
 		eval "$(fzf --zsh 2>/dev/null)"
@@ -175,6 +185,17 @@ options:
 	ssh "$host" "chmod +x '$remote_bin/distant'"
 	echo "distant installed on $host ($remote_bin/distant)"
 }
+
+# nnn
+if command -v nnn >/dev/null 2>&1; then
+	export NNN_FIFO="${NNN_FIFO:-/tmp/nnn.fifo}"
+	export NNN_PLUG='p:preview-tui'
+	alias nnn='nnn -d -e -C'
+	# Install plugins if preview-tui is missing
+	if [ ! -f "${XDG_CONFIG_HOME:-$HOME/.config}/nnn/plugins/preview-tui" ]; then
+		curl -Ls "https://raw.githubusercontent.com/jarun/nnn/master/plugins/getplugs" | sh 2>/dev/null
+	fi
+fi
 
 # default prompt (ubuntu-style) as fallback before starship
 if [ -n "$BASH_VERSION" ]; then
