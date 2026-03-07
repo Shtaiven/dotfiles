@@ -176,6 +176,13 @@ options:
 	echo "distant installed on $host ($remote_bin/distant)"
 }
 
+# default prompt (ubuntu-style) as fallback before starship
+if [ -n "$BASH_VERSION" ]; then
+	PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+elif [ -n "$ZSH_VERSION" ]; then
+	PS1='%F{green}%B%n@%m%b%f:%F{blue}%B%~%b%f%# '
+fi
+
 # starship
 command -v starship >/dev/null 2>&1 && eval "$(starship init $_shell)"
 
