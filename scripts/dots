@@ -79,12 +79,31 @@ def cmd_install(args: argparse.Namespace) -> int:
             continue
 
         if args.force:
-            result = run_stow(["-R", pkg])
-            if result.returncode == 0:
-                print(f"Installed (restowed): {pkg}")
-            else:
-                print(f"Failed to restow: {pkg}", file=sys.stderr)
+            if not shutil.which("git"):
+                print("Error: git is required for --force (to restore dotfiles versions)", file=sys.stderr)
+                return 1
+            pkg_rel = str((STOW_DIR / pkg).relative_to(DOTFILES_DIR))
+            dirty = subprocess.run(
+                ["git", "-C", str(DOTFILES_DIR), "diff", "--quiet", "--", pkg_rel],
+                capture_output=True,
+            ).returncode != 0
+            if dirty:
+                subprocess.run(
+                    ["git", "-C", str(DOTFILES_DIR), "stash", "push", "-m",
+                     f"dots overwrite: auto-stash {pkg}", "--", pkg_rel],
+                )
+            result = run_stow(["--adopt", "-S", pkg])
+            if result.returncode != 0:
+                if dirty:
+                    subprocess.run(["git", "-C", str(DOTFILES_DIR), "stash", "pop"])
+                print(f"Failed to install: {pkg}", file=sys.stderr)
                 return result.returncode
+            subprocess.run(
+                ["git", "-C", str(DOTFILES_DIR), "checkout", "--", pkg_rel],
+            )
+            if dirty:
+                subprocess.run(["git", "-C", str(DOTFILES_DIR), "stash", "pop"])
+            print(f"Installed (overwritten): {pkg}")
         elif args.adopt:
             result = run_stow(["--adopt", "-S", pkg])
             if result.returncode == 0:
@@ -105,11 +124,32 @@ def cmd_install(args: argparse.Namespace) -> int:
                 else:
                     return result.returncode
             elif choice == "o":
-                result = run_stow(["-R", pkg])
-                if result.returncode == 0:
-                    print(f"Installed (restowed): {pkg}")
-                else:
+                if not shutil.which("git"):
+                    print("Error: git is required for overwrite (to restore dotfiles versions)", file=sys.stderr)
+                    return 1
+                # Stash any uncommitted changes in the package dir before adopt clobbers them
+                pkg_rel = str((STOW_DIR / pkg).relative_to(DOTFILES_DIR))
+                dirty = subprocess.run(
+                    ["git", "-C", str(DOTFILES_DIR), "diff", "--quiet", "--", pkg_rel],
+                    capture_output=True,
+                ).returncode != 0
+                if dirty:
+                    subprocess.run(
+                        ["git", "-C", str(DOTFILES_DIR), "stash", "push", "-m",
+                         f"dots overwrite: auto-stash {pkg}", "--", pkg_rel],
+                    )
+                result = run_stow(["--adopt", "-S", pkg])
+                if result.returncode != 0:
+                    if dirty:
+                        subprocess.run(["git", "-C", str(DOTFILES_DIR), "stash", "pop"])
                     return result.returncode
+                # Adopt overwrites repo files with target's; restore the dotfiles versions
+                subprocess.run(
+                    ["git", "-C", str(DOTFILES_DIR), "checkout", "--", pkg_rel],
+                )
+                if dirty:
+                    subprocess.run(["git", "-C", str(DOTFILES_DIR), "stash", "pop"])
+                print(f"Installed (overwritten): {pkg}")
             else:
                 print(f"Skipped: {pkg}")
 
