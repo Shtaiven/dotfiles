@@ -58,8 +58,13 @@ def get_stowed_packages() -> dict[str, list[Path]]:
                 target_entry = TARGET_DIR / rel
                 if target_entry.is_symlink():
                     try:
-                        resolved = target_entry.resolve()
-                        if str(resolved).startswith(pkg_prefix):
+                        # Use readlink (one level) to handle symlinks-of-symlinks
+                        # e.g. ~/.config/starship.toml -> stow/starship/.config/starship.toml
+                        # even if that file itself is a symlink to misc/...
+                        link_target = target_entry.parent / os.readlink(target_entry)
+                        resolved = link_target.resolve()
+                        stow_entry_resolved = stow_entry.resolve()
+                        if str(resolved).startswith(pkg_prefix) or resolved == stow_entry_resolved:
                             links.append(target_entry)
                             # If a directory is a symlink (tree folding),
                             # don't descend into it on the target side
@@ -375,12 +380,32 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
         except Exception:
             pass
     if shell:
-        if "zsh" in shell:
-            ok(f"Default shell: {shell}")
-        else:
-            warn(f"Default shell is not zsh: {shell}")
+        ok(f"Default shell: {shell}")
     else:
         warn("Could not determine default shell")
+
+    stowed_early = get_stowed_packages()
+    shell_stowed = "shell" in stowed_early and stowed_early["shell"]
+    bash_stowed = "bash" in stowed_early and stowed_early["bash"]
+    zsh_stowed = "zsh" in stowed_early and stowed_early["zsh"]
+    if shell_stowed:
+        ok("shell dotfiles: stowed")
+    else:
+        warn("shell dotfiles: not stowed")
+    if "zsh" in shell:
+        if zsh_stowed:
+            ok("zsh dotfiles: stowed")
+        else:
+            warn("zsh dotfiles: not stowed (run: dots install zsh)")
+    elif "bash" in shell:
+        if bash_stowed:
+            ok("bash dotfiles: stowed")
+        else:
+            warn("bash dotfiles: not stowed (run: dots install bash)")
+    if bash_stowed and not shell_stowed:
+        warn("bash dotfiles stowed but shell package is not (run: dots install shell)")
+    if zsh_stowed and not shell_stowed:
+        warn("zsh dotfiles stowed but shell package is not (run: dots install shell)")
 
     # ── Prezto ───────────────────────────────────────────────────────────────
     section("Prezto")
@@ -449,37 +474,57 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
 
     # ── Recommended Programs ─────────────────────────────────────────────────
     section("Recommended Programs")
-    # (display_name, [binary_candidates])  — from README "Recommended installs"
-    TOOLS: list[tuple[str, list[str]]] = [
-        ("bat",       ["bat", "batcat"]),
-        ("carapace",  ["carapace"]),
-        ("cargo",     ["cargo"]),
-        ("delta",     ["delta"]),
-        ("fd",        ["fd"]),
-        ("fzf",       ["fzf"]),
-        ("git",       ["git"]),
-        ("nnn",       ["nnn"]),
-        ("nvim",      ["nvim"]),
-        ("pixi",      ["pixi"]),
-        ("ripgrep",   ["rg"]),
-        ("starship",  ["starship"]),
-        ("tmux",      ["tmux"]),
-        ("wezterm",   ["wezterm"]),
-        ("zoxide",    ["zoxide"]),
-        ("zsh",       ["zsh"]),
+    # (display_name, [binary_candidates], stow_package_or_None)
+    TOOLS: list[tuple[str, list[str], str | None]] = [
+        ("bat",       ["bat", "batcat"],  "bat"),
+        ("carapace",  ["carapace"],       None),
+        ("cargo",     ["cargo"],          None),
+        ("delta",     ["delta"],          None),
+        ("fd",        ["fd"],             None),
+        ("fzf",       ["fzf"],            None),
+        ("git",       ["git"],            "git"),
+        ("nnn",       ["nnn"],            None),
+        ("nvim",      ["nvim"],           "nvim"),
+        ("pixi",      ["pixi"],           None),
+        ("ripgrep",   ["rg"],             None),
+        ("starship",  ["starship"],       "starship"),
+        ("tmux",      ["tmux"],           "tmux"),
+        ("wezterm",   ["wezterm"],        "wezterm"),
+        ("zoxide",    ["zoxide"],         None),
+        ("zsh",       ["zsh"],            "zsh"),
     ]
-    for display, candidates in TOOLS:
+    stowed = get_stowed_packages()
+    for display, candidates, pkg in TOOLS:
         found_cmd = found_path = None
         for candidate in candidates:
             p = shutil.which(candidate)
             if p:
                 found_cmd, found_path = candidate, p
                 break
+        # Determine dotfiles status
+        dots_status = None  # None = no stow package for this tool
+        if pkg:
+            pkg_dir = STOW_DIR / pkg
+            if pkg_dir.is_dir():
+                dots_status = "stowed" if (pkg in stowed and stowed[pkg]) else "not stowed"
+            else:
+                dots_status = "none"
+
+        # Warn if installed but dotfiles available and not stowed
+        if found_path and dots_status == "not stowed":
+            warn(display)
+        elif found_path:
+            ok(display)
+        else:
+            warn(display)
+
         if found_path:
             suffix = f" (as {found_cmd})" if found_cmd != candidates[0] else ""
-            ok(f"{display}{suffix}: {found_path}")
+            print(f"          binary: {found_path}{suffix}")
         else:
-            warn(f"{display}: not found")
+            print(f"          binary: not found")
+        if dots_status is not None:
+            print(f"          dotfiles: {dots_status}")
 
     # ── Nerd Fonts ───────────────────────────────────────────────────────────
     section("Nerd Fonts")
