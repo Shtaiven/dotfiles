@@ -84,6 +84,49 @@ def has_conflicts(pkg: str) -> bool:
     return result.returncode != 0
 
 
+def _confirm(prompt: str) -> bool:
+    try:
+        return input(prompt).strip().lower() in ("y", "yes")
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return False
+
+
+def post_install(pkg: str) -> None:
+    """Run post-install hooks for specific packages."""
+    if pkg == "zsh":
+        zprezto = Path.home() / ".zprezto"
+        if not zprezto.exists():
+            if not shutil.which("git"):
+                print("  Prezto: skipped (git not found)")
+            elif _confirm("  Install Prezto? [y/N] "):
+                print("  Installing Prezto...")
+                subprocess.run(
+                    ["git", "clone", "--recursive",
+                     "https://github.com/sorin-ionescu/prezto.git", str(zprezto)],
+                )
+            else:
+                print("  Prezto: skipped")
+        else:
+            print("  Prezto: already installed")
+    elif pkg == "shell":
+        plugins_dir = Path(
+            os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))
+        ) / "nnn" / "plugins"
+        if not (plugins_dir / "preview-tui").exists():
+            if not shutil.which("curl"):
+                print("  nnn plugins: skipped (curl not found)")
+            elif _confirm("  Install nnn plugins? [y/N] "):
+                print("  Installing nnn plugins...")
+                subprocess.run(
+                    ["sh", "-c", "curl -Ls https://raw.githubusercontent.com/jarun/nnn/master/plugins/getplugs | sh"],
+                )
+            else:
+                print("  nnn plugins: skipped")
+        else:
+            print("  nnn plugins: already installed")
+
+
 def cmd_install(args: argparse.Namespace) -> int:
     for pkg in args.packages:
         pkg_path = STOW_DIR / pkg
@@ -97,6 +140,7 @@ def cmd_install(args: argparse.Namespace) -> int:
             result = run_stow(["-S", pkg])
             if result.returncode == 0:
                 print(f"Installed: {pkg}")
+                post_install(pkg)
             else:
                 print(f"Failed to install: {pkg}", file=sys.stderr)
                 return result.returncode
@@ -108,10 +152,12 @@ def cmd_install(args: argparse.Namespace) -> int:
                 print(f"Failed to install: {pkg}", file=sys.stderr)
                 return rc
             print(f"Installed (overwritten): {pkg}")
+            post_install(pkg)
         elif args.adopt:
             result = run_stow(["--adopt", "-S", pkg])
             if result.returncode == 0:
                 print(f"Installed (adopted existing files): {pkg}")
+                post_install(pkg)
             else:
                 print(f"Failed to adopt: {pkg}", file=sys.stderr)
                 return result.returncode
@@ -125,6 +171,7 @@ def cmd_install(args: argparse.Namespace) -> int:
                 result = run_stow(["--adopt", "-S", pkg])
                 if result.returncode == 0:
                     print(f"Installed (adopted): {pkg}")
+                    post_install(pkg)
                 else:
                     return result.returncode
             elif choice == "o":
@@ -132,6 +179,7 @@ def cmd_install(args: argparse.Namespace) -> int:
                 if rc != 0:
                     return rc
                 print(f"Installed (overwritten): {pkg}")
+                post_install(pkg)
             else:
                 print(f"Skipped: {pkg}")
 
@@ -411,8 +459,7 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
     section("Prezto")
     zprezto = Path.home() / ".zprezto"
     if not zprezto.exists():
-        err("Prezto not installed (~/.zprezto not found)")
-        warn("Will be auto-installed on first zsh launch once the zsh package is stowed")
+        err("Prezto not installed (run: dots install zsh)")
     else:
         ok(f"Installed at {zprezto}")
         if not (zprezto / ".git").exists():
@@ -525,6 +572,15 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
             print(f"          binary: not found")
         if dots_status is not None:
             print(f"          dotfiles: {dots_status}")
+        # nnn addon check
+        if display == "nnn" and found_path:
+            nnn_preview = Path(
+                os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))
+            ) / "nnn" / "plugins" / "preview-tui"
+            if nnn_preview.exists():
+                print(f"          plugins: installed")
+            else:
+                print(f"          plugins: not installed (run: dots install shell)")
 
     # ── Nerd Fonts ───────────────────────────────────────────────────────────
     section("Nerd Fonts")

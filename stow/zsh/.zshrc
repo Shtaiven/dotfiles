@@ -9,17 +9,7 @@
 # Bash-style globbing: pass unmatched globs through as literals
 setopt NO_NOMATCH
 
-# Bootstrap Prezto if not present
-if [[ ! -d "${ZDOTDIR:-$HOME}/.zprezto" ]]; then
-  if ! command -v git &>/dev/null; then
-    echo "Prezto not found and git is not installed. Please install git to bootstrap Prezto."
-  else
-    echo "Prezto not found. Installing..."
-    git clone --recursive https://github.com/sorin-ionescu/prezto.git "${ZDOTDIR:-$HOME}/.zprezto"
-  fi
-fi
-
-# Source Prezto
+# Source Prezto (installed by: dots install zsh)
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi

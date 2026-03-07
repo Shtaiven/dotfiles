@@ -191,9 +191,9 @@ if command -v nnn >/dev/null 2>&1; then
 	export NNN_FIFO="${NNN_FIFO:-/tmp/nnn.fifo}"
 	export NNN_PLUG='p:preview-tui'
 	alias nnn='nnn -d -e -C'
-	# Install plugins if preview-tui is missing
+	# Plugins installed by: dots install shell
 	if [ ! -f "${XDG_CONFIG_HOME:-$HOME/.config}/nnn/plugins/preview-tui" ]; then
-		curl -Ls "https://raw.githubusercontent.com/jarun/nnn/master/plugins/getplugs" | sh 2>/dev/null
+		echo "nnn: preview-tui plugin missing (run: dots install shell)"
 	fi
 fi
 
