@@ -21,7 +21,12 @@ return {
             { "gs", "<Plug>(leap-from-window)", mode = { "n", "x", "o" }, desc = "Leap from window" },
         },
     },
-    "danilamihailov/beacon.nvim",
+    {
+        "danilamihailov/beacon.nvim",
+        opts = {
+            ft_ignore = { "distant-window" },
+        },
+    },
     { "lukas-reineke/virt-column.nvim", opts = {} },
     {
         "folke/todo-comments.nvim",

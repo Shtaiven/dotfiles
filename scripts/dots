@@ -2,10 +2,12 @@
 """Unified dotfiles management script wrapping GNU Stow."""
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
 import sys
+import urllib.request
 from pathlib import Path
 
 DOTFILES_DIR = Path(__file__).resolve().parent.parent
@@ -144,14 +146,73 @@ def cmd_remove(args: argparse.Namespace) -> int:
     return 0
 
 
+def get_package_drift(pkg: str, stowed_links: list[Path]) -> tuple[list[Path], list[Path]]:
+    """Return (repo_only, unmanaged) for a package.
+
+    repo_only:  files in the stow package that have no counterpart in TARGET_DIR.
+    unmanaged:  real files (or foreign symlinks) in TARGET_DIR at paths the package owns.
+    """
+    pkg_dir = STOW_DIR / pkg
+    stow_pkg_prefix = str((STOW_DIR / pkg).resolve())
+    stowed_set = {str(p) for p in stowed_links}
+    repo_only: list[Path] = []
+    unmanaged: list[Path] = []
+
+    for root, _dirs, files in os.walk(pkg_dir):
+        for name in files:
+            rel = (Path(root) / name).relative_to(pkg_dir)
+            target = TARGET_DIR / rel
+
+            # Check if this target or any ancestor directory is already stow-managed
+            # (handles folder-folding where stow symlinks a whole directory).
+            is_stowed = False
+            check = target
+            while check != TARGET_DIR and check != check.parent:
+                if str(check) in stowed_set:
+                    is_stowed = True
+                    break
+                check = check.parent
+            if is_stowed:
+                continue
+
+            if target.is_symlink():
+                try:
+                    if not str(target.resolve()).startswith(stow_pkg_prefix):
+                        unmanaged.append(target)
+                except OSError:
+                    repo_only.append(target)  # broken symlink
+            elif target.exists():
+                unmanaged.append(target)
+            else:
+                repo_only.append(target)
+
+    return repo_only, unmanaged
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     stowed = get_stowed_packages()
-    if not stowed:
-        print("No packages currently stowed.")
+    all_pkgs = sorted(d.name for d in STOW_DIR.iterdir() if d.is_dir())
+    if not all_pkgs:
+        print("No packages available.")
         return 0
 
-    for pkg, links in stowed.items():
-        print(f"{pkg} ({len(links)} files)")
+    for pkg in all_pkgs:
+        stowed_links = stowed.get(pkg, [])
+        repo_only, unmanaged = get_package_drift(pkg, stowed_links)
+
+        if args.installed and not stowed_links:
+            continue
+        if args.not_installed and not repo_only:
+            continue
+        if args.unmanaged and not unmanaged:
+            continue
+
+        parts = [f"{len(stowed_links)} stowed"]
+        if repo_only:
+            parts.append(f"{len(repo_only)} not linked")
+        if unmanaged:
+            parts.append(f"{len(unmanaged)} unmanaged")
+        print(f"{pkg} ({', '.join(parts)})")
 
     return 0
 
@@ -245,22 +306,213 @@ def cmd_dir(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_packages(args: argparse.Namespace) -> int:
-    for entry in sorted(STOW_DIR.iterdir()):
-        if entry.is_dir():
-            print(entry.name)
+
+def cmd_checkhealth(args: argparse.Namespace) -> int:
+    use_color = sys.stdout.isatty()
+    if use_color:
+        G = "\033[32m"
+        Y = "\033[33m"
+        R = "\033[31m"
+        C = "\033[36m"
+        B = "\033[1m"
+        X = "\033[0m"
+    else:
+        G = Y = R = C = B = X = ""
+
+    def ok(msg: str) -> None:
+        print(f"  {G}OK{X}    {msg}")
+
+    def warn(msg: str) -> None:
+        print(f"  {Y}WARN{X}  {msg}")
+
+    def err(msg: str) -> None:
+        print(f"  {R}ERROR{X} {msg}")
+
+    def section(title: str) -> None:
+        print(f"\n{B}{C}## {title}{X}")
+
+    # ── dots & stow ──────────────────────────────────────────────────────────
+    section("dots & stow")
+    dots_path = shutil.which("dots")
+    if dots_path:
+        ok(f"dots: {dots_path}")
+    else:
+        err("dots not on PATH — symlink scripts/dots into ~/.local/bin")
+    stow_path = shutil.which("stow")
+    if stow_path:
+        ok(f"stow: {stow_path}")
+    else:
+        err("stow not installed  (run: pixi global install stow)")
+
+    # ── Shell ────────────────────────────────────────────────────────────────
+    section("Shell")
+    shell = os.environ.get("SHELL", "")
+    if not shell:
+        try:
+            pw = subprocess.run(
+                ["getent", "passwd", os.environ.get("USER", "")],
+                capture_output=True, text=True, timeout=5,
+            )
+            if pw.returncode == 0:
+                shell = pw.stdout.strip().rsplit(":", 1)[-1]
+        except Exception:
+            pass
+    if shell:
+        if "zsh" in shell:
+            ok(f"Default shell: {shell}")
+        else:
+            warn(f"Default shell is not zsh: {shell}")
+    else:
+        warn("Could not determine default shell")
+
+    # ── Prezto ───────────────────────────────────────────────────────────────
+    section("Prezto")
+    zprezto = Path.home() / ".zprezto"
+    if not zprezto.exists():
+        err("Prezto not installed (~/.zprezto not found)")
+        warn("Will be auto-installed on first zsh launch once the zsh package is stowed")
+    else:
+        ok(f"Installed at {zprezto}")
+        if not (zprezto / ".git").exists():
+            warn("Not a git repo — cannot check for updates")
+        else:
+            try:
+                local = subprocess.run(
+                    ["git", "-C", str(zprezto), "rev-parse", "HEAD"],
+                    capture_output=True, text=True, timeout=5,
+                ).stdout.strip()
+                remote_res = subprocess.run(
+                    ["git", "-C", str(zprezto), "ls-remote", "origin", "HEAD"],
+                    capture_output=True, text=True, timeout=15,
+                )
+                if remote_res.returncode == 0 and remote_res.stdout.strip():
+                    remote = remote_res.stdout.split()[0]
+                    if local == remote:
+                        ok(f"Up to date ({local[:8]})")
+                    else:
+                        warn(f"Updates available  local:{local[:8]} → remote:{remote[:8]}")
+                        warn("Update: git -C ~/.zprezto pull && git -C ~/.zprezto submodule update --init --recursive")
+                else:
+                    warn("Could not reach Prezto remote (offline?)")
+            except subprocess.TimeoutExpired:
+                warn("Timed out checking Prezto remote")
+
+    # ── Pixi ─────────────────────────────────────────────────────────────────
+    section("Pixi")
+    pixi_path = shutil.which("pixi")
+    if not pixi_path:
+        warn("pixi not installed")
+        warn("Install: curl -fsSL https://pixi.sh/install.sh | bash")
+    else:
+        ok(f"Installed at {pixi_path}")
+        ver_res = subprocess.run(
+            ["pixi", "--version"], capture_output=True, text=True, timeout=5
+        )
+        current_ver = ver_res.stdout.strip() if ver_res.returncode == 0 else ""
+        if current_ver:
+            ok(f"Version: {current_ver}")
+        try:
+            req = urllib.request.Request(
+                "https://api.github.com/repos/prefix-dev/pixi/releases/latest",
+                headers={"User-Agent": "dots-checkhealth/1.0"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read())
+            latest_tag = data.get("tag_name", "").lstrip("v")
+            current_tag = current_ver.removeprefix("pixi ").strip() if current_ver else ""
+            if latest_tag and current_tag:
+                if current_tag == latest_tag:
+                    ok(f"Up to date (v{latest_tag})")
+                else:
+                    warn(f"Update available: v{current_tag} → v{latest_tag}  (run: pixi self-update)")
+            else:
+                warn("Could not compare pixi versions")
+        except Exception as exc:
+            warn(f"Could not check for pixi updates: {exc}")
+
+    # ── Recommended Programs ─────────────────────────────────────────────────
+    section("Recommended Programs")
+    # (display_name, [binary_candidates])  — from README "Recommended installs"
+    TOOLS: list[tuple[str, list[str]]] = [
+        ("bat",       ["bat", "batcat"]),
+        ("carapace",  ["carapace"]),
+        ("cargo",     ["cargo"]),
+        ("delta",     ["delta"]),
+        ("fd",        ["fd"]),
+        ("fzf",       ["fzf"]),
+        ("git",       ["git"]),
+        ("nnn",       ["nnn"]),
+        ("nvim",      ["nvim"]),
+        ("pixi",      ["pixi"]),
+        ("ripgrep",   ["rg"]),
+        ("starship",  ["starship"]),
+        ("tmux",      ["tmux"]),
+        ("wezterm",   ["wezterm"]),
+        ("zoxide",    ["zoxide"]),
+        ("zsh",       ["zsh"]),
+    ]
+    for display, candidates in TOOLS:
+        found_cmd = found_path = None
+        for candidate in candidates:
+            p = shutil.which(candidate)
+            if p:
+                found_cmd, found_path = candidate, p
+                break
+        if found_path:
+            suffix = f" (as {found_cmd})" if found_cmd != candidates[0] else ""
+            ok(f"{display}{suffix}: {found_path}")
+        else:
+            warn(f"{display}: not found")
+
+    # ── Nerd Fonts ───────────────────────────────────────────────────────────
+    section("Nerd Fonts")
+    nerd_families: set[str] = set()
+    if shutil.which("fc-list"):
+        try:
+            fc_res = subprocess.run(
+                ["fc-list", ":", "family"],
+                capture_output=True, text=True, timeout=10,
+            )
+            for line in fc_res.stdout.splitlines():
+                for token in line.split(","):
+                    token = token.strip()
+                    if "nerd" in token.lower():
+                        nerd_families.add(token)
+        except Exception:
+            pass
+    else:
+        # Fallback: scan common font dirs for files with "nerd" in the name
+        font_dirs = [
+            Path.home() / ".local/share/fonts",
+            Path.home() / ".fonts",
+            Path("/usr/share/fonts"),
+            Path("/usr/local/share/fonts"),
+        ]
+        for font_dir in font_dirs:
+            if font_dir.is_dir():
+                for f in font_dir.rglob("*"):
+                    if f.suffix.lower() in (".ttf", ".otf") and "nerd" in f.stem.lower():
+                        nerd_families.add(f.stem)
+
+    if nerd_families:
+        for fam in sorted(nerd_families):
+            ok(fam)
+    else:
+        warn("No Nerd Fonts detected")
+        warn("Required by many configs — install from: https://www.nerdfonts.com/font-downloads")
+
+    print()
     return 0
 
 
 def check_stow() -> None:
     if shutil.which("stow") is None:
-        print("Error: GNU Stow is not installed. Install it with:", file=sys.stderr)
-        print("  sudo apt install stow", file=sys.stderr)
+        print("Error: GNU Stow is not installed.", file=sys.stderr)
+        print("  Install with: pixi global install stow", file=sys.stderr)
         sys.exit(1)
 
 
 def main() -> int:
-    check_stow()
 
     parser = argparse.ArgumentParser(
         prog="dots", description="Unified dotfiles management with GNU Stow"
@@ -284,7 +536,16 @@ def main() -> int:
     p_remove.set_defaults(func=cmd_remove)
 
     # list
-    p_list = sub.add_parser("list", help="List currently stowed packages")
+    p_list = sub.add_parser("list", help="List packages and their stow status")
+    p_list.add_argument(
+        "--installed", action="store_true", help="Only show packages with at least one stowed file"
+    )
+    p_list.add_argument(
+        "--not-installed", action="store_true", help="Only show packages with at least one file not linked in dest"
+    )
+    p_list.add_argument(
+        "--unmanaged", action="store_true", help="Only show packages with at least one unmanaged file in dest"
+    )
     p_list.set_defaults(func=cmd_list)
 
     # new
@@ -315,14 +576,17 @@ def main() -> int:
     p_edit.add_argument("package", help="Package name to edit")
     p_edit.set_defaults(func=cmd_edit)
 
-    # packages
-    p_packages = sub.add_parser("packages", help="List available packages")
-    p_packages.set_defaults(func=cmd_packages)
+    # checkhealth
+    p_checkhealth = sub.add_parser("checkhealth", help="Check dotfiles environment health")
+    p_checkhealth.set_defaults(func=cmd_checkhealth)
 
     args = parser.parse_args()
     if args.command is None:
         parser.print_help()
         return 0
+    # checkhealth checks for stow itself, so skip the stow requirement
+    if args.command != "checkhealth":
+        check_stow()
     return args.func(args)
 
 

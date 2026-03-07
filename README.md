@@ -37,6 +37,7 @@ to install my bash config
 * bat
 * carapace
 * cargo
+* delta
 * fd
 * firacode nerd font (a nerd font is required for many configs)
 * fzf

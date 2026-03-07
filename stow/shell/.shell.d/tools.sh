@@ -74,22 +74,31 @@ if command -v tmux >/dev/null 2>&1; then
 	# ssht — ssh with tmux config copied to remote (plugins stripped)
 	ssht() {
 		if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-			echo "Usage: ssht user@host"
-			echo ""
-			echo "SSH into a remote host and attach to (or create) a tmux session using"
-			echo "your local tmux config. TPM plugins are stripped before copying so the"
-			echo "remote does not attempt to bootstrap the plugin manager."
+			echo "usage: ssht [-h] user@host
+
+SSH into a remote host and attach to (or create) a tmux session using
+your local tmux config. TPM plugins are stripped before copying so the
+remote does not attempt to bootstrap the plugin manager.
+
+positional arguments:
+  user@host     host to connect to
+
+options:
+  -h, --help    show this help message and exit"
 			return 0
 		fi
 		if [ -z "$1" ]; then
-			echo "Usage: ssht user@host" >&2
+			echo "usage: ssht [-h] user@host" >&2
 			return 1
 		fi
 		local config hash remote_conf
+		# Bail early if host is unreachable
+		ssh -o ConnectTimeout=5 "$1" true || return 1
 		config=$(sed '/# plugins (TPM)/,$d' "$HOME/.tmux.conf")
 		hash=$(printf '%s' "$config" | sha1sum | cut -c1-8)
 		remote_conf="/tmp/.tmux-${hash}.conf"
-		ssh "$1" "test -f $remote_conf" || printf '%s' "$config" | ssh "$1" "cat > $remote_conf"
+		ssh "$1" "test -f $remote_conf" ||
+			printf '%s' "$config" | ssh "$1" "cat > $remote_conf" || return 1
 		ssh -t "$1" "tmux -f $remote_conf new-session -A -s main"
 	}
 fi
@@ -99,19 +108,23 @@ fi
 distant-install() {
 	local online=0 host
 	if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-		echo "Usage: distant-install [--online] user@host"
-		echo ""
-		echo "Install the distant server binary on a remote host for use with distant.nvim."
-		echo ""
-		echo "Options:"
-		echo "  --online    Run the official install script on the remote (requires internet on remote)."
-		echo "              Supports all architectures."
-		echo ""
-		echo "Default (no --online): detects remote OS/arch, downloads the correct prebuilt"
-		echo "binary locally, and copies it over via scp. The remote needs no internet access."
-		echo "Supports x86_64 and aarch64 on Linux and macOS."
-		echo ""
-		echo "Run once per remote, then use :DistantLaunch user@host from nvim to connect."
+		echo "usage: distant-install [-h] [--online] user@host
+
+Install the distant server binary on a remote host for use with distant.nvim.
+Run once per remote, then use :DistantLaunch user@host from nvim to connect.
+
+By default, detects the remote OS/arch, downloads the correct prebuilt binary
+locally, and copies it via scp (the remote needs no internet). Supports x86_64
+and aarch64 on Linux and macOS. Use --online to run the official install script
+on the remote instead.
+
+positional arguments:
+  user@host        host to install on
+
+options:
+  -h, --help       show this help message and exit
+  --online         run the official install script on the remote (requires
+                   internet on remote; supports all architectures)"
 		return 0
 	fi
 	if [ "$1" = "--online" ]; then
@@ -120,7 +133,7 @@ distant-install() {
 	fi
 	host="$1"
 	if [ -z "$host" ]; then
-		echo "Usage: distant-install [--online] user@host" >&2
+		echo "usage: distant-install [-h] [--online] user@host" >&2
 		return 1
 	fi
 
@@ -130,8 +143,9 @@ distant-install() {
 	fi
 
 	local os arch triple tmpfile
-	os=$(ssh "$host" "uname -s" | tr '[:upper:]' '[:lower:]')
-	arch=$(ssh "$host" "uname -m")
+	os=$(ssh "$host" "uname -s") || return 1
+	os=$(printf '%s' "$os" | tr '[:upper:]' '[:lower:]')
+	arch=$(ssh "$host" "uname -m") || return 1
 	case "$arch" in
 	x86_64) arch="x86_64" ;;
 	aarch64 | arm64) arch="aarch64" ;;
@@ -153,10 +167,10 @@ distant-install() {
 		rm "$tmpfile"
 		return 1
 	}
-	ssh "$host" "mkdir -p ~/.local/bin"
-	scp "$tmpfile" "$host:~/.local/bin/distant"
-	ssh "$host" "chmod +x ~/.local/bin/distant"
+	ssh "$host" "mkdir -p ~/.local/bin" || { rm "$tmpfile"; return 1; }
+	scp "$tmpfile" "$host:~/.local/bin/distant" || { rm "$tmpfile"; return 1; }
 	rm "$tmpfile"
+	ssh "$host" "chmod +x ~/.local/bin/distant"
 	echo "distant installed on $host (~/.local/bin/distant)"
 }
 
