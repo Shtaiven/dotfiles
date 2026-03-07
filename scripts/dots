@@ -64,7 +64,10 @@ def get_stowed_packages() -> dict[str, list[Path]]:
                         link_target = target_entry.parent / os.readlink(target_entry)
                         resolved = link_target.resolve()
                         stow_entry_resolved = stow_entry.resolve()
-                        if str(resolved).startswith(pkg_prefix) or resolved == stow_entry_resolved:
+                        if (
+                            str(resolved).startswith(pkg_prefix)
+                            or resolved == stow_entry_resolved
+                        ):
                             links.append(target_entry)
                             # If a directory is a symlink (tree folding),
                             # don't descend into it on the target side
@@ -102,24 +105,35 @@ def post_install(pkg: str) -> None:
             elif _confirm("  Install Prezto? [y/N] "):
                 print("  Installing Prezto...")
                 subprocess.run(
-                    ["git", "clone", "--recursive",
-                     "https://github.com/sorin-ionescu/prezto.git", str(zprezto)],
+                    [
+                        "git",
+                        "clone",
+                        "--recursive",
+                        "https://github.com/sorin-ionescu/prezto.git",
+                        str(zprezto),
+                    ],
                 )
             else:
                 print("  Prezto: skipped")
         else:
             print("  Prezto: already installed")
     elif pkg == "shell":
-        plugins_dir = Path(
-            os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))
-        ) / "nnn" / "plugins"
+        plugins_dir = (
+            Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
+            / "nnn"
+            / "plugins"
+        )
         if not (plugins_dir / "preview-tui").exists():
             if not shutil.which("curl"):
                 print("  nnn plugins: skipped (curl not found)")
             elif _confirm("  Install nnn plugins? [y/N] "):
                 print("  Installing nnn plugins...")
                 subprocess.run(
-                    ["sh", "-c", "curl -Ls https://raw.githubusercontent.com/jarun/nnn/master/plugins/getplugs | sh"],
+                    [
+                        "sh",
+                        "-c",
+                        "curl -Ls https://raw.githubusercontent.com/jarun/nnn/master/plugins/getplugs | sh",
+                    ],
                 )
             else:
                 print("  nnn plugins: skipped")
@@ -164,7 +178,7 @@ def cmd_install(args: argparse.Namespace) -> int:
         else:
             print(f"Conflicts detected for '{pkg}'.")
             print("  [a]dopt existing files into dotfiles")
-            print("  [o]verwrite with dotfiles versions (restow)")
+            print("  [o]verwrite with dotfiles versions")
             print("  [s]kip")
             choice = input("  Choice [a/o/s]: ").strip().lower()
             if choice == "a":
@@ -216,7 +230,9 @@ def cmd_remove(args: argparse.Namespace) -> int:
     return 0
 
 
-def get_package_drift(pkg: str, stowed_links: list[Path]) -> tuple[list[Path], list[Path]]:
+def get_package_drift(
+    pkg: str, stowed_links: list[Path]
+) -> tuple[list[Path], list[Path]]:
     """Return (repo_only, unmanaged) for a package.
 
     repo_only:  files in the stow package that have no counterpart in TARGET_DIR.
@@ -376,7 +392,6 @@ def cmd_dir(args: argparse.Namespace) -> int:
     return 0
 
 
-
 def cmd_checkhealth(args: argparse.Namespace) -> int:
     use_color = sys.stdout.isatty()
     if use_color:
@@ -421,7 +436,9 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
         try:
             pw = subprocess.run(
                 ["getent", "passwd", os.environ.get("USER", "")],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if pw.returncode == 0:
                 shell = pw.stdout.strip().rsplit(":", 1)[-1]
@@ -468,19 +485,27 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
             try:
                 local = subprocess.run(
                     ["git", "-C", str(zprezto), "rev-parse", "HEAD"],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 ).stdout.strip()
                 remote_res = subprocess.run(
                     ["git", "-C", str(zprezto), "ls-remote", "origin", "HEAD"],
-                    capture_output=True, text=True, timeout=15,
+                    capture_output=True,
+                    text=True,
+                    timeout=15,
                 )
                 if remote_res.returncode == 0 and remote_res.stdout.strip():
                     remote = remote_res.stdout.split()[0]
                     if local == remote:
                         ok(f"Up to date ({local[:8]})")
                     else:
-                        warn(f"Updates available  local:{local[:8]} → remote:{remote[:8]}")
-                        warn("Update: git -C ~/.zprezto pull && git -C ~/.zprezto submodule update --init --recursive")
+                        warn(
+                            f"Updates available  local:{local[:8]} → remote:{remote[:8]}"
+                        )
+                        warn(
+                            "Update: git -C ~/.zprezto pull && git -C ~/.zprezto submodule update --init --recursive"
+                        )
                 else:
                     warn("Could not reach Prezto remote (offline?)")
             except subprocess.TimeoutExpired:
@@ -508,12 +533,16 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read())
             latest_tag = data.get("tag_name", "").lstrip("v")
-            current_tag = current_ver.removeprefix("pixi ").strip() if current_ver else ""
+            current_tag = (
+                current_ver.removeprefix("pixi ").strip() if current_ver else ""
+            )
             if latest_tag and current_tag:
                 if current_tag == latest_tag:
                     ok(f"Up to date (v{latest_tag})")
                 else:
-                    warn(f"Update available: v{current_tag} → v{latest_tag}  (run: pixi self-update)")
+                    warn(
+                        f"Update available: v{current_tag} → v{latest_tag}  (run: pixi self-update)"
+                    )
             else:
                 warn("Could not compare pixi versions")
         except Exception as exc:
@@ -523,22 +552,22 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
     section("Recommended Programs")
     # (display_name, [binary_candidates], stow_package_or_None)
     TOOLS: list[tuple[str, list[str], str | None]] = [
-        ("bat",       ["bat", "batcat"],  "bat"),
-        ("carapace",  ["carapace"],       None),
-        ("cargo",     ["cargo"],          None),
-        ("delta",     ["delta"],          None),
-        ("fd",        ["fd"],             None),
-        ("fzf",       ["fzf"],            None),
-        ("git",       ["git"],            "git"),
-        ("nnn",       ["nnn"],            None),
-        ("nvim",      ["nvim"],           "nvim"),
-        ("pixi",      ["pixi"],           None),
-        ("ripgrep",   ["rg"],             None),
-        ("starship",  ["starship"],       "starship"),
-        ("tmux",      ["tmux"],           "tmux"),
-        ("wezterm",   ["wezterm"],        "wezterm"),
-        ("zoxide",    ["zoxide"],         None),
-        ("zsh",       ["zsh"],            "zsh"),
+        ("bat", ["bat", "batcat"], "bat"),
+        ("carapace", ["carapace"], None),
+        ("cargo", ["cargo"], None),
+        ("delta", ["delta"], None),
+        ("fd", ["fd"], None),
+        ("fzf", ["fzf"], None),
+        ("git", ["git"], "git"),
+        ("nnn", ["nnn"], None),
+        ("nvim", ["nvim"], "nvim"),
+        ("pixi", ["pixi"], None),
+        ("ripgrep", ["rg"], None),
+        ("starship", ["starship"], "starship"),
+        ("tmux", ["tmux"], "tmux"),
+        ("wezterm", ["wezterm"], "wezterm"),
+        ("zoxide", ["zoxide"], None),
+        ("zsh", ["zsh"], "zsh"),
     ]
     stowed = get_stowed_packages()
     for display, candidates, pkg in TOOLS:
@@ -553,7 +582,9 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
         if pkg:
             pkg_dir = STOW_DIR / pkg
             if pkg_dir.is_dir():
-                dots_status = "stowed" if (pkg in stowed and stowed[pkg]) else "not stowed"
+                dots_status = (
+                    "stowed" if (pkg in stowed and stowed[pkg]) else "not stowed"
+                )
             else:
                 dots_status = "none"
 
@@ -574,9 +605,12 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
             print(f"          dotfiles: {dots_status}")
         # nnn addon check
         if display == "nnn" and found_path:
-            nnn_preview = Path(
-                os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))
-            ) / "nnn" / "plugins" / "preview-tui"
+            nnn_preview = (
+                Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
+                / "nnn"
+                / "plugins"
+                / "preview-tui"
+            )
             if nnn_preview.exists():
                 print(f"          plugins: installed")
             else:
@@ -589,7 +623,9 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
         try:
             fc_res = subprocess.run(
                 ["fc-list", ":", "family"],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             for line in fc_res.stdout.splitlines():
                 for token in line.split(","):
@@ -609,7 +645,10 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
         for font_dir in font_dirs:
             if font_dir.is_dir():
                 for f in font_dir.rglob("*"):
-                    if f.suffix.lower() in (".ttf", ".otf") and "nerd" in f.stem.lower():
+                    if (
+                        f.suffix.lower() in (".ttf", ".otf")
+                        and "nerd" in f.stem.lower()
+                    ):
                         nerd_families.add(f.stem)
 
     if nerd_families:
@@ -617,7 +656,9 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
             ok(fam)
     else:
         warn("No Nerd Fonts detected")
-        warn("Required by many configs — install from: https://www.nerdfonts.com/font-downloads")
+        warn(
+            "Required by many configs — install from: https://www.nerdfonts.com/font-downloads"
+        )
 
     print()
     return 0
@@ -637,7 +678,9 @@ def cmd_deploy(args: argparse.Namespace) -> int:
         return 1
     if result.returncode == 0:
         print(f"Error: {remote_dotfiles} already exists on {host}", file=sys.stderr)
-        print(f"  Delete it first:  ssh {host} rm -rf {remote_dotfiles}", file=sys.stderr)
+        print(
+            f"  Delete it first:  ssh {host} rm -rf {remote_dotfiles}", file=sys.stderr
+        )
         return 1
 
     # Archive working tree (including local changes, excluding .git)
@@ -709,13 +752,19 @@ def main() -> int:
     # list
     p_list = sub.add_parser("list", help="List packages and their stow status")
     p_list.add_argument(
-        "--installed", action="store_true", help="Only show packages with at least one stowed file"
+        "--installed",
+        action="store_true",
+        help="Only show packages with at least one stowed file",
     )
     p_list.add_argument(
-        "--not-installed", action="store_true", help="Only show packages with at least one file not linked in dest"
+        "--not-installed",
+        action="store_true",
+        help="Only show packages with at least one file not linked in dest",
     )
     p_list.add_argument(
-        "--unmanaged", action="store_true", help="Only show packages with at least one unmanaged file in dest"
+        "--unmanaged",
+        action="store_true",
+        help="Only show packages with at least one unmanaged file in dest",
     )
     p_list.set_defaults(func=cmd_list)
 
@@ -752,17 +801,23 @@ def main() -> int:
     p_deploy.add_argument("host", help="user@host to deploy to")
     bootstrap_group = p_deploy.add_mutually_exclusive_group()
     bootstrap_group.add_argument(
-        "--bootstrap", action="store_true", default=None,
+        "--bootstrap",
+        action="store_true",
+        default=None,
         help="Run bootstrap.sh on remote after copying",
     )
     bootstrap_group.add_argument(
-        "--no-bootstrap", dest="bootstrap", action="store_false",
+        "--no-bootstrap",
+        dest="bootstrap",
+        action="store_false",
         help="Don't run bootstrap.sh on remote after copying",
     )
     p_deploy.set_defaults(func=cmd_deploy)
 
     # checkhealth
-    p_checkhealth = sub.add_parser("checkhealth", help="Check dotfiles environment health")
+    p_checkhealth = sub.add_parser(
+        "checkhealth", help="Check dotfiles environment health"
+    )
     p_checkhealth.set_defaults(func=cmd_checkhealth)
 
     args = parser.parse_args()

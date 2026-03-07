@@ -19,5 +19,5 @@
   "alwaysShowNewBlockBullet": false,
   "otherHeading": null,
   "killAnimations": true,
-  "disabled": false
+  "disabled": true
 }

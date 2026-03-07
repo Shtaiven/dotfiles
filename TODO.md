@@ -4,5 +4,7 @@ This file tracks all work to be done
 
 ## Tasks
 
-* show images in nvim, nnn, fzf when in wezterm
-
+* Make your starship prompt have spacing around the sections and maybe one line
+* add cosmic epoch config
+* add pixi config
+* add vivaldi config
