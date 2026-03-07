@@ -342,7 +342,7 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
     if stow_path:
         ok(f"stow: {stow_path}")
     else:
-        err("stow not installed  (run: pixi global install stow)")
+        err("stow not installed  (run: pixi global install --expose stow stow)")
 
     # ── Shell ────────────────────────────────────────────────────────────────
     section("Shell")
@@ -505,10 +505,63 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_deploy(args: argparse.Namespace) -> int:
+    host = args.host
+    remote_dotfiles = "~/.dotfiles"
+
+    # Check if .dotfiles already exists on the remote
+    result = subprocess.run(
+        ["ssh", "-o", "ConnectTimeout=5", host, f"test -d {remote_dotfiles}"],
+        capture_output=True,
+    )
+    if result.returncode == 255:
+        print(f"Error: could not connect to {host}", file=sys.stderr)
+        return 1
+    if result.returncode == 0:
+        print(f"Error: {remote_dotfiles} already exists on {host}", file=sys.stderr)
+        print(f"  Delete it first:  ssh {host} rm -rf {remote_dotfiles}", file=sys.stderr)
+        return 1
+
+    # Archive (shallow, no git history) and copy to remote
+    print(f"Copying dotfiles to {host}:{remote_dotfiles} ...")
+    archive = subprocess.run(
+        ["git", "-C", str(DOTFILES_DIR), "archive", "--format=tar.gz", "HEAD"],
+        capture_output=True,
+    )
+    if archive.returncode != 0:
+        print("Error: git archive failed", file=sys.stderr)
+        return 1
+    extract = subprocess.run(
+        ["ssh", host, f"mkdir -p {remote_dotfiles} && tar xzf - -C {remote_dotfiles}"],
+        input=archive.stdout,
+    )
+    if extract.returncode != 0:
+        print("Error: remote extract failed", file=sys.stderr)
+        return 1
+    print("Done.")
+
+    # Bootstrap
+    if args.bootstrap is None:
+        try:
+            answer = input(f"Run bootstrap.sh on {host}? [y/N] ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            answer = "n"
+        run_bootstrap = answer in ("y", "yes")
+    else:
+        run_bootstrap = args.bootstrap
+
+    if run_bootstrap:
+        print(f"Running bootstrap.sh on {host} ...")
+        subprocess.run(["ssh", "-t", host, f"{remote_dotfiles}/bootstrap.sh"])
+
+    return 0
+
+
 def check_stow() -> None:
     if shutil.which("stow") is None:
         print("Error: GNU Stow is not installed.", file=sys.stderr)
-        print("  Install with: pixi global install stow", file=sys.stderr)
+        print("  Install with: pixi global install --expose stow stow", file=sys.stderr)
         sys.exit(1)
 
 
@@ -576,6 +629,20 @@ def main() -> int:
     p_edit.add_argument("package", help="Package name to edit")
     p_edit.set_defaults(func=cmd_edit)
 
+    # deploy
+    p_deploy = sub.add_parser("deploy", help="Deploy dotfiles to a remote host via scp")
+    p_deploy.add_argument("host", help="user@host to deploy to")
+    bootstrap_group = p_deploy.add_mutually_exclusive_group()
+    bootstrap_group.add_argument(
+        "--bootstrap", action="store_true", default=None,
+        help="Run bootstrap.sh on remote after copying",
+    )
+    bootstrap_group.add_argument(
+        "--no-bootstrap", dest="bootstrap", action="store_false",
+        help="Don't run bootstrap.sh on remote after copying",
+    )
+    p_deploy.set_defaults(func=cmd_deploy)
+
     # checkhealth
     p_checkhealth = sub.add_parser("checkhealth", help="Check dotfiles environment health")
     p_checkhealth.set_defaults(func=cmd_checkhealth)
@@ -585,7 +652,7 @@ def main() -> int:
         parser.print_help()
         return 0
     # checkhealth checks for stow itself, so skip the stow requirement
-    if args.command != "checkhealth":
+    if args.command not in ("checkhealth", "deploy"):
         check_stow()
     return args.func(args)
 

@@ -34,8 +34,8 @@ echo "==> Installing stow"
 if command -v stow >/dev/null 2>&1; then
     echo "    stow already installed"
 else
-    confirm "pixi global install stow"
-    pixi global install stow
+    confirm "pixi global install --expose stow stow"
+    pixi global install --expose stow stow
 fi
 
 echo "==> Installing curl"
@@ -51,5 +51,5 @@ mkdir -p "$HOME/.local/bin"
 ln -sf "$DOTFILES_DIR/scripts/dots" "$HOME/.local/bin/dots"
 
 echo "==> Done"
-echo "    Run 'dots packages' to see available packages"
+echo "    Run 'dots list' to see available packages"
 echo "    Run 'dots install <package>' to stow a package"
