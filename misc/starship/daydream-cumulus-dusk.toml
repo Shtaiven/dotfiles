@@ -10,7 +10,7 @@
 #
 
 format = """
-[█](fg:bright-blue)\
+[  █](fg:bright-blue)\
 $time\
 [ ░▒▓█](fg:#e78a4e bg:bright-blue)\
 $username\
@@ -156,5 +156,5 @@ style = "inverted fg:bold bright-blue"
 
 [character]
 success_symbol = "[●](bright-blue)"
-error_symbol = "[●](bright-red)"
+error_symbol = "[●](#e78a4e)"
 vicmd_symbol = "[○](bright-blue)"
