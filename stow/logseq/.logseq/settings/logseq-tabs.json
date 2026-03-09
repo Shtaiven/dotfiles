@@ -4,8 +4,8 @@
   "tabs:select-next": "ctrl+tab",
   "tabs:select-prev": "ctrl+shift+tab",
   "tabs:inherit-custom-css": false,
-  "tabs:show-single-tab": false,
+  "tabs:show-single-tab": true,
   "tabs:close-button-left": false,
-  "tabs:hide-close-all-button": false,
-  "disabled": false
+  "tabs:hide-close-all-button": true,
+  "disabled": true
 }

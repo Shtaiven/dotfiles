@@ -4,5 +4,5 @@
   "showTablerInplace": "mod+alt+t",
   "otherHeading": null,
   "pluginUpdateNotify": true,
-  "disabled": false
+  "disabled": true
 }

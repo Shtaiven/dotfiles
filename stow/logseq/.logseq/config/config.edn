@@ -9,4 +9,4 @@
 ;;   {:shortcuts {:ui/toggle-theme "t z"
 ;;                :ui/toggle-brackets "t b"}}
 
-{}
+{:shortcuts {:plugin.logseq-markdown-table/$shortcut$mod_shift_t []}}

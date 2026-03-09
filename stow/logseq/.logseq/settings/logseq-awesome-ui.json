@@ -1,6 +1,6 @@
 {
   "tabsHeading": null,
-  "tabsPosition": "Standard",
+  "tabsPosition": "TopPanel",
   "tabsStyle": "Awesome",
   "headerHeading": null,
   "headerVariant": "Standard",
@@ -18,6 +18,6 @@
   "contentHeading": null,
   "alwaysShowNewBlockBullet": false,
   "otherHeading": null,
-  "killAnimations": true,
+  "killAnimations": false,
   "disabled": true
 }
