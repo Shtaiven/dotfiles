@@ -3,6 +3,19 @@
 # Detect current shell once
 if [ -n "$ZSH_VERSION" ]; then _shell=zsh; elif [ -n "$BASH_VERSION" ]; then _shell=bash; fi
 
+# Cache helper: run a command once and source the output, re-running if the binary changes.
+# Usage: _eval_cached <binary> <cache_key> <cmd [args...]>
+_eval_cached() {
+	local _bin="$1" _key="$2"; shift 2
+	command -v "$_bin" >/dev/null 2>&1 || return
+	local _cache="${XDG_CACHE_HOME:-$HOME/.cache}/$_key"
+	if [ ! -f "$_cache" ] || [ "$(command -v "$_bin")" -nt "$_cache" ]; then
+		mkdir -p "${_cache%/*}"
+		"$@" >"$_cache" 2>/dev/null
+	fi
+	. "$_cache"
+}
+
 # bat as manpager
 if command -v bat >/dev/null 2>&1; then
 	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
@@ -48,11 +61,7 @@ if command -v fzf >/dev/null 2>&1; then
 	fi
 	unset _bat
 
-	if [ -n "$ZSH_VERSION" ]; then
-		eval "$(fzf --zsh 2>/dev/null)"
-	elif [ -n "$BASH_VERSION" ]; then
-		eval "$(fzf --bash 2>/dev/null)"
-	fi
+	_eval_cached fzf "fzf_init.$_shell" fzf "--$_shell"
 fi
 
 # rgf — interactive ripgrep + fzf with bat preview
@@ -201,42 +210,20 @@ elif [ -n "$ZSH_VERSION" ]; then
 fi
 
 # starship
-command -v starship >/dev/null 2>&1 && eval "$(starship init $_shell)"
+_eval_cached starship "starship_init.$_shell" starship init "$_shell"
 
 # zoxide
 export _ZO_FZF_OPTS="${_ZO_FZF_OPTS:---select-1 --exit-0 --height=40% --reverse --no-sort} --color=16 --border=rounded"
-command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init $_shell)"
+_eval_cached zoxide "zoxide_init.$_shell" zoxide init "$_shell"
 
-# carapace (cached)
-if command -v carapace >/dev/null 2>&1; then
-	_carapace_cache="${XDG_CACHE_HOME:-$HOME/.cache}/carapace_init.$_shell"
-	if [ ! -f "$_carapace_cache" ] || [ "$(command -v carapace)" -nt "$_carapace_cache" ]; then
-		mkdir -p "${_carapace_cache%/*}"
-		carapace _carapace "$_shell" >"$_carapace_cache"
-	fi
-	. "$_carapace_cache"
-	unset _carapace_cache
-fi
+# dots completion
+_eval_cached dots "dots_completion.$_shell" dots completion "$_shell"
 
-# pyenv + pyenv-virtualenv (cached)
-if command -v pyenv >/dev/null 2>&1; then
-	export PYENV_VIRTUALENV_DISABLE_PROMPT=1
-	_pyenv_cache="${XDG_CACHE_HOME:-$HOME/.cache}/pyenv_init.$_shell"
-	if [ ! -f "$_pyenv_cache" ] || [ "$(command -v pyenv)" -nt "$_pyenv_cache" ]; then
-		mkdir -p "${_pyenv_cache%/*}"
-		{
-			pyenv init - "$_shell"
-			command pyenv virtualenv-init - "$_shell" 2>/dev/null
-		} >"$_pyenv_cache"
-	fi
-	. "$_pyenv_cache"
-	unset _pyenv_cache
-fi
+# carapace
+_eval_cached carapace "carapace_init.$_shell" carapace _carapace "$_shell"
 
 # pixi
-if command -v pixi >/dev/null 2>&1; then
-	eval "$(pixi completion --shell $_shell)"
-fi
+_eval_cached pixi "pixi_completion.$_shell" pixi completion --shell "$_shell"
 
 unset _shell
 
