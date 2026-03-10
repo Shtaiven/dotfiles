@@ -26,6 +26,7 @@ return {
             { "<leader>f:", function() require("fzf-lua").command_history() end, desc = "[F]ind command history" },
             { '<leader>f"', function() require("fzf-lua").registers() end, desc = "[F]ind registers" },
             { "<leader>fp", function() require("fzf-lua").resume() end, desc = "[F]ind [P]revious (resume)" },
+            { "<leader>fz", function() require("fzf-lua").zoxide() end, desc = "[F]ind [Z]oxide directory" },
             { "<leader>gc", function() require("fzf-lua").git_commits() end, desc = "[G]it [C]ommits" },
             { "<leader>gS", function() require("fzf-lua").git_status() end, desc = "[G]it [S]tatus" },
         },
