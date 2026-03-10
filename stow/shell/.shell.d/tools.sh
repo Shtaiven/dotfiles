@@ -28,7 +28,7 @@ fi
 # fzf shell integration (key bindings + completion fallback)
 # Must run before carapace so carapace's complete -D takes precedence when present
 if command -v fzf >/dev/null 2>&1; then
-	export FZF_DEFAULT_OPTS="--color=16"
+	export FZF_DEFAULT_OPTS="--color=16 --border=rounded"
 	export FZF_ALT_C_OPTS="--preview 'ls -la {}'"
 
 	# preview for CTRL+T file browsing (images via wezterm imgcat, text via bat)
@@ -204,6 +204,7 @@ fi
 command -v starship >/dev/null 2>&1 && eval "$(starship init $_shell)"
 
 # zoxide
+export _ZO_FZF_OPTS="${_ZO_FZF_OPTS:---select-1 --exit-0 --height=40% --reverse --no-sort} --color=16 --border=rounded"
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init $_shell)"
 
 # carapace (cached)
