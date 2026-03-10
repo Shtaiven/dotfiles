@@ -4,6 +4,7 @@
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -17,21 +18,39 @@ TARGET_DIR = Path.home()
 
 
 def stow_force_overwrite(pkg: str) -> int:
-    """Force-install a package by backing up repo files, adopting, then restoring."""
-    pkg_dir = STOW_DIR / pkg
-    with tempfile.TemporaryDirectory() as tmp:
-        backup = Path(tmp) / pkg
-        shutil.copytree(pkg_dir, backup, symlinks=True)
-        result = run_stow(["--adopt", "-S", pkg])
-        if result.returncode != 0:
-            # Restore repo files from backup since adopt may have partially clobbered
-            shutil.rmtree(pkg_dir)
-            shutil.copytree(backup, pkg_dir, symlinks=True)
-            return result.returncode
-        # Restore the dotfiles versions over the adopted (target) versions
-        shutil.rmtree(pkg_dir)
-        shutil.copytree(backup, pkg_dir, symlinks=True)
-    return 0
+    """Force-install a package by backing up and removing conflicting files, then stowing."""
+    # Dry-run to discover conflicts
+    sim = run_stow(["--simulate", "-S", pkg], capture=True)
+    if sim.returncode == 0:
+        return run_stow(["-S", pkg]).returncode
+
+    # Collect conflicting target paths
+    conflicts: list[Path] = []
+    for line in sim.stderr.splitlines():
+        m = re.search(r"existing target[^:]*:\s+(.+)$", line)
+        if m:
+            conflicts.append(TARGET_DIR / m.group(1).strip())
+
+    if not conflicts:
+        # Unexpected failure — just try anyway
+        return run_stow(["-S", pkg]).returncode
+
+    # Back up conflicting files to a temp dir that persists after the call
+    backup_dir = Path(tempfile.mkdtemp(prefix=f"dots-overwrite-{pkg}-"))
+    for conflict in conflicts:
+        rel = conflict.relative_to(TARGET_DIR)
+        dest = backup_dir / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if conflict.is_symlink() or conflict.is_file():
+            shutil.copy2(conflict, dest)
+            conflict.unlink()
+        elif conflict.is_dir():
+            shutil.copytree(conflict, dest)
+            shutil.rmtree(conflict)
+
+    print(f"  Backup of overwritten files: {backup_dir}")
+
+    return run_stow(["-S", pkg]).returncode
 
 
 def run_stow(args: list[str], capture: bool = False) -> subprocess.CompletedProcess:
@@ -160,7 +179,7 @@ def cmd_install(args: argparse.Namespace) -> int:
                 return result.returncode
             continue
 
-        if args.force:
+        if args.overwrite:
             rc = stow_force_overwrite(pkg)
             if rc != 0:
                 print(f"Failed to install: {pkg}", file=sys.stderr)
@@ -303,17 +322,17 @@ def cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_new(args: argparse.Namespace) -> int:
+def cmd_adopt(args: argparse.Namespace) -> int:
     pkg_path = STOW_DIR / args.package
 
-    if pkg_path.exists() and not args.force:
+    if pkg_path.exists() and not args.overwrite:
         print(
-            f"Error: package '{args.package}' already exists. Use --force to overwrite.",
+            f"Error: package '{args.package}' already exists. Use --overwrite to overwrite.",
             file=sys.stderr,
         )
         return 1
 
-    if pkg_path.exists() and args.force:
+    if pkg_path.exists() and args.overwrite:
         shutil.rmtree(pkg_path)
 
     pkg_path.mkdir(parents=True, exist_ok=True)
@@ -343,7 +362,7 @@ def cmd_new(args: argparse.Namespace) -> int:
 
         print(f"  Added: {rel}")
 
-    print(f"Created package: {args.package}")
+    print(f"Adopted package: {args.package}")
 
     # Decide whether to install
     if args.install:
@@ -363,6 +382,37 @@ def cmd_new(args: argparse.Namespace) -> int:
             return result.returncode
 
     return 0
+
+
+def cmd_update(args: argparse.Namespace) -> int:
+    branch_res = subprocess.run(
+        ["git", "-C", str(DOTFILES_DIR), "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True,
+        text=True,
+    )
+    if branch_res.returncode != 0:
+        print("Error: could not determine git branch", file=sys.stderr)
+        return 1
+    branch = branch_res.stdout.strip()
+
+    dirty_res = subprocess.run(
+        ["git", "-C", str(DOTFILES_DIR), "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+    )
+    is_dirty = bool(dirty_res.stdout.strip())
+
+    if branch != "main" or is_dirty:
+        if branch != "main":
+            print(f"Warning: not on main branch (current: {branch})", file=sys.stderr)
+        if is_dirty:
+            print("Warning: repository has uncommitted changes", file=sys.stderr)
+            for line in dirty_res.stdout.splitlines():
+                print(f"  {line}", file=sys.stderr)
+        return 1
+
+    result = subprocess.run(["git", "-C", str(DOTFILES_DIR), "pull"])
+    return result.returncode
 
 
 def cmd_edit(args: argparse.Namespace) -> int:
@@ -737,7 +787,7 @@ def main() -> int:
     p_install = sub.add_parser("install", help="Install (stow) packages")
     p_install.add_argument("packages", nargs="+", help="Package names to install")
     p_install.add_argument(
-        "-f", "--force", action="store_true", help="Overwrite existing files (restow)"
+        "-o", "--overwrite", action="store_true", help="Overwrite existing files"
     )
     p_install.add_argument(
         "-a", "--adopt", action="store_true", help="Adopt existing files into dotfiles"
@@ -768,21 +818,25 @@ def main() -> int:
     )
     p_list.set_defaults(func=cmd_list)
 
-    # new
-    p_new = sub.add_parser("new", help="Create a new stow package from existing files")
-    p_new.add_argument("package", help="Package name")
-    p_new.add_argument("files", nargs="+", help="Files/directories to include")
-    p_new.add_argument(
-        "-f", "--force", action="store_true", help="Overwrite existing package"
+    # adopt
+    p_adopt = sub.add_parser("adopt", help="Create a new stow package from existing files")
+    p_adopt.add_argument("package", help="Package name")
+    p_adopt.add_argument("files", nargs="+", help="Files/directories to include")
+    p_adopt.add_argument(
+        "-o", "--overwrite", action="store_true", help="Overwrite existing package"
     )
-    install_group = p_new.add_mutually_exclusive_group()
+    install_group = p_adopt.add_mutually_exclusive_group()
     install_group.add_argument(
         "-i", "--install", action="store_true", help="Install after creating"
     )
     install_group.add_argument(
         "-n", "--no-install", action="store_true", help="Don't install after creating"
     )
-    p_new.set_defaults(func=cmd_new)
+    p_adopt.set_defaults(func=cmd_adopt)
+
+    # update
+    p_update = sub.add_parser("update", help="Pull latest changes (main branch only, clean repo)")
+    p_update.set_defaults(func=cmd_update)
 
     # dir
     p_dir = sub.add_parser("dir", help="Print path to dotfiles dir or a package dir")
@@ -825,7 +879,7 @@ def main() -> int:
         parser.print_help()
         return 0
     # checkhealth checks for stow itself, so skip the stow requirement
-    if args.command not in ("checkhealth", "deploy"):
+    if args.command not in ("checkhealth", "deploy", "update"):
         check_stow()
     return args.func(args)
 
