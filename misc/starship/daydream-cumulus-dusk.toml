@@ -145,7 +145,7 @@ format = "[ took $duration]($style)"
 style = "bold inverted #e78a4e"
 
 [jobs]
-format = "[$number$symbol]($style)"
+format = "[ $symbol$number]($style)"
 style = "bold bright-yellow"
 symbol = ""
 
