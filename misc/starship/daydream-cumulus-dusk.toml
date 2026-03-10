@@ -28,11 +28,13 @@ $line_break\
 $directory\
 [ ░▒▓█](fg:#e78a4e bg:bright-blue)\
 $vcsh\
+$fossil_branch\
 $git_branch\
 $git_commit\
 $git_status\
 $git_state\
 $hg_branch\
+$hg_state\
 [█](#e78a4e)\
 $line_break\
 $character"""
@@ -78,6 +80,12 @@ format = "[$symbol$repo]($style)"
 symbol = " "
 style = "bold inverted #e78a4e"
 
+[fossil_branch]
+format = "[$symbol$branch]($style)"
+symbol = " "
+style = "bold inverted #e78a4e"
+disabled = false
+
 [git_branch]
 format = "[$symbol$branch]($style)"
 symbol = " "
@@ -98,6 +106,11 @@ style = "bold inverted #e78a4e"
 [hg_branch]
 format = "[$symbol$branch]($style)"
 symbol = " "
+style = "bold inverted #e78a4e"
+disabled = false
+
+[hg_state]
+format = '[ \($state( $progress_current/$progress_total)\)]($style)'
 style = "bold inverted #e78a4e"
 disabled = false
 
