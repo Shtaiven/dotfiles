@@ -77,6 +77,21 @@ return {
                     require("lualine").refresh()
                 end,
             })
+
+            -- When opening a file from fzf-lua, the buffer ends up unlisted (buflisted=false).
+            -- fzf-lua's previewer loads files as unlisted buffers and deletes them on close;
+            -- when the file is selected, the buffer is recreated via bufadd() which also starts
+            -- unlisted. With no listed buffers, lualine's tabline renders an empty buffers
+            -- component, causing the lualine_a section background (gray) to show through
+            -- instead of being hidden. This forces any real file buffer (buftype="") to be
+            -- listed so lualine counts it and renders the tabline correctly.
+            vim.api.nvim_create_autocmd("BufWinEnter", {
+                callback = function(ev)
+                    if vim.bo[ev.buf].buftype == "" and vim.api.nvim_buf_get_name(ev.buf) ~= "" then
+                        vim.bo[ev.buf].buflisted = true
+                    end
+                end,
+            })
         end,
     },
     {
