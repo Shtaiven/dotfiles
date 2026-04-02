@@ -20,8 +20,8 @@ config.default_cursor_style = "SteadyBar"
 config.allow_square_glyphs_to_overflow_width = "Always"
 
 config.window_padding = {
-	left = "0.5cell",
-	right = "0.5cell",
+	left = "1cell",
+	right = "1cell",
 	top = "0.5cell",
 	bottom = "0.5cell",
 }
@@ -127,15 +127,13 @@ config.colors = {
 	},
 }
 
+config.tab_max_width = 24
 config.hide_tab_bar_if_only_one_tab = true
 config.tab_bar_at_bottom = false
-config.use_fancy_tab_bar = true
+config.use_fancy_tab_bar = false
 
--- Triangle in the upper right used for terminal tabs
-local LOWER_RIGHT_TRIANGLE = wezterm.nerdfonts.ple_lower_right_triangle
-
--- Triangle in the upper left used for terminal tabs
-local LOWER_LEFT_TRIANGLE = wezterm.nerdfonts.ple_lower_left_triangle
+local LEFT_CIRCLE = wezterm.nerdfonts.ple_left_half_circle_thick
+local RIGHT_CIRCLE = wezterm.nerdfonts.ple_right_half_circle_thick
 
 -- This function returns the suggested title for a tab.
 -- It prefers the title that was set via `tab:set_title()`
@@ -146,50 +144,51 @@ local function tab_title(tab_info)
 	local index = tab_info.tab_index + 1
 	-- if the tab title is explicitly set, take that
 	if title and #title > 0 then
-		return index .. ":" .. title
+		return title
 	end
 	-- Otherwise, use the title from the active pane
 	-- in that tab
-	return index .. ":" .. tab_info.active_pane.title
+	return tab_info.active_pane.title
 end
 
 -- Tab coloration and shape
--- wezterm.on(
---   'format-tab-title',
---   function(tab, tabs, panes, config, hover, max_width)
---     local edge_background = INACTIVE_BG_COLOR
---     local background = INACTIVE_BG_COLOR
---     local foreground = INACTIVE_FG_COLOR
+wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
+	local bar_bg = INACTIVE_BG_COLOR
+	local bg = INACTIVE_BG_COLOR
+	local fg = INACTIVE_FG_COLOR
 
---     if tab.is_active then
---       background = ACTIVE_BG_COLOR
---       foreground = ACTIVE_FG_COLOR
---     elseif hover then
---       background = HOVER_BG_COLOR
---       foreground = HOVER_FG_COLOR
---     end
+	if tab.is_active then
+		bg = ACTIVE_FG_COLOR
+		fg = INACTIVE_BG_COLOR
+	elseif hover then
+		bg = HOVER_BG_COLOR
+		fg = HOVER_FG_COLOR
+	end
 
---     local edge_foreground = background
+	local title = tab_title(tab)
+	title = wezterm.truncate_right(title, max_width - 4)
 
---     local title = tab_title(tab)
+	local padding = ""
+	if tab.tab_index == 0 then
+		padding = " "
+	end
 
---     -- ensure that the titles fit in the available space,
---     -- and that we have room for the edges.
---     title = wezterm.truncate_right(title, max_width - 2)
-
---     return {
---       { Background = { Color = edge_background } },
---       { Foreground = { Color = edge_foreground } },
---       { Text = LOWER_RIGHT_TRIANGLE },
---       { Background = { Color = background } },
---       { Foreground = { Color = foreground } },
---       { Text = title },
---       { Background = { Color = edge_background } },
---       { Foreground = { Color = edge_foreground } },
---       { Text = LOWER_LEFT_TRIANGLE },
---     }
---   end
--- )
+	return {
+		{ Background = { Color = bar_bg } },
+		{ Text = padding },
+		{ Foreground = { Color = bg } },
+		{ Text = LEFT_CIRCLE },
+		{ Background = { Color = bg } },
+		{ Foreground = { Color = fg } },
+		{ Attribute = { Intensity = tab.is_active and "Bold" or "Normal" } },
+		{ Text = " " .. title .. " " },
+		{ Background = { Color = bar_bg } },
+		{ Foreground = { Color = bg } },
+		{ Text = RIGHT_CIRCLE },
+		{ Background = { Color = bar_bg } },
+		{ Text = " " },
+	}
+end)
 
 -- Keybindings
 local ok, smart_splits = pcall(wezterm.plugin.require, "https://github.com/mrjones2014/smart-splits.nvim")
