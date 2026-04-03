@@ -168,9 +168,13 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_wid
 	local title = tab_title(tab)
 	-- Reserve 4 cells: left circle (1) + space (1) + space (1) + right circle (1)
 	local max_title_width = max_width - 4
-	-- Truncate based on actual display width, not codepoint count
-	while wezterm.column_width(title) > max_title_width do
-		title = wezterm.truncate_right(title, #title - 1)
+	-- truncate_right counts graphemes, not display cells, so wide chars
+	-- (like nerd font icons) can cause the title to overflow. Shrink by
+	-- one grapheme at a time until it fits.
+	local limit = max_title_width
+	while wezterm.column_width(title) > max_title_width and limit > 0 do
+		limit = limit - 1
+		title = wezterm.truncate_right(title, limit)
 	end
 
 	local padding = ""
