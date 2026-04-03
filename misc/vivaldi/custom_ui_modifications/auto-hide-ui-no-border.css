@@ -1,0 +1,8 @@
+/* zero padding from user sjudenim */
+
+div.auto-hide {
+
+    grid-template-columns: 0px [content] 1fr 0px !important;
+    grid-template-rows: 0px [content] 1fr 0px !important;
+
+}
