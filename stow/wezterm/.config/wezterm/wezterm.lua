@@ -166,7 +166,12 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_wid
 	end
 
 	local title = tab_title(tab)
-	title = wezterm.truncate_right(title, max_width - 4)
+	-- Reserve 4 cells: left circle (1) + space (1) + space (1) + right circle (1)
+	local max_title_width = max_width - 4
+	-- Truncate based on actual display width, not codepoint count
+	while wezterm.column_width(title) > max_title_width do
+		title = wezterm.truncate_right(title, #title - 1)
+	end
 
 	local padding = ""
 	if tab.tab_index == 0 then
