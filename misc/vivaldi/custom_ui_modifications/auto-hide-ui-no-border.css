@@ -1,8 +1,18 @@
 /* zero padding from user sjudenim */
-
 div.auto-hide {
 
     grid-template-columns: 0px [content] 1fr 0px !important;
     grid-template-rows: 0px [content] 1fr 0px !important;
 
+}
+
+/* remove the border radius from around the main content (and the auto-hidden elements) */
+#browser.native {
+    --radiusWindow: 0px !important;
+    border-radius: 0 !important;
+}
+
+/* restore rounding of floading elements */
+#browser.native div.auto-hide-wrapper {
+    --radiusWindow: 16px !important; /* default 6px, increase to match os */
 }
