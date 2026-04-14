@@ -10,7 +10,7 @@
 #
 
 format = """
-[ ](fg:bright-blue)\
+[](fg:bright-blue)\
 $username\
 $hostname\
 $singularity\
