@@ -1,0 +1,24 @@
+[
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 276
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "Control_L+Super_L+KP_Up",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 275
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "Control_L+Super_L+KP_Down",
+        "mapping_type": "key_macro"
+    }
+]

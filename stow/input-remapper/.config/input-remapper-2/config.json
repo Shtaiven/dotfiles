@@ -5,8 +5,7 @@
         "AT Translated Set 2 keyboard": "CTRL<->CAPS",
         "Cherry GmbH CHERRY Mouse": "Workspace Switching",
         "Logitech Advanced Corded Mouse M500s": "Workspace switching",
-        "Logitech MX Anywhere 3": "Workspaces",
-        "Logitech USB Keyboard": "CTRL<->CAPS and ISO<->ANSI"
+        "Logitech MX Anywhere 3": "Workspaces"
     },
     "macros": {
         "keystroke_sleep_ms": 10
@@ -21,5 +20,5 @@
             "y_scroll_speed": 0.5
         }
     },
-    "version": "1.4.0"
+    "version": "2.0.1"
 }

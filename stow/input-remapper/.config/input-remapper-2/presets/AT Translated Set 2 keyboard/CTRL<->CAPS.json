@@ -1,0 +1,189 @@
+[
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 58
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "Control_L",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 22
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_PAGEUP",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 24
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_PAGEDOWN",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 25
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_PRINT",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 14
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_DELETE",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_UNKNOWN",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 39
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_END",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 38
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_RIGHT",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 37
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_DOWN",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 36
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_LEFT",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 35
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_HOME",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 23
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_UP",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 29
+            },
+            {
+                "type": 1,
+                "code": 15
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "KEY_CAPSLOCK",
+        "mapping_type": "key_macro"
+    }
+]
