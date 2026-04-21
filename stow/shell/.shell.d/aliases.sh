@@ -43,6 +43,11 @@ if command -v zoxide >/dev/null 2>&1; then
 	alias cd=z
 fi
 
+# delta — override diff
+if command -v delta >/dev/null 2>&1; then
+	alias diff=delta
+fi
+
 # dircolors + color aliases
 if [ -x /usr/bin/dircolors ]; then
 	if [ -r "$HOME/.dircolors" ]; then

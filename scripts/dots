@@ -374,7 +374,7 @@ def cmd_adopt(args: argparse.Namespace) -> int:
         do_install = choice in ("y", "yes")
 
     if do_install:
-        result = run_stow(["-S", args.package])
+        result = run_stow(["--adopt", "-S", args.package])
         if result.returncode == 0:
             print(f"Installed: {args.package}")
         else:
