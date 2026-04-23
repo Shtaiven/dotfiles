@@ -14,6 +14,13 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
 
+# Prevent autosuggestions from interfering with repeated tab completion
+ZSH_AUTOSUGGEST_CLEAR_WIDGETS+=(expand-or-complete expand-or-complete-prefix)
+
+# Completion caching
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "$HOME/.zcompcache"
+
 # Secrets (not tracked in dotfiles)
 [[ -f "$HOME/.secrets" ]] && source "$HOME/.secrets"
 
