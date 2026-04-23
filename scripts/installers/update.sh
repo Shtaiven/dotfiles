@@ -9,6 +9,6 @@ SCRIPT_ARR=(
 	"zellij.sh"
 )
 
-for script in ${SCRIPT_ARR[@]}; do
-	source ${SCRIPT_DIR}/${script}
+for script in "${SCRIPT_ARR[@]}"; do
+	source "${SCRIPT_DIR}/${script}"
 done

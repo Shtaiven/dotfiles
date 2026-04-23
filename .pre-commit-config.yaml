@@ -1,0 +1,49 @@
+exclude: ^(stow/logseq|stow/fonts|misc/qbittorrent|misc/tabliss)/
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+      - id: check-json
+        exclude: ^stow/input-remapper/
+      - id: check-toml
+      - id: check-yaml
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        types: [shell]
+        exclude_types: [zsh]
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.13.1-1
+    hooks:
+      - id: shfmt
+        args: [-i, "2", -ci]
+        types: [shell]
+
+  - repo: local
+    hooks:
+      - id: check-hardcoded-home
+        name: check hardcoded home paths
+        language: script
+        entry: scripts/check-hardcoded-home.sh
+        types: [text]
+        exclude: ^scripts/check-hardcoded-home\.sh$
+
+      - id: zsh-syntax-check
+        name: zsh syntax check
+        language: script
+        types: [zsh]
+        entry: scripts/zsh-syntax-check.sh
+
+  - repo: https://github.com/JohnnyMorganz/StyLua
+    rev: v2.4.1
+    hooks:
+      - id: stylua

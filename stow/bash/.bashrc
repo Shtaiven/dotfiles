@@ -1,4 +1,5 @@
 # If not running interactively, don't do anything
+# shellcheck shell=bash
 [[ $- != *i* ]] && return
 
 # History

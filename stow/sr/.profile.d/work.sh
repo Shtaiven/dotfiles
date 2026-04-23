@@ -1,4 +1,5 @@
 # Work-specific login environment
+# shellcheck shell=bash
 
 # JetBrains Toolbox
 if [ -d "$HOME/.local/share/JetBrains/Toolbox/scripts" ]; then

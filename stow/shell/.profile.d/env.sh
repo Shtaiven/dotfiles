@@ -1,5 +1,6 @@
 # Portable login environment — sourced by both .profile and .zprofile
 # Must be POSIX sh compliant
+# shellcheck shell=sh
 
 # Deduplicated PATH helpers (POSIX sh)
 path_prepend() { case ":$PATH:" in *:"$1":*) ;; *) PATH="$1:$PATH" ;; esac }

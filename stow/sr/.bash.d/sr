@@ -1,4 +1,4 @@
-# Ensure pixi bin is on PATH (may not be set in non-login shells)
+# shellcheck shell=bash
 # Ensure pixi bin is on PATH (may not be set in non-login shells)
 [[ -d "$HOME/.pixi/bin" && ":$PATH:" != *":$HOME/.pixi/bin:"* ]] && export PATH="$HOME/.pixi/bin:$PATH"
 
@@ -26,16 +26,16 @@ alias sr-pycharm='tmux new -d sr run pycharm \$CONDA_DEFAULT_ENV'
 
 # >>> mamba initialize >>>
 # !! Contents within this block are managed by 'mamba init' !!
-export MAMBA_EXE="/home/steven/.local/bin/micromamba";
-export MAMBA_ROOT_PREFIX="/home/steven/micromamba";
+export MAMBA_EXE="$HOME/.local/bin/micromamba";
+export MAMBA_ROOT_PREFIX="$HOME/micromamba";
 __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
 if [ $? -eq 0 ]; then
     eval "$__mamba_setup"
 else
-    if [ -f "/home/steven/micromamba/etc/profile.d/micromamba.sh" ]; then
-        . "/home/steven/micromamba/etc/profile.d/micromamba.sh"
+    if [ -f "$HOME/micromamba/etc/profile.d/micromamba.sh" ]; then
+        . "$HOME/micromamba/etc/profile.d/micromamba.sh"
     else
-        export  PATH="/home/steven/micromamba/bin:$PATH"  # extra space after export prevents interference from conda init
+        export  PATH="$HOME/micromamba/bin:$PATH"  # extra space after export prevents interference from conda init
     fi
 fi
 unset __mamba_setup
@@ -80,4 +80,3 @@ publish-rn-link ()
           curl -X POST -H 'Content-type: application/json' --data "{'text' : '${text}'  } " "$SR_SLACK_WEBHOOK_URL"
     fi
 }
-

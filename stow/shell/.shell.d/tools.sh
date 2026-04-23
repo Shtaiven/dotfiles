@@ -1,4 +1,5 @@
 # Portable tool inits — sourced by both bash and zsh
+# shellcheck shell=bash
 
 # Detect current shell once
 if [ -n "$ZSH_VERSION" ]; then _shell=zsh; elif [ -n "$BASH_VERSION" ]; then _shell=bash; fi
@@ -18,9 +19,11 @@ _eval_cached() {
 
 # bat as manpager
 if command -v bat >/dev/null 2>&1; then
+	# shellcheck disable=SC2089,SC2090
 	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 	export MANROFFOPT="-c"
 elif command -v batcat >/dev/null 2>&1; then
+	# shellcheck disable=SC2089,SC2090
 	export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
 	export MANROFFOPT="-c"
 fi
@@ -50,6 +53,7 @@ if command -v fzf >/dev/null 2>&1; then
 	else _bat=""; fi
 
 	if command -v wezterm >/dev/null 2>&1 && [ -n "$_bat" ]; then
+		# shellcheck disable=SC2089,SC2090
 		export FZF_CTRL_T_OPTS="--preview '
 			case {} in
 				*.png|*.jpg|*.jpeg|*.gif|*.bmp|*.webp|*.svg|*.ico|*.tiff|*.tif)
@@ -57,6 +61,7 @@ if command -v fzf >/dev/null 2>&1; then
 				*) $_bat --color=always --plain {} ;;
 			esac'"
 	elif [ -n "$_bat" ]; then
+		# shellcheck disable=SC2089,SC2090
 		export FZF_CTRL_T_OPTS="--preview '$_bat --color=always --plain {}'"
 	fi
 	unset _bat
@@ -116,6 +121,7 @@ options:
 		config=$(sed '/# plugins (TPM)/,$d' "$HOME/.tmux.conf")
 		hash=$(printf '%s' "$config" | sha1sum | cut -c1-8)
 		remote_conf="/tmp/.tmux-${hash}.conf"
+		# shellcheck disable=SC2029
 		ssh "$1" "test -f $remote_conf" ||
 			printf '%s' "$config" | ssh "$1" "cat > $remote_conf" || return 1
 		ssh -t "$1" "tmux -f $remote_conf new-session -A -s main"
@@ -188,9 +194,11 @@ options:
 	}
 	local remote_bin
 	remote_bin=$(ssh "$host" 'echo $HOME/.local/bin') || { rm -f "$tmpfile"; return 1; }
+	# shellcheck disable=SC2029
 	ssh "$host" "mkdir -p '$remote_bin'; pkill -f distant 2>/dev/null; rm -f '$remote_bin/distant'" || true
 	scp "$tmpfile" "$host:$remote_bin/distant" || { rm -f "$tmpfile"; return 1; }
 	rm -f "$tmpfile"
+	# shellcheck disable=SC2029
 	ssh "$host" "chmod +x '$remote_bin/distant'"
 	echo "distant installed on $host ($remote_bin/distant)"
 }

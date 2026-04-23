@@ -158,4 +158,3 @@ style = "inverted fg:bold bright-purple"
 success_symbol = "[●](bright-purple)"
 error_symbol = "[●](bright-red)"
 vicmd_symbol = "[○](bright-purple)"
-

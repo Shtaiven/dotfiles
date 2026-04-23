@@ -7,4 +7,3 @@ ripgrep@stable
 shfmt@stable
 shellcheck@stable
 webi@stable
-

@@ -1,4 +1,5 @@
 # Portable aliases — sourced by both bash and zsh
+# shellcheck shell=sh
 
 # please — re-run last command with sudo
 alias please='sudo $(fc -ln -1)'
@@ -25,8 +26,8 @@ if [ "$TERM" = "xterm-kitty" ]; then
 fi
 
 # peon-ping quick controls
-[ -f /home/steven/.claude/hooks/peon-ping/peon.sh ] && alias peon="bash /home/steven/.claude/hooks/peon-ping/peon.sh"
-[ -f /home/steven/.claude/hooks/peon-ping/completions.bash ] && source /home/steven/.claude/hooks/peon-ping/completions.bash
+[ -f "$HOME/.claude/hooks/peon-ping/peon.sh" ] && alias peon="bash $HOME/.claude/hooks/peon-ping/peon.sh"
+[ -f "$HOME/.claude/hooks/peon-ping/completions.bash" ] && . "$HOME/.claude/hooks/peon-ping/completions.bash"
 
 # nvim
 if command -v nvim >/dev/null 2>&1; then

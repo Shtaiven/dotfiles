@@ -62,4 +62,3 @@ distant-install <user@host>  # install distant.nvim on the remote which allows f
 * wezterm (a terminal emulator to install locally)
 * zoxide (executable is z, zi, alternative for cd)
 * zsh (bash alternative with extra features)
-
