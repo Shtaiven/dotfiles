@@ -11,7 +11,7 @@ _eval_cached() {
 	local _cache="${XDG_CACHE_HOME:-$HOME/.cache}/$_key"
 	if [ ! -f "$_cache" ] || [ "$(command -v "$_bin")" -nt "$_cache" ]; then
 		mkdir -p "${_cache%/*}"
-		"$@" >"$_cache" 2>/dev/null
+		"$@" >|"$_cache" 2>/dev/null
 	fi
 	. "$_cache"
 }

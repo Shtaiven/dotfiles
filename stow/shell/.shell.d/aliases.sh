@@ -1,11 +1,7 @@
 # Portable aliases — sourced by both bash and zsh
 
 # please — re-run last command with sudo
-if [ -n "$ZSH_VERSION" ]; then
-	alias please='sudo $(fc -ln -1)'
-else
-	alias please='sudo $(fc -ln -1)'
-fi
+alias please='sudo $(fc -ln -1)'
 
 # gearlever — flatpak guard
 if command -v flatpak >/dev/null 2>&1 && flatpak info it.mijorus.gearlever >/dev/null 2>&1; then
