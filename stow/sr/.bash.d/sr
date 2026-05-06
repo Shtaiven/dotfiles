@@ -12,12 +12,15 @@ source "$_sr_completion_cache"
 unset _sr_completion_cache
 
 # sr dotfiles
-source ~/dots/setup.bash
+[[ -f ~/dots/setup.bash ]] && source ~/dots/setup.bash
 
 # alias for sr
 SR_DOTS_DIR="$HOME/dots"
 SR_INSTALLATION_TOOLS_DIR="$HOME/src/sr_installation_tools"
 alias sr-update="( cd $SR_DOTS_DIR && git pull );pixi global install --force-reinstall caty sr_installation_tools -c https://conda.smart-robotics.nl/get/smart-robotics -c conda-forge"
+
+# sr_deployment
+[[ -f "$HOME/src/sr_deployment/scripts/common.bash" ]] && source "$HOME/src/sr_deployment/scripts/common.bash"
 
 # aliases for sr ides
 alias sr-clion='tmux new -d sr run clion \$CONDA_DEFAULT_ENV'
