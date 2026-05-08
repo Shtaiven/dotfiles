@@ -38,7 +38,7 @@ local ACTIVE_BG_COLOR = "#202020"
 local ACTIVE_FG_COLOR = "#d4be98"
 local HOVER_BG_COLOR = "#101010"
 local HOVER_FG_COLOR = "#928374"
-local COMMAND_PALETTE_BG_COLOR = "#131414"
+local COMMAND_PALETTE_BG_COLOR = "#303030"
 
 config.window_frame = {
 	-- The font used in the tab bar.
