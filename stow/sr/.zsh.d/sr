@@ -1,0 +1,10 @@
+# shellcheck shell=bash
+# sr zsh completion: ensure user site-functions dir is on fpath before compinit,
+# and auto-install the _sr symlink on first use of a new machine.
+# Must be sourced before prezto's compinit runs.
+fpath=("$HOME/.local/share/zsh/site-functions" $fpath)
+
+if command -v sr >/dev/null 2>&1 \
+	&& [[ ! -e "$HOME/.local/share/zsh/site-functions/_sr" ]]; then
+	sr completion install zsh >/dev/null 2>&1
+fi

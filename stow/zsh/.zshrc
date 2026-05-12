@@ -9,6 +9,14 @@
 # Bash-style globbing: pass unmatched globs through as literals
 setopt NO_NOMATCH
 
+# Local specific extensions (sourced before Prezto so fpath edits apply pre-compinit)
+if [[ -d "$HOME/.zsh.d" ]]; then
+  for f in "$HOME"/.zsh.d/*(N); do
+    [[ -f "$f" ]] && source "$f"
+  done
+  unset f
+fi
+
 # Source Prezto (installed by: dots install zsh)
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"

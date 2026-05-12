@@ -2,14 +2,13 @@
 # Ensure pixi bin is on PATH (may not be set in non-login shells)
 [[ -d "$HOME/.pixi/bin" && ":$PATH:" != *":$HOME/.pixi/bin:"* ]] && export PATH="$HOME/.pixi/bin:$PATH"
 
-# sr bash completion (cached for fast startup)
-_sr_completion_cache="$HOME/.cache/sr-bash-completion.bash"
-if [[ ! -f "$_sr_completion_cache" ]] || [[ "$(command -v sr)" -nt "$_sr_completion_cache" ]]; then
-	mkdir -p "${_sr_completion_cache%/*}"
-	_SR_COMPLETE=bash_source sr > "$_sr_completion_cache" 2>/dev/null
+# sr bash completion: auto-install the symlink on first use of a new machine.
+# `sr completion install bash` symlinks into ~/.local/share/bash-completion/
+# completions/sr, which bash-completion >= 2.10 auto-discovers.
+if command -v sr >/dev/null 2>&1 \
+	&& [[ ! -e "$HOME/.local/share/bash-completion/completions/sr" ]]; then
+	sr completion install bash >/dev/null 2>&1
 fi
-source "$_sr_completion_cache"
-unset _sr_completion_cache
 
 # sr dotfiles
 [[ -f ~/dots/setup.bash ]] && source ~/dots/setup.bash
