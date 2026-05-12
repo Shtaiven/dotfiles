@@ -1,6 +1,5 @@
 # shellcheck shell=bash
-# Ensure pixi bin is on PATH (may not be set in non-login shells)
-[[ -d "$HOME/.pixi/bin" && ":$PATH:" != *":$HOME/.pixi/bin:"* ]] && export PATH="$HOME/.pixi/bin:$PATH"
+# Bash-only sr work config. Shared sr config lives in ~/.shell.d/sr.sh.
 
 # sr bash completion: auto-install the symlink on first use of a new machine.
 # `sr completion install bash` symlinks into ~/.local/share/bash-completion/
@@ -9,22 +8,6 @@ if command -v sr >/dev/null 2>&1 \
 	&& [[ ! -e "$HOME/.local/share/bash-completion/completions/sr" ]]; then
 	sr completion install bash >/dev/null 2>&1
 fi
-
-# sr dotfiles
-[[ -f ~/dots/setup.bash ]] && source ~/dots/setup.bash
-
-# alias for sr
-SR_DOTS_DIR="$HOME/dots"
-SR_INSTALLATION_TOOLS_DIR="$HOME/src/sr_installation_tools"
-alias sr-update="( cd $SR_DOTS_DIR && git pull );pixi global install --force-reinstall caty sr_installation_tools -c https://conda.smart-robotics.nl/get/smart-robotics -c conda-forge"
-
-# sr_deployment
-[[ -f "$HOME/src/sr_deployment/scripts/common.bash" ]] && source "$HOME/src/sr_deployment/scripts/common.bash"
-
-# aliases for sr ides
-alias sr-clion='tmux new -d sr run clion \$CONDA_DEFAULT_ENV'
-alias sr-code='tmux new -d sr run code \$CONDA_DEFAULT_ENV'
-alias sr-pycharm='tmux new -d sr run pycharm \$CONDA_DEFAULT_ENV'
 
 # >>> mamba initialize >>>
 # !! Contents within this block are managed by 'mamba init' !!
@@ -42,43 +25,3 @@ else
 fi
 unset __mamba_setup
 # <<< mamba initialize <<<
-
-function yes_or_no {
-    if [[ -n "$SKIP_ASK" ]] ; then return 0; fi
-    while true; do
-        echo -e "$* [y/n]: "
-        read -r yn
-        case $yn in
-            [Yy]*) return 0  ;;
-            [Nn]*) echo "No" ; return  1 ;;
-        esac
-    done
-}
-
-publish-rn-link ()
-{
-    local TAG;
-    local FILE;
-    local remote;
-    local text;
-    TAG=$(git describe --exact-match --tags);
-    FILE=$(git show --name-only HEAD~ | tail -n1);
-    commit=0
-    while ! yes_or_no "Is ${FILE} the changelog"; do
-        FILE=$(git show --name-only HEAD~${commit} | tail -n1);
-        commit=$(($commit + 1))
-    done
-    remote=$(git remote get-url origin);
-    remote=${remote/git@git.smart-robotics.nl:/https:\/\/git.smart-robotics.nl\/};
-    remote=${remote%.git};
-
-    text="<${remote}/-/blob/${TAG}/${FILE} | ${remote##*/}@${TAG}>"
-    if [[ -n "$1" ]] ; then
-       text="${text} ($1)"
-    fi
-    text="${text} by $(git config user.name)"
-    if yes_or_no "Post ${text} to #release_tags?"
-        then
-          curl -X POST -H 'Content-type: application/json' --data "{'text' : '${text}'  } " "$SR_SLACK_WEBHOOK_URL"
-    fi
-}
