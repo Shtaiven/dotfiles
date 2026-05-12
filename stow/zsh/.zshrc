@@ -33,7 +33,8 @@ zstyle ':completion:*' cache-path "$HOME/.zcompcache"
 [[ -f "$HOME/.secrets" ]] && source "$HOME/.secrets"
 
 # Source shared shell config (portable bash/zsh)
-for f in "$HOME"/.shell.d/*.sh(N); do
+# (N-.) = NULL_GLOB + follow symlinks + regular files only — skips broken symlinks
+for f in "$HOME"/.shell.d/*.sh(N-.); do
   source "$f"
 done
 unset f
