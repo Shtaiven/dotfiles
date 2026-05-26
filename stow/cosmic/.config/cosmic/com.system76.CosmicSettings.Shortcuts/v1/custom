@@ -1,0 +1,39 @@
+{
+    (
+        modifiers: [
+            Super,
+        ],
+    ): System(Launcher),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "x",
+    ): Spawn("/home/steven/.pixi/envs/ixontray2/bin/ixonlauncher"),
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "semicolon",
+    ): Resizing(Inwards),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "semicolon",
+    ): Resizing(Outwards),
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "m",
+    ): Minimize,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "e",
+    ): Spawn("flatpak run it.mijorus.smile"),
+}

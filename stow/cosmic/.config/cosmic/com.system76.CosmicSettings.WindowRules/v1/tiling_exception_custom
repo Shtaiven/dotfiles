@@ -1,0 +1,12 @@
+[
+  (
+    enabled: true,
+    appid: ".*",
+    title: "^IXON.*"
+  ),
+  (
+    enabled: true,
+    appid: ".*",
+    title: "^Smile$"
+  )
+]

@@ -1,0 +1,6 @@
+Some((
+    wait_time: 0,
+    transition_time: 100,
+    handle_size: 4,
+    unhide_delay: 200,
+))
