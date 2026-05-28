@@ -121,15 +121,15 @@
         ),
         stackedbars: (
             background: (
-                red: 40,
-                green: 40,
-                blue: 40,
+                red: 43,
+                green: 43,
+                blue: 43,
                 alpha: 255,
             ),
             frame: (
-                red: 40,
-                green: 40,
-                blue: 40,
+                red: 255,
+                green: 255,
+                blue: 255,
                 alpha: 255,
             ),
             text: (

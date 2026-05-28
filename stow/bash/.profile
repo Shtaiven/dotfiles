@@ -14,3 +14,7 @@ if [ -d "$HOME/.profile.d" ]; then
   done
   unset f
 fi
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/home/steven/.lmstudio/bin"
+# End of LM Studio CLI section
