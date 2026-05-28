@@ -1036,29 +1036,99 @@ def check_stow() -> None:
 
 def main() -> int:
 
+    fmt = argparse.RawDescriptionHelpFormatter
+
     parser = argparse.ArgumentParser(
-        prog="dots", description="Unified dotfiles management with GNU Stow"
+        prog="dots",
+        description=(
+            "Unified dotfiles management built on GNU Stow.\n"
+            "\n"
+            "Each subdirectory of stow/ is a 'package' whose contents are symlinked\n"
+            "into your home directory. `dots` wraps stow with conflict handling,\n"
+            "status listings, and helpers for capturing live config files back into\n"
+            "the repo."
+        ),
+        epilog=(
+            "Common workflows:\n"
+            "  dots list                          # see which packages are installed\n"
+            "  dots install zsh nvim              # symlink package files into ~\n"
+            "  dots adopt cosmic ~/.config/cosmic # capture live state into stow/cosmic\n"
+            "  dots edit zsh                      # open a package in $EDITOR\n"
+        ),
+        formatter_class=fmt,
     )
-    sub = parser.add_subparsers(dest="command")
+    sub = parser.add_subparsers(dest="command", metavar="<command>")
 
     # install
-    p_install = sub.add_parser("install", help="Install (stow) packages")
+    p_install = sub.add_parser(
+        "install",
+        help="Symlink package files into your home directory",
+        description=(
+            "Install one or more packages by creating symlinks from your home\n"
+            "directory into stow/<package>/. If a target path already exists with\n"
+            "different content, dots prompts you to adopt (move the existing file\n"
+            "into the package), overwrite (replace with the package's version,\n"
+            "saving a timestamped backup), or skip."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dots install zsh                # interactive on conflicts\n"
+            "  dots install -o cosmic          # force overwrite existing files\n"
+            "  dots install -a nvim            # adopt existing files into the package\n"
+            "  dots install zsh nvim shell     # install multiple at once\n"
+        ),
+        formatter_class=fmt,
+    )
     p_install.add_argument("packages", nargs="+", help="Package names to install")
     p_install.add_argument(
-        "-o", "--overwrite", action="store_true", help="Overwrite existing files"
+        "-o",
+        "--overwrite",
+        action="store_true",
+        help="On conflict, replace target with the package version (backs up the original)",
     )
     p_install.add_argument(
-        "-a", "--adopt", action="store_true", help="Adopt existing files into dotfiles"
+        "-a",
+        "--adopt",
+        action="store_true",
+        help="On conflict, move the existing file into the package and symlink it",
     )
     p_install.set_defaults(func=cmd_install)
 
     # remove
-    p_remove = sub.add_parser("remove", help="Remove (unstow) packages")
+    p_remove = sub.add_parser(
+        "remove",
+        help="Remove symlinks created by a package (unstow)",
+        description=(
+            "Remove the symlinks a package created in your home directory. The\n"
+            "files in stow/<package>/ are NOT deleted — use this to temporarily\n"
+            "uninstall a package without losing its content."
+        ),
+        epilog="Example:\n  dots remove zsh\n",
+        formatter_class=fmt,
+    )
     p_remove.add_argument("packages", nargs="+", help="Package names to remove")
     p_remove.set_defaults(func=cmd_remove)
 
     # list
-    p_list = sub.add_parser("list", help="List packages and their stow status")
+    p_list = sub.add_parser(
+        "list",
+        help="Show packages and their install status",
+        description=(
+            "List every package under stow/ along with one of three statuses:\n"
+            "  installed     — all files are symlinked into the destination\n"
+            "  not installed — package exists but no symlinks present\n"
+            "  partial       — some files linked, others missing or conflicting\n"
+            "Filters narrow the output to a specific category."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dots list                  # everything\n"
+            "  dots list --installed      # only fully-installed packages\n"
+            "  dots list --not-installed  # packages with at least one unlinked file\n"
+            "  dots list --unmanaged      # packages with conflicting files in dest\n"
+        ),
+        formatter_class=fmt,
+    )
     p_list.add_argument(
         "--installed",
         action="store_true",
@@ -1078,47 +1148,129 @@ def main() -> int:
 
     # adopt
     p_adopt = sub.add_parser(
-        "adopt", help="Create a new stow package from existing files"
+        "adopt",
+        help="Capture files from ~ into a stow package",
+        description=(
+            "Copy files from your home directory into a stow package, then\n"
+            "re-stow them as symlinks. Use this to capture changes made directly\n"
+            "to live config files back into the dotfiles repo.\n"
+            "\n"
+            "Default behavior (merges into an existing package):\n"
+            "  1. Delete broken symlinks under the source paths.\n"
+            "  2. Copy live → stow, dereferencing symlinks (so existing stow\n"
+            "     links resolve back to themselves — a no-op for unchanged files).\n"
+            "  3. Unstow + re-stow with --adopt so the destination becomes\n"
+            "     symlinks again, with no straggling real files.\n"
+            "\n"
+            "Use --overwrite to wipe the existing package directory first\n"
+            "(start fresh) rather than merging. Use --dry-run to preview."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dots adopt cosmic ~/.config/cosmic               # merge live state into stow\n"
+            "  dots adopt --dry-run cosmic ~/.config/cosmic     # show planned changes only\n"
+            "  dots adopt -o nvim ~/.config/nvim                # wipe stow/nvim and re-adopt\n"
+            "  dots adopt -i tmux ~/.tmux.conf                  # adopt and re-install non-interactively\n"
+        ),
+        formatter_class=fmt,
     )
-    p_adopt.add_argument("package", help="Package name")
-    p_adopt.add_argument("files", nargs="+", help="Files/directories to include")
+    p_adopt.add_argument("package", help="Package name (created if missing)")
     p_adopt.add_argument(
-        "-o", "--overwrite", action="store_true", help="Overwrite existing package"
+        "files",
+        nargs="+",
+        help="Files/directories under your home to capture into the package",
+    )
+    p_adopt.add_argument(
+        "-o",
+        "--overwrite",
+        action="store_true",
+        help="Delete the existing stow/<package> directory before copying",
     )
     p_adopt.add_argument(
         "--dry-run",
         action="store_true",
-        help="Show what would change without modifying anything",
+        help="Print broken-symlink removals and add/overwrite plans without touching anything",
     )
     install_group = p_adopt.add_mutually_exclusive_group()
     install_group.add_argument(
-        "-i", "--install", action="store_true", help="Install after creating"
+        "-i",
+        "--install",
+        action="store_true",
+        help="Re-stow after adopting without prompting",
     )
     install_group.add_argument(
-        "-n", "--no-install", action="store_true", help="Don't install after creating"
+        "-n",
+        "--no-install",
+        action="store_true",
+        help="Skip re-stow and exit after copying",
     )
     p_adopt.set_defaults(func=cmd_adopt)
 
     # update
     p_update = sub.add_parser(
-        "update", help="Pull latest changes (main branch only, clean repo)"
+        "update",
+        help="git pull the dotfiles repo (main branch, clean tree only)",
+        description=(
+            "Run `git pull` in the dotfiles repository. Refuses if you're not\n"
+            "on the main branch or if the working tree has uncommitted changes,\n"
+            "so an update never silently clobbers in-progress edits."
+        ),
+        epilog="Example:\n  dots update\n",
+        formatter_class=fmt,
     )
     p_update.set_defaults(func=cmd_update)
 
     # dir
-    p_dir = sub.add_parser("dir", help="Print path to dotfiles dir or a package dir")
+    p_dir = sub.add_parser(
+        "dir",
+        help="Print the path to the dotfiles repo or a package",
+        description=(
+            "Print the absolute path to the dotfiles repository root, or to a\n"
+            "specific package directory under stow/. Useful for shell expansion."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  cd $(dots dir)            # cd into ~/.dotfiles\n"
+            "  cd $(dots dir zsh)        # cd into stow/zsh\n"
+        ),
+        formatter_class=fmt,
+    )
     p_dir.add_argument(
-        "package", nargs="?", help="Package name (omit for dotfiles root)"
+        "package", nargs="?", help="Package name (omit to print the repo root)"
     )
     p_dir.set_defaults(func=cmd_dir)
 
     # edit
-    p_edit = sub.add_parser("edit", help="Open a package directory in $EDITOR")
+    p_edit = sub.add_parser(
+        "edit",
+        help="Open a package directory in $EDITOR",
+        description=(
+            "Launch $EDITOR on stow/<package>/. Equivalent to\n"
+            "`$EDITOR $(dots dir <package>)`."
+        ),
+        epilog="Example:\n  dots edit zsh\n",
+        formatter_class=fmt,
+    )
     p_edit.add_argument("package", help="Package name to edit")
     p_edit.set_defaults(func=cmd_edit)
 
     # deploy
-    p_deploy = sub.add_parser("deploy", help="Deploy dotfiles to a remote host via scp")
+    p_deploy = sub.add_parser(
+        "deploy",
+        help="Copy the dotfiles repo to a remote host via scp",
+        description=(
+            "Mirror the local dotfiles repository to a remote host with scp.\n"
+            "Optionally runs bootstrap.sh on arrival to set everything up.\n"
+            "If neither --bootstrap nor --no-bootstrap is given, you're prompted."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dots deploy user@host                # prompt for bootstrap\n"
+            "  dots deploy --bootstrap user@host    # run bootstrap.sh automatically\n"
+            "  dots deploy --no-bootstrap user@host # just copy, don't bootstrap\n"
+        ),
+        formatter_class=fmt,
+    )
     p_deploy.add_argument("host", help="user@host to deploy to")
     bootstrap_group = p_deploy.add_mutually_exclusive_group()
     bootstrap_group.add_argument(
@@ -1137,13 +1289,33 @@ def main() -> int:
 
     # checkhealth
     p_checkhealth = sub.add_parser(
-        "checkhealth", help="Check dotfiles environment health"
+        "checkhealth",
+        help="Verify the dotfiles environment is set up correctly",
+        description=(
+            "Run a series of sanity checks on the dotfiles environment:\n"
+            "GNU Stow is installed, the repo lives where expected, the `dots`\n"
+            "command is on PATH, and required tools are available."
+        ),
+        epilog="Example:\n  dots checkhealth\n",
+        formatter_class=fmt,
     )
     p_checkhealth.set_defaults(func=cmd_checkhealth)
 
     # completion
     p_completion = sub.add_parser(
-        "completion", help="Print shell completion script"
+        "completion",
+        help="Emit a shell completion script for bash or zsh",
+        description=(
+            "Print a shell completion script to stdout. Source it from your\n"
+            "shell's rc file (or pipe to a file in your completions dir) to get\n"
+            "tab-completion for subcommands, flags, and package names."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dots completion zsh >> ~/.zshrc\n"
+            "  dots completion bash > /etc/bash_completion.d/dots\n"
+        ),
+        formatter_class=fmt,
     )
     p_completion.add_argument("shell", choices=["bash", "zsh"], help="Shell type")
     p_completion.set_defaults(func=cmd_completion)
