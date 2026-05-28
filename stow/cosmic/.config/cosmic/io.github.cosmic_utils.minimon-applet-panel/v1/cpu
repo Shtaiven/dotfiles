@@ -1,8 +1,8 @@
 (
     chart_visible: true,
     value_visible: false,
-    label_visible: false,
-    icon_visible: true,
+    label_visible: true,
+    icon_visible: false,
     chart: StackedBars,
     colors: (
         ring: (
@@ -121,16 +121,16 @@
         ),
         stackedbars: (
             background: (
-                red: 43,
-                green: 43,
-                blue: 43,
-                alpha: 255,
+                red: 40,
+                green: 40,
+                blue: 40,
+                alpha: 0,
             ),
             frame: (
                 red: 255,
                 green: 255,
                 blue: 255,
-                alpha: 255,
+                alpha: 0,
             ),
             text: (
                 red: 255,

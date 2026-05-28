@@ -12,9 +12,9 @@
         alpha: 1.0,
     ),
     pressed: (
-        red: 0.22736584,
+        red: 0.2273658,
         green: 0.47246388,
-        blue: 0.3175619,
+        blue: 0.31756186,
         alpha: 1.0,
     ),
     selected: (
@@ -36,13 +36,13 @@
         alpha: 1.0,
     ),
     divider: (
-        red: 0.0,
+        red: -0.0,
         green: 0.0,
         blue: 0.0,
         alpha: 1.0,
     ),
     on: (
-        red: 0.0,
+        red: -0.0,
         green: 0.0,
         blue: 0.0,
         alpha: 1.0,

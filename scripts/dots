@@ -322,24 +322,124 @@ def cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def _find_broken_symlinks(root: Path) -> list[Path]:
+    """Return broken symlinks under root (or root itself, if broken)."""
+    broken: list[Path] = []
+    if root.is_symlink():
+        if not root.exists():
+            broken.append(root)
+        return broken
+    if not root.is_dir():
+        return broken
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        for name in dirnames + filenames:
+            p = Path(dirpath) / name
+            if p.is_symlink() and not p.exists():
+                broken.append(p)
+    return broken
+
+
+def _classify_file(src: Path, dest: Path, new: list, changed: list, unchanged: list) -> None:
+    if not dest.exists():
+        new.append(dest)
+        return
+    try:
+        if src.read_bytes() == dest.read_bytes():
+            unchanged.append(dest)
+        else:
+            changed.append(dest)
+    except OSError:
+        changed.append(dest)
+
+
+def _plan_merge(src: Path, dest: Path, pkg_resolved: Path) -> tuple[list[Path], list[Path], list[Path]]:
+    """Walk src and classify what _merge_copy would do — returns (new, changed, unchanged)."""
+    new: list[Path] = []
+    changed: list[Path] = []
+    unchanged: list[Path] = []
+
+    def visit(s: Path, d: Path) -> None:
+        if s.is_symlink():
+            try:
+                real = s.resolve(strict=True)
+            except (FileNotFoundError, OSError):
+                return
+            try:
+                real.relative_to(pkg_resolved)
+                return
+            except ValueError:
+                pass
+            if real.is_dir():
+                for entry in real.iterdir():
+                    visit(entry, d / entry.name)
+            else:
+                _classify_file(real, d, new, changed, unchanged)
+            return
+        if s.is_dir():
+            for entry in s.iterdir():
+                visit(entry, d / entry.name)
+        elif s.is_file():
+            _classify_file(s, d, new, changed, unchanged)
+
+    visit(src, dest)
+    return new, changed, unchanged
+
+
+def _merge_copy(src: Path, dest: Path, pkg_resolved: Path) -> None:
+    """Copy src to dest, merging into existing dest tree and dereferencing symlinks.
+
+    Symlinks that already point inside pkg_resolved are skipped (already adopted).
+    Broken symlinks are silently skipped (callers should clean them first).
+    """
+    if src.is_symlink():
+        try:
+            real = src.resolve(strict=True)
+        except (FileNotFoundError, OSError):
+            return
+        try:
+            real.relative_to(pkg_resolved)
+            return
+        except ValueError:
+            pass
+        if real.is_dir():
+            dest.mkdir(parents=True, exist_ok=True)
+            for entry in real.iterdir():
+                _merge_copy(entry, dest / entry.name, pkg_resolved)
+        else:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(real, dest, follow_symlinks=True)
+        return
+    if src.is_dir():
+        dest.mkdir(parents=True, exist_ok=True)
+        for entry in src.iterdir():
+            _merge_copy(entry, dest / entry.name, pkg_resolved)
+    elif src.is_file():
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest, follow_symlinks=True)
+
+
 def cmd_adopt(args: argparse.Namespace) -> int:
     pkg_path = STOW_DIR / args.package
-
-    if pkg_path.exists() and not args.overwrite:
-        print(
-            f"Error: package '{args.package}' already exists. Use --overwrite to overwrite.",
-            file=sys.stderr,
-        )
-        return 1
+    dry = getattr(args, "dry_run", False)
 
     if pkg_path.exists() and args.overwrite:
-        shutil.rmtree(pkg_path)
+        if dry:
+            print(f"  Would rmtree: {pkg_path}")
+        else:
+            shutil.rmtree(pkg_path)
 
-    pkg_path.mkdir(parents=True, exist_ok=True)
+    if not dry:
+        pkg_path.mkdir(parents=True, exist_ok=True)
+    pkg_resolved = pkg_path.resolve() if pkg_path.exists() else (STOW_DIR.resolve() / args.package)
+
+    total_broken: list[Path] = []
+    total_new: list[Path] = []
+    total_changed: list[Path] = []
+    total_unchanged: list[Path] = []
 
     for file_path in args.files:
-        src = Path(file_path).resolve()
-        if not src.exists():
+        src = Path(file_path).expanduser().absolute()
+        if not (src.exists() or src.is_symlink()):
             print(f"Warning: '{file_path}' does not exist, skipping.", file=sys.stderr)
             continue
 
@@ -352,15 +452,40 @@ def cmd_adopt(args: argparse.Namespace) -> int:
             )
             continue
 
+        broken = _find_broken_symlinks(src)
+        total_broken.extend(broken)
+        for p in broken:
+            if dry:
+                print(f"  Would remove broken symlink: {p}")
+            else:
+                p.unlink()
+                print(f"  Removed broken symlink: {p}")
+
         dest = pkg_path / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
 
-        if src.is_dir():
-            shutil.copytree(src, dest)
+        if dry:
+            new, changed, unchanged = _plan_merge(src, dest, pkg_resolved)
+            total_new.extend(new)
+            total_changed.extend(changed)
+            total_unchanged.extend(unchanged)
+            for p in new:
+                print(f"  Would add:       {p.relative_to(STOW_DIR)}")
+            for p in changed:
+                print(f"  Would overwrite: {p.relative_to(STOW_DIR)}")
         else:
-            shutil.copy2(src, dest)
+            _merge_copy(src, dest, pkg_resolved)
+            print(f"  Adopted: {rel}")
 
-        print(f"  Added: {rel}")
+    if dry:
+        print(
+            f"\nDry-run summary for '{args.package}': "
+            f"{len(total_broken)} broken symlink(s) to remove, "
+            f"{len(total_new)} file(s) to add, "
+            f"{len(total_changed)} file(s) to overwrite, "
+            f"{len(total_unchanged)} unchanged."
+        )
+        print("Re-run without --dry-run to apply.")
+        return 0
 
     print(f"Adopted package: {args.package}")
 
@@ -374,6 +499,9 @@ def cmd_adopt(args: argparse.Namespace) -> int:
         do_install = choice in ("y", "yes")
 
     if do_install:
+        # Re-stow cleanly: unstow first (ignore failure if not currently stowed),
+        # then re-stow with --adopt to absorb any straggling real files.
+        run_stow(["-D", args.package], capture=True)
         result = run_stow(["--adopt", "-S", args.package])
         if result.returncode == 0:
             print(f"Installed: {args.package}")
@@ -956,6 +1084,11 @@ def main() -> int:
     p_adopt.add_argument("files", nargs="+", help="Files/directories to include")
     p_adopt.add_argument(
         "-o", "--overwrite", action="store_true", help="Overwrite existing package"
+    )
+    p_adopt.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would change without modifying anything",
     )
     install_group = p_adopt.add_mutually_exclusive_group()
     install_group.add_argument(

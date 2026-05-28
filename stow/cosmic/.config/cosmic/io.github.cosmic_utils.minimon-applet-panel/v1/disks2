@@ -45,16 +45,16 @@
         ),
         line: (
             background: (
-                red: 43,
-                green: 43,
-                blue: 43,
-                alpha: 255,
+                red: 40,
+                green: 40,
+                blue: 40,
+                alpha: 0,
             ),
             frame: (
                 red: 255,
                 green: 255,
                 blue: 255,
-                alpha: 255,
+                alpha: 0,
             ),
             text: (
                 red: 255,

@@ -1,6 +1,6 @@
 Some((
-    wait_time: 0,
-    transition_time: 100,
+    wait_time: 200,
+    transition_time: 200,
     handle_size: 4,
     unhide_delay: 200,
 ))

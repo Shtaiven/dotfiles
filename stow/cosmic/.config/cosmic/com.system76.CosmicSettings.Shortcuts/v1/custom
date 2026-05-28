@@ -1,0 +1,28 @@
+{
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "e",
+        description: Some("Smile"),
+    ): Spawn("flatpak run it.mijorus.smile"),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "x",
+    ): Spawn("/home/steven/.pixi/bin/ixonlauncher"),
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "semicolon",
+    ): Resizing(Inwards),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "semicolon",
+    ): Resizing(Outwards),
+}
