@@ -11,6 +11,7 @@ path_append() { case ":$PATH:" in *:"$1":*) ;; *) PATH="$PATH:$1" ;; esac }
 [ -d "$HOME/.local/bin" ] && path_prepend "$HOME/.local/bin"
 [ -d "$HOME/local/bin" ] && path_prepend "$HOME/local/bin"
 [ -d "$HOME/bin" ] && path_prepend "$HOME/bin"
+[ -d "$HOME/.lmstudio/bin" ] && path_append "$HOME/.lmstudio/bin"
 export PATH
 
 # Pager

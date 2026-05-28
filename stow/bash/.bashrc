@@ -74,7 +74,3 @@ xterm* | rxvt* | screen* | tmux*)
 	trap '__preexec_title' DEBUG
 	;;
 esac
-
-# Added by LM Studio CLI (lms)
-export PATH="$PATH:/home/steven/.lmstudio/bin"
-# End of LM Studio CLI section
