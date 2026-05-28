@@ -177,6 +177,12 @@ def cmd_install(args: argparse.Namespace) -> int:
             print(f"Error: package '{pkg}' not found in {STOW_DIR}", file=sys.stderr)
             return 1
 
+        if args.copy:
+            count = copy_install(pkg)
+            print(f"Installed (copied): {pkg} ({count} files)")
+            post_install(pkg)
+            continue
+
         conflicts = has_conflicts(pkg)
 
         if not conflicts:
@@ -208,8 +214,9 @@ def cmd_install(args: argparse.Namespace) -> int:
             print(f"Conflicts detected for '{pkg}'.")
             print("  [a]dopt existing files into dotfiles")
             print("  [o]verwrite with dotfiles versions")
+            print("  [c]opy dotfiles versions in (real files, no symlinks)")
             print("  [s]kip")
-            choice = input("  Choice [a/o/s]: ").strip().lower()
+            choice = input("  Choice [a/o/c/s]: ").strip().lower()
             if choice == "a":
                 result = run_stow(["--adopt", "-S", pkg])
                 if result.returncode == 0:
@@ -222,6 +229,10 @@ def cmd_install(args: argparse.Namespace) -> int:
                 if rc != 0:
                     return rc
                 print(f"Installed (overwritten): {pkg}")
+                post_install(pkg)
+            elif choice == "c":
+                count = copy_install(pkg)
+                print(f"Installed (copied): {pkg} ({count} files)")
                 post_install(pkg)
             else:
                 print(f"Skipped: {pkg}")
@@ -426,6 +437,58 @@ def _merge_copy(src: Path, dest: Path, pkg_resolved: Path) -> None:
     elif src.is_file():
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest, follow_symlinks=True)
+
+
+def _place_file(real_src: Path, dest: Path) -> int:
+    """Write real_src to dest as an independent file, replacing whatever is there."""
+    if dest.is_symlink() or dest.exists():
+        if dest.is_dir() and not dest.is_symlink():
+            shutil.rmtree(dest)
+        else:
+            dest.unlink()
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(real_src, dest, follow_symlinks=True)
+    return 1
+
+
+def _copy_install_tree(src: Path, dest: Path) -> int:
+    """Copy src→dest as real files, dereferencing symlinks and replacing any
+    existing dest (symlink or file) with an independent copy. Returns file count.
+
+    Unlike stowing, this leaves no symlinks behind — useful for apps that save
+    config via atomic rename (e.g. COSMIC), which would clobber a stow symlink.
+    """
+    if src.is_symlink():
+        try:
+            real = src.resolve(strict=True)
+        except OSError:
+            return 0  # broken symlink in the package — skip
+        if real.is_dir():
+            count = 0
+            if dest.is_symlink() or (dest.exists() and not dest.is_dir()):
+                dest.unlink()
+            dest.mkdir(parents=True, exist_ok=True)
+            for entry in real.iterdir():
+                count += _copy_install_tree(entry, dest / entry.name)
+            return count
+        return _place_file(real, dest)
+    if src.is_dir():
+        count = 0
+        if dest.is_symlink() or (dest.exists() and not dest.is_dir()):
+            dest.unlink()
+        dest.mkdir(parents=True, exist_ok=True)
+        for entry in src.iterdir():
+            count += _copy_install_tree(entry, dest / entry.name)
+        return count
+    if src.is_file():
+        return _place_file(src, dest)
+    return 0
+
+
+def copy_install(pkg: str) -> int:
+    """Install a package by copying real files into the target (no symlinks)."""
+    pkg_path = STOW_DIR / pkg
+    return _copy_install_tree(pkg_path, TARGET_DIR)
 
 
 def cmd_adopt(args: argparse.Namespace) -> int:
@@ -944,6 +1007,7 @@ _dots() {{
                     _arguments \\
                         '(-o --overwrite){{-o,--overwrite}}[overwrite existing files]' \\
                         '(-a --adopt){{-a,--adopt}}[adopt existing files into dotfiles]' \\
+                        '(-c --copy){{-c,--copy}}[copy files instead of symlinking]' \\
                         '*:package:(${{packages[@]}})'
                     ;;
                 remove|edit)
@@ -1002,7 +1066,7 @@ _dots_bash() {{
     case $subcmd in
         install)
             case $cur in
-                -*) COMPREPLY=($(compgen -W "-o --overwrite -a --adopt" -- "$cur")) ;;
+                -*) COMPREPLY=($(compgen -W "-o --overwrite -a --adopt -c --copy" -- "$cur")) ;;
                 *)  COMPREPLY=($(compgen -W "$packages" -- "$cur")) ;;
             esac ;;
         remove|edit)
@@ -1085,6 +1149,7 @@ def main() -> int:
             "  dots install zsh                # interactive on conflicts\n"
             "  dots install -o cosmic          # force overwrite existing files\n"
             "  dots install -a nvim            # adopt existing files into the package\n"
+            "  dots install -c cosmic          # copy files instead of symlinking\n"
             "  dots install zsh nvim shell     # install multiple at once\n"
         ),
         formatter_class=fmt,
@@ -1101,6 +1166,13 @@ def main() -> int:
         "--adopt",
         action="store_true",
         help="On conflict, move the existing file into the package and symlink it",
+    )
+    p_install.add_argument(
+        "-c",
+        "--copy",
+        action="store_true",
+        help="Copy real files into the target instead of symlinking (overwrites existing); "
+        "for apps that save via atomic rename and would clobber stow symlinks (e.g. COSMIC)",
     )
     p_install.set_defaults(func=cmd_install)
 
