@@ -19,36 +19,46 @@ TARGET_DIR = Path.home()
 
 def stow_force_overwrite(pkg: str) -> int:
     """Force-install a package by backing up and removing conflicting files, then stowing."""
-    # Dry-run to discover conflicts
-    sim = run_stow(["--simulate", "-S", pkg], capture=True)
-    if sim.returncode == 0:
-        return run_stow(["-S", pkg]).returncode
+    # stow may not report all conflicts in a single --simulate pass, so loop
+    # until simulate is clean, removing conflicts each round.
+    # stow emits two different formats depending on version/conflict type:
+    #   old: "existing target is neither a link nor a directory: .config/..."
+    #   new: "cannot stow ... over existing target .config/... since neither ..."
+    backup_dir: Path | None = None
 
-    # Collect conflicting target paths
-    conflicts: list[Path] = []
-    for line in sim.stderr.splitlines():
-        m = re.search(r"existing target[^:]*:\s+(.+)$", line)
-        if m:
-            conflicts.append(TARGET_DIR / m.group(1).strip())
+    for _ in range(100):  # hard cap to prevent infinite loops
+        sim = run_stow(["--simulate", "-S", pkg], capture=True)
+        if sim.returncode == 0:
+            break
 
-    if not conflicts:
-        # Unexpected failure — just try anyway
-        return run_stow(["-S", pkg]).returncode
+        conflicts: list[Path] = []
+        for line in sim.stderr.splitlines():
+            m = re.search(r"existing target[^:]*:\s+(.+)$", line)
+            if not m:
+                m = re.search(r"over existing target\s+(.+?)\s+since\b", line)
+            if m:
+                conflicts.append(TARGET_DIR / m.group(1).strip())
 
-    # Back up conflicting files to a temp dir that persists after the call
-    backup_dir = Path(tempfile.mkdtemp(prefix=f"dots-overwrite-{pkg}-"))
-    for conflict in conflicts:
-        rel = conflict.relative_to(TARGET_DIR)
-        dest = backup_dir / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        if conflict.is_symlink() or conflict.is_file():
-            shutil.copy2(conflict, dest)
-            conflict.unlink()
-        elif conflict.is_dir():
-            shutil.copytree(conflict, dest)
-            shutil.rmtree(conflict)
+        if not conflicts:
+            # Unexpected failure — just try anyway
+            return run_stow(["-S", pkg]).returncode
 
-    print(f"  Backup of overwritten files: {backup_dir}")
+        if backup_dir is None:
+            backup_dir = Path(tempfile.mkdtemp(prefix=f"dots-overwrite-{pkg}-"))
+
+        for conflict in conflicts:
+            rel = conflict.relative_to(TARGET_DIR)
+            dest = backup_dir / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if conflict.is_symlink() or conflict.is_file():
+                shutil.copy2(conflict, dest)
+                conflict.unlink()
+            elif conflict.is_dir():
+                shutil.copytree(conflict, dest)
+                shutil.rmtree(conflict)
+
+    if backup_dir:
+        print(f"  Backup of overwritten files: {backup_dir}")
 
     return run_stow(["-S", pkg]).returncode
 
