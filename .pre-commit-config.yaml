@@ -35,13 +35,19 @@ repos:
         language: script
         entry: scripts/check-hardcoded-home.sh
         types: [text]
-        exclude: ^scripts/check-hardcoded-home\.sh$
+        exclude: ^(scripts/check-hardcoded-home\.sh|stow/cosmic/)
 
       - id: zsh-syntax-check
         name: zsh syntax check
         language: script
         types: [zsh]
         entry: scripts/zsh-syntax-check.sh
+
+      - id: check-dotfiles-sentinel
+        name: check dotfiles sentinel (detect installer appends)
+        language: script
+        entry: scripts/check-dotfiles-sentinel.sh
+        files: ^stow/(bash/\.(bashrc|profile)|zsh/\.(zshrc|zprofile))$
 
   - repo: https://github.com/JohnnyMorganz/StyLua
     rev: v2.4.1

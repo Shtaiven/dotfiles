@@ -62,3 +62,5 @@ fi
 # Set terminal title to current directory (updates tmux pane_title via OSC 0)
 function _set_title_to_dir() { print -Pn '\e]0;%~\a' }
 add-zsh-hook precmd _set_title_to_dir
+
+# >>> dotfiles sentinel — nothing should be added below this line (pre-commit will flag installer additions) >>>

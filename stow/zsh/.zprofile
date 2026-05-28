@@ -45,3 +45,5 @@ for f in "$HOME"/.profile.d/*.sh(N); do
   source "$f"
 done
 unset f
+
+# >>> dotfiles sentinel — nothing should be added below this line (pre-commit will flag installer additions) >>>

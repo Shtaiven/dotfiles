@@ -74,3 +74,5 @@ xterm* | rxvt* | screen* | tmux*)
 	trap '__preexec_title' DEBUG
 	;;
 esac
+
+# >>> dotfiles sentinel — nothing should be added below this line (pre-commit will flag installer additions) >>>

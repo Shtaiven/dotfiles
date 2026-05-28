@@ -14,3 +14,5 @@ if [ -d "$HOME/.profile.d" ]; then
   done
   unset f
 fi
+
+# >>> dotfiles sentinel — nothing should be added below this line (pre-commit will flag installer additions) >>>
