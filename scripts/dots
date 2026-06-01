@@ -560,6 +560,12 @@ def cmd_adopt(args: argparse.Namespace) -> int:
         print("Re-run without --dry-run to apply.")
         return 0
 
+    if args.copy:
+        # Copy-managed package: the live files already are the installed copies,
+        # so there is nothing to re-stow (mirror of `dots install --copy`, reversed).
+        print(f"Adopted (copied) package: {args.package}")
+        return 0
+
     print(f"Adopted package: {args.package}")
 
     # Decide whether to install
@@ -1005,9 +1011,9 @@ _dots() {{
             case $words[1] in
                 install)
                     _arguments \\
-                        '(-o --overwrite){{-o,--overwrite}}[overwrite existing files]' \\
-                        '(-a --adopt){{-a,--adopt}}[adopt existing files into dotfiles]' \\
-                        '(-c --copy){{-c,--copy}}[copy files instead of symlinking]' \\
+                        '(-o --overwrite -a --adopt -c --copy){{-o,--overwrite}}[overwrite existing files]' \\
+                        '(-o --overwrite -a --adopt -c --copy){{-a,--adopt}}[adopt existing files into dotfiles]' \\
+                        '(-o --overwrite -a --adopt -c --copy){{-c,--copy}}[copy files instead of symlinking]' \\
                         '*:package:(${{packages[@]}})'
                     ;;
                 remove|edit)
@@ -1025,8 +1031,9 @@ _dots() {{
                 adopt)
                     _arguments \\
                         '(-o --overwrite){{-o,--overwrite}}[overwrite existing package]' \\
-                        '(-i --install){{-i,--install}}[install after creating]' \\
-                        '(-n --no-install){{-n,--no-install}}[don'"'"'t install after creating]' \\
+                        '(-i --install -n --no-install -c --copy){{-i,--install}}[install after creating]' \\
+                        '(-i --install -n --no-install -c --copy){{-n,--no-install}}[don'"'"'t install after creating]' \\
+                        '(-i --install -n --no-install -c --copy){{-c,--copy}}[copy-managed package: real files, no re-stow]' \\
                         '1:package' \\
                         '*:file:_files'
                     ;;
@@ -1078,7 +1085,7 @@ _dots_bash() {{
         adopt)
             if [ "$cword" -eq 2 ]; then
                 case $cur in
-                    -*) COMPREPLY=($(compgen -W "-o --overwrite -i --install -n --no-install" -- "$cur")) ;;
+                    -*) COMPREPLY=($(compgen -W "-o --overwrite -i --install -n --no-install -c --copy" -- "$cur")) ;;
                 esac
             else
                 COMPREPLY=($(compgen -f -- "$cur"))
@@ -1155,19 +1162,20 @@ def main() -> int:
         formatter_class=fmt,
     )
     p_install.add_argument("packages", nargs="+", help="Package names to install")
-    p_install.add_argument(
+    conflict_group = p_install.add_mutually_exclusive_group()
+    conflict_group.add_argument(
         "-o",
         "--overwrite",
         action="store_true",
         help="On conflict, replace target with the package version (backs up the original)",
     )
-    p_install.add_argument(
+    conflict_group.add_argument(
         "-a",
         "--adopt",
         action="store_true",
         help="On conflict, move the existing file into the package and symlink it",
     )
-    p_install.add_argument(
+    conflict_group.add_argument(
         "-c",
         "--copy",
         action="store_true",
@@ -1245,7 +1253,13 @@ def main() -> int:
             "     symlinks again, with no straggling real files.\n"
             "\n"
             "Use --overwrite to wipe the existing package directory first\n"
-            "(start fresh) rather than merging. Use --dry-run to preview."
+            "(start fresh) rather than merging. Use --dry-run to preview.\n"
+            "\n"
+            "Use --copy for copy-managed packages (the reverse of\n"
+            "`dots install --copy`): live files are copied into stow as real\n"
+            "files and re-stowing is skipped, since the live files already are\n"
+            "the installed copies. Combine with --overwrite to delete the\n"
+            "package directory and copy the host's contents in fresh."
         ),
         epilog=(
             "Examples:\n"
@@ -1253,6 +1267,7 @@ def main() -> int:
             "  dots adopt --dry-run cosmic ~/.config/cosmic     # show planned changes only\n"
             "  dots adopt -o nvim ~/.config/nvim                # wipe stow/nvim and re-adopt\n"
             "  dots adopt -i tmux ~/.tmux.conf                  # adopt and re-install non-interactively\n"
+            "  dots adopt -c -o cosmic ~/.config/cosmic         # refresh copy-managed pkg from host\n"
         ),
         formatter_class=fmt,
     )
@@ -1285,6 +1300,14 @@ def main() -> int:
         "--no-install",
         action="store_true",
         help="Skip re-stow and exit after copying",
+    )
+    install_group.add_argument(
+        "-c",
+        "--copy",
+        action="store_true",
+        help="Adopt as a copy-managed package: copy live files into stow as real "
+        "files (no symlinks) and skip re-stowing, since the live files already are "
+        "the installed copies; the reverse of `dots install --copy` (e.g. COSMIC)",
     )
     p_adopt.set_defaults(func=cmd_adopt)
 
