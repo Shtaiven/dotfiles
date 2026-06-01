@@ -1011,9 +1011,9 @@ _dots() {{
             case $words[1] in
                 install)
                     _arguments \\
-                        '(-o --overwrite -a --adopt -c --copy){{-o,--overwrite}}[overwrite existing files]' \\
-                        '(-o --overwrite -a --adopt -c --copy){{-a,--adopt}}[adopt existing files into dotfiles]' \\
-                        '(-o --overwrite -a --adopt -c --copy){{-c,--copy}}[copy files instead of symlinking]' \\
+                        '(-o --overwrite -a --adopt -c --copy)'{{-o,--overwrite}}'[overwrite existing files]' \\
+                        '(-o --overwrite -a --adopt -c --copy)'{{-a,--adopt}}'[adopt existing files into dotfiles]' \\
+                        '(-o --overwrite -a --adopt -c --copy)'{{-c,--copy}}'[copy files instead of symlinking]' \\
                         '*:package:(${{packages[@]}})'
                     ;;
                 remove|edit)
@@ -1030,10 +1030,10 @@ _dots() {{
                     ;;
                 adopt)
                     _arguments \\
-                        '(-o --overwrite){{-o,--overwrite}}[overwrite existing package]' \\
-                        '(-i --install -n --no-install -c --copy){{-i,--install}}[install after creating]' \\
-                        '(-i --install -n --no-install -c --copy){{-n,--no-install}}[don'"'"'t install after creating]' \\
-                        '(-i --install -n --no-install -c --copy){{-c,--copy}}[copy-managed package: real files, no re-stow]' \\
+                        '(-o --overwrite)'{{-o,--overwrite}}'[overwrite existing package]' \\
+                        '(-i --install -n --no-install -c --copy)'{{-i,--install}}'[install after creating]' \\
+                        '(-i --install -n --no-install -c --copy)'{{-n,--no-install}}'[don'"'"'t install after creating]' \\
+                        '(-i --install -n --no-install -c --copy)'{{-c,--copy}}'[copy-managed package: real files, no re-stow]' \\
                         '1:package' \\
                         '*:file:_files'
                     ;;
