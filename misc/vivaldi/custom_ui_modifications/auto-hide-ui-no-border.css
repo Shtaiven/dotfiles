@@ -12,7 +12,7 @@ div.auto-hide {
     border-radius: 0 !important;
 }
 
-/* restore rounding of floading elements */
+/* restore rounding of floating elements */
 #browser.native div.auto-hide-wrapper {
-    --radiusWindow: 14px !important; /* default 6px, increase to match issuna custom */
+    --radiusWindow: 12px !important; /* default 6px, increase to match issuna custom */
 }
