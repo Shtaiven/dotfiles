@@ -168,6 +168,31 @@ def post_install(pkg: str) -> None:
                 print("  nnn plugins: skipped")
         else:
             print("  nnn plugins: already installed")
+    elif pkg == "kb-kill":
+        bin_dir = Path.home() / ".local" / "bin"
+        link = bin_dir / "kb-kill"
+        source = DOTFILES_DIR / "scripts" / "kb-kill"
+        if link.exists() or link.is_symlink():
+            print("  kb-kill: already installed")
+        else:
+            print("  Installing kb-kill...")
+            bin_dir.mkdir(parents=True, exist_ok=True)
+            link.symlink_to(source)
+        if shutil.which("systemctl"):
+            active = subprocess.run(
+                ["systemctl", "--user", "is-enabled", "kb-kill.service"],
+                capture_output=True,
+                text=True,
+            )
+            if active.stdout.strip() == "enabled":
+                print("  kb-kill service: already enabled")
+            elif _confirm("  Enable kb-kill service now? [y/N] "):
+                subprocess.run(
+                    ["systemctl", "--user", "enable", "--now", "kb-kill.service"],
+                )
+            else:
+                print("  kb-kill service: skipped (enable with: "
+                      "systemctl --user enable --now kb-kill)")
 
 
 def cmd_install(args: argparse.Namespace) -> int:

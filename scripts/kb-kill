@@ -1,0 +1,591 @@
+#!/usr/bin/env python3
+"""kb-kill - disable/enable a target keyboard on a global hotkey.
+
+Runs as a long-lived service. Any keyboard can press the configured *kill*
+hotkey to disable (grab + eat all events from) the target keyboard(s). While
+killed, every key from the target is swallowed EXCEPT the *wake* hotkey, so the
+target keyboard can always wake itself - there is no way to lock yourself out.
+
+Design notes
+------------
+* "Disable" means EVIOCGRAB on the target device: the kernel routes its events
+  exclusively to us and we drop them. We only grab *while killed* - when awake
+  the target is merely monitored (read, never grabbed), so normal typing is
+  100% native and a crash of this service cannot break the keyboard.
+* We never re-inject events, so there is no virtual device and no awake-path
+  latency.
+* Coexistence with input-remapper: input-remapper grabs the physical keyboard
+  (e.g. /dev/input/event3) and forwards it to a virtual "...forwarded" device.
+  kb-kill targets that *virtual* device and never the physical one, so
+  input-remapper can always (re)grab the physical device - including across an
+  input-remapper restart. See `_resolve_targets`.
+
+Requires: python-evdev, and read/write access to /dev/input/event* (membership
+of the `input` group is enough - root is not required).
+"""
+
+import argparse
+import errno
+import os
+import selectors
+import signal
+import sys
+import time
+from pathlib import Path
+
+try:
+    from evdev import InputDevice, ecodes, list_devices
+except ImportError:
+    sys.stderr.write(
+        "kb-kill: python-evdev is required.\n"
+        "  Debian/Ubuntu : sudo apt install python3-evdev\n"
+        "  Arch          : sudo pacman -S python-evdev\n"
+        "  pip           : pip install --user evdev\n"
+    )
+    sys.exit(1)
+
+
+# --------------------------------------------------------------------------- #
+# Modifier aliases
+#
+# A combo is written as `+`-joined tokens, e.g. "ctrl+alt+shift+k". Each token
+# resolves to an "any-of" GROUP of acceptable keycodes; the combo matches when
+# every group has at least one of its keycodes currently held.
+#
+# Bare modifier names match EITHER side; prefix with l/r to pin a side.
+#
+#   token                         matches (evdev KEY_*, code)
+#   ----------------------------  -------------------------------------------
+#   ctrl  / control               KEY_LEFTCTRL  (29)  or KEY_RIGHTCTRL  (97)
+#   lctrl / rctrl                  left-only           / right-only
+#   alt                           KEY_LEFTALT   (56)  or KEY_RIGHTALT  (100, AltGr)
+#   lalt  / ralt                   left-only           / right-only
+#   shift                         KEY_LEFTSHIFT (42)  or KEY_RIGHTSHIFT (54)
+#   lshift / rshift                left-only           / right-only
+#   super / meta / win / cmd      KEY_LEFTMETA  (125) or KEY_RIGHTMETA (126)
+#   lsuper/lmeta / rsuper/rmeta    left-only           / right-only
+#
+# Any other token resolves to a single keycode: a letter a-z -> KEY_A..KEY_Z,
+# a raw evdev name like KEY_SCROLLLOCK, or a numeric keycode.
+# --------------------------------------------------------------------------- #
+MODIFIER_ALIASES = {
+    "ctrl": frozenset({ecodes.KEY_LEFTCTRL, ecodes.KEY_RIGHTCTRL}),
+    "control": frozenset({ecodes.KEY_LEFTCTRL, ecodes.KEY_RIGHTCTRL}),
+    "lctrl": frozenset({ecodes.KEY_LEFTCTRL}),
+    "rctrl": frozenset({ecodes.KEY_RIGHTCTRL}),
+    "alt": frozenset({ecodes.KEY_LEFTALT, ecodes.KEY_RIGHTALT}),
+    "lalt": frozenset({ecodes.KEY_LEFTALT}),
+    "ralt": frozenset({ecodes.KEY_RIGHTALT}),
+    "altgr": frozenset({ecodes.KEY_RIGHTALT}),
+    "shift": frozenset({ecodes.KEY_LEFTSHIFT, ecodes.KEY_RIGHTSHIFT}),
+    "lshift": frozenset({ecodes.KEY_LEFTSHIFT}),
+    "rshift": frozenset({ecodes.KEY_RIGHTSHIFT}),
+    "super": frozenset({ecodes.KEY_LEFTMETA, ecodes.KEY_RIGHTMETA}),
+    "meta": frozenset({ecodes.KEY_LEFTMETA, ecodes.KEY_RIGHTMETA}),
+    "win": frozenset({ecodes.KEY_LEFTMETA, ecodes.KEY_RIGHTMETA}),
+    "cmd": frozenset({ecodes.KEY_LEFTMETA, ecodes.KEY_RIGHTMETA}),
+    "lsuper": frozenset({ecodes.KEY_LEFTMETA}),
+    "lmeta": frozenset({ecodes.KEY_LEFTMETA}),
+    "rsuper": frozenset({ecodes.KEY_RIGHTMETA}),
+    "rmeta": frozenset({ecodes.KEY_RIGHTMETA}),
+}
+
+CONFIG_SEARCH = [
+    Path.home() / ".config" / "kb-kill" / "kb-kill.conf",
+    Path.home() / ".kb-kill",
+    Path("/etc/kb-kill/kb-kill.conf"),
+]
+
+# How often (seconds) to rescan for hotplugged / recreated devices.
+RESCAN_INTERVAL = 2.0
+# Grace before grabbing the *physical* device when physical_fallback is on,
+# kept longer than an input-remapper restart so we never steal it mid-restart.
+PHYSICAL_FALLBACK_GRACE = 8.0
+
+
+def log(msg):
+    sys.stderr.write(f"kb-kill: {msg}\n")
+    sys.stderr.flush()
+
+
+class ConfigError(Exception):
+    pass
+
+
+# --------------------------------------------------------------------------- #
+# Config
+# --------------------------------------------------------------------------- #
+class Config:
+    def __init__(self, keyboards, kill_combo, wake_combo, physical_fallback,
+                 kill_raw, wake_raw, source):
+        self.keyboards = keyboards            # list[str] lowercase substrings
+        self.kill_combo = kill_combo          # list[frozenset[int]]
+        self.wake_combo = wake_combo          # list[frozenset[int]]
+        self.physical_fallback = physical_fallback
+        self.kill_raw = kill_raw              # original string (for display)
+        self.wake_raw = wake_raw
+        self.source = source                  # Path it was loaded from
+
+
+def _parse_bool(value):
+    v = value.strip().lower()
+    if v in ("true", "yes", "on", "1"):
+        return True
+    if v in ("false", "no", "off", "0"):
+        return False
+    raise ConfigError(f"invalid boolean value: {value!r}")
+
+
+def _parse_token(token):
+    """Resolve one combo token to a frozenset of acceptable keycodes."""
+    t = token.strip().lower()
+    if not t:
+        raise ConfigError("empty key in combo")
+    if t in MODIFIER_ALIASES:
+        return MODIFIER_ALIASES[t]
+    if len(t) == 1 and t.isalnum():
+        name = f"KEY_{t.upper()}"
+        code = getattr(ecodes, name, None)
+        if code is not None:
+            return frozenset({code})
+    # raw evdev name, e.g. KEY_SCROLLLOCK / SCROLLLOCK
+    name = t.upper() if t.upper().startswith("KEY_") else f"KEY_{t.upper()}"
+    code = getattr(ecodes, name, None)
+    if code is not None:
+        return frozenset({code})
+    # numeric keycode
+    if t.isdigit():
+        return frozenset({int(t)})
+    raise ConfigError(f"unknown key {token!r} (try ctrl/alt/shift/super, a-z, "
+                      f"or a KEY_* name)")
+
+
+def _parse_combo(spec):
+    tokens = [tok for tok in spec.split("+") if tok.strip()]
+    if not tokens:
+        raise ConfigError(f"empty combo: {spec!r}")
+    return [_parse_token(tok) for tok in tokens]
+
+
+def find_config(explicit=None):
+    if explicit:
+        p = Path(explicit).expanduser()
+        if not p.is_file():
+            raise ConfigError(f"config not found: {p}")
+        return p
+    env = os.environ.get("KB_KILL_CONFIG")
+    if env:
+        p = Path(env).expanduser()
+        if not p.is_file():
+            raise ConfigError(f"$KB_KILL_CONFIG points at a missing file: {p}")
+        return p
+    for p in CONFIG_SEARCH:
+        # ~/.kb-kill may be a directory holding kb-kill.conf
+        if p.is_dir():
+            inner = p / "kb-kill.conf"
+            if inner.is_file():
+                return inner
+        elif p.is_file():
+            return p
+    raise ConfigError(
+        "no config file found. Create ~/.config/kb-kill/kb-kill.conf with:\n"
+        "  keyboards  = AT Translated Set 2 keyboard\n"
+        "  kill_combo = ctrl+alt+shift+k\n"
+        "  wake_combo = ctrl+alt+shift+u"
+    )
+
+
+def load_config(explicit=None):
+    path = find_config(explicit)
+    values = {}
+    for lineno, raw in enumerate(path.read_text().splitlines(), 1):
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if "=" not in line:
+            raise ConfigError(f"{path}:{lineno}: expected 'key = value', got {raw!r}")
+        key, val = line.split("=", 1)
+        values[key.strip().lower()] = val.strip()
+
+    if "keyboards" not in values:
+        raise ConfigError(f"{path}: missing required 'keyboards'")
+    keyboards = [k.strip().lower() for k in values["keyboards"].split(",") if k.strip()]
+    if not keyboards:
+        raise ConfigError(f"{path}: 'keyboards' is empty")
+
+    kill_raw = values.get("kill_combo", "ctrl+alt+shift+k")
+    wake_raw = values.get("wake_combo", "ctrl+alt+shift+u")
+    try:
+        kill_combo = _parse_combo(kill_raw)
+        wake_combo = _parse_combo(wake_raw)
+    except ConfigError as e:
+        raise ConfigError(f"{path}: {e}")
+
+    physical_fallback = False
+    if "physical_fallback" in values:
+        try:
+            physical_fallback = _parse_bool(values["physical_fallback"])
+        except ConfigError as e:
+            raise ConfigError(f"{path}: physical_fallback: {e}")
+
+    return Config(keyboards, kill_combo, wake_combo, physical_fallback,
+                  kill_raw, wake_raw, path)
+
+
+# --------------------------------------------------------------------------- #
+# Device helpers
+# --------------------------------------------------------------------------- #
+def is_keyboard(dev):
+    """True for real typing keyboards (filters mice, power buttons, etc.)."""
+    keys = dev.capabilities().get(ecodes.EV_KEY, [])
+    return (ecodes.KEY_A in keys and ecodes.KEY_Z in keys
+            and ecodes.KEY_ENTER in keys)
+
+
+def is_virtual(dev):
+    """True for uinput / forwarded devices (e.g. input-remapper output)."""
+    phys = (dev.phys or "").lower()
+    name = (dev.name or "").lower()
+    return ("uinput" in phys or "forwarded" in name or "input-remapper" in name)
+
+
+def open_keyboards():
+    """Return {path: InputDevice} for every readable keyboard."""
+    found = {}
+    for path in list_devices():
+        try:
+            dev = InputDevice(path)
+        except OSError:
+            continue
+        if is_keyboard(dev):
+            found[path] = dev
+        else:
+            dev.close()
+    return found
+
+
+def combo_held(combo, pressed):
+    """True when every token group has >=1 of its keycodes in `pressed`."""
+    return all(group & pressed for group in combo)
+
+
+def combo_str(raw, combo):
+    return raw
+
+
+# --------------------------------------------------------------------------- #
+# Service
+# --------------------------------------------------------------------------- #
+class KbKill:
+    def __init__(self, config):
+        self.config = config
+        self.sel = selectors.DefaultSelector()
+        self.devices = {}       # path -> InputDevice (monitored)
+        self.pressed = {}       # path -> set[int]
+        self.targets = {}       # path -> InputDevice (current kill targets)
+        self.grabbed = set()    # paths currently EVIOCGRAB'd by us
+        self.deferred = set()   # target paths whose grab waits for key release
+        self.killed = False
+        self.running = True
+        self.need_rescan = False
+        self._no_virtual_since = None
+
+    # -- device name matching ------------------------------------------------ #
+    def _name_matches(self, name):
+        low = (name or "").lower()
+        return any(sub in low for sub in self.config.keyboards)
+
+    def _resolve_targets(self):
+        """Pick the devices to grab. Prefer virtual (forwarded) devices and
+        never touch the physical keyboard unless physical_fallback is on."""
+        matched = {p: d for p, d in self.devices.items()
+                   if self._name_matches(d.name)}
+        virtual = {p: d for p, d in matched.items() if is_virtual(d)}
+        physical = {p: d for p, d in matched.items() if not is_virtual(d)}
+
+        if virtual:
+            self._no_virtual_since = None
+            return virtual
+
+        if not (self.config.physical_fallback and physical):
+            self._no_virtual_since = None
+            return {}
+
+        # Physical fallback, gated by a grace period longer than an IR restart
+        # so we don't steal the physical device while input-remapper restarts.
+        now = time.monotonic()
+        if self._no_virtual_since is None:
+            self._no_virtual_since = now
+            return {}
+        if now - self._no_virtual_since >= PHYSICAL_FALLBACK_GRACE:
+            return physical
+        return {}
+
+    # -- device lifecycle ---------------------------------------------------- #
+    def _add_device(self, path, dev):
+        self.devices[path] = dev
+        self.pressed[path] = set(dev.active_keys())
+        self.sel.register(dev, selectors.EVENT_READ, path)
+
+    def _remove_device(self, path):
+        dev = self.devices.pop(path, None)
+        if dev is not None:
+            try:
+                self.sel.unregister(dev)
+            except (KeyError, ValueError):
+                pass
+            try:
+                dev.close()
+            except OSError:
+                pass
+        self.pressed.pop(path, None)
+        self.targets.pop(path, None)
+        self.grabbed.discard(path)
+        self.deferred.discard(path)
+
+    def rescan(self):
+        self.need_rescan = False
+        current = open_keyboards()
+
+        # Drop devices that vanished.
+        for path in list(self.devices):
+            if path not in current:
+                log(f"device gone: {path}")
+                self._remove_device(path)
+
+        # Add newly appeared devices.
+        for path, dev in current.items():
+            if path in self.devices:
+                dev.close()  # already monitored; discard the duplicate handle
+            else:
+                self._add_device(path, dev)
+                log(f"watching: {path} ({dev.name})")
+
+        self.targets = self._resolve_targets()
+
+        # Keep grabs consistent with state and the current target set.
+        if self.killed:
+            for path in self.targets:
+                if path not in self.grabbed and path not in self.deferred:
+                    self._grab(path)
+            for path in list(self.grabbed):
+                if path not in self.targets:
+                    self._ungrab(path)
+        else:
+            for path in list(self.grabbed):
+                self._ungrab(path)
+
+    # -- grab / ungrab ------------------------------------------------------- #
+    def _grab(self, path):
+        dev = self.devices.get(path)
+        if dev is None or path in self.grabbed:
+            return
+        try:
+            dev.grab()
+            self.grabbed.add(path)
+            log(f"grabbed (eating): {dev.name}")
+        except OSError as e:
+            if e.errno == errno.EBUSY:
+                log(f"cannot grab {dev.name}: busy (held by another process)")
+            else:
+                log(f"cannot grab {dev.name}: {e}")
+
+    def _ungrab(self, path):
+        dev = self.devices.get(path)
+        if dev is not None and path in self.grabbed:
+            try:
+                dev.ungrab()
+            except OSError:
+                pass
+            log(f"released: {dev.name}")
+        self.grabbed.discard(path)
+
+    # -- state transitions --------------------------------------------------- #
+    def _do_kill(self):
+        if self.killed:
+            return
+        self.killed = True
+        if not self.targets:
+            log("kill: no target keyboard present yet (will grab when it appears)")
+        # Lockout guard: warn (do not refuse) if killing the only keyboard. The
+        # target can always wake itself, so this is never a hard lockout.
+        non_targets = [p for p in self.devices if p not in self.targets]
+        if self.targets and not non_targets:
+            log("warning: killing the only keyboard present "
+                "(wake hotkey on it still works)")
+        for path in self.targets:
+            # If the kill combo is being held *on the target itself*, defer its
+            # grab until the keys are released so their key-ups reach the OS and
+            # no modifier gets stuck down.
+            if combo_held(self.config.kill_combo, self.pressed[path]):
+                self.deferred.add(path)
+                log(f"deferring grab of {self.devices[path].name} "
+                    "until kill keys are released")
+            else:
+                self._grab(path)
+        log("KILLED")
+
+    def _do_wake(self):
+        if not self.killed:
+            return
+        self.killed = False
+        self.deferred.clear()
+        for path in list(self.grabbed):
+            self._ungrab(path)
+        log("WOKEN")
+
+    def _maybe_grab_deferred(self, path):
+        if path in self.deferred and self.killed:
+            if not combo_held(self.config.kill_combo, self.pressed[path]):
+                self.deferred.discard(path)
+                self._grab(path)
+
+    # -- event handling ------------------------------------------------------ #
+    def _process(self, path, event):
+        if event.type != ecodes.EV_KEY:
+            return
+        pressed = self.pressed[path]
+        if event.value == 1:          # key down
+            pressed.add(event.code)
+        elif event.value == 0:        # key up
+            pressed.discard(event.code)
+            self._maybe_grab_deferred(path)
+            return
+        else:                         # autorepeat (2) - ignore for combos
+            return
+
+        if not self.killed:
+            if combo_held(self.config.kill_combo, pressed):
+                self._do_kill()
+        else:
+            if combo_held(self.config.wake_combo, pressed):
+                self._do_wake()
+
+    def _read_device(self, dev, path):
+        try:
+            for event in dev.read():
+                self._process(path, event)
+        except OSError as e:
+            if e.errno in (errno.ENODEV, errno.EBADF):
+                log(f"device removed mid-read: {path}")
+                self._remove_device(path)
+                self.need_rescan = True
+            elif e.errno != errno.EAGAIN:
+                log(f"read error on {path}: {e}")
+
+    # -- main loop ----------------------------------------------------------- #
+    def run(self):
+        def _stop(signum, frame):
+            raise KeyboardInterrupt
+
+        signal.signal(signal.SIGTERM, _stop)
+
+        log(f"config: {self.config.source}")
+        log(f"targets match: {', '.join(self.config.keyboards)}")
+        log(f"kill = {self.config.kill_raw!r}   wake = {self.config.wake_raw!r}")
+        self.rescan()
+
+        last_scan = time.monotonic()
+        try:
+            while self.running:
+                events = self.sel.select(timeout=RESCAN_INTERVAL)
+                for key, _ in events:
+                    self._read_device(key.fileobj, key.data)
+                now = time.monotonic()
+                if self.need_rescan or (now - last_scan) >= RESCAN_INTERVAL:
+                    self.rescan()
+                    last_scan = now
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.cleanup()
+
+    def cleanup(self):
+        for path in list(self.grabbed):
+            self._ungrab(path)
+        for path in list(self.devices):
+            self._remove_device(path)
+        log("stopped; keyboards restored")
+
+
+# --------------------------------------------------------------------------- #
+# Commands
+# --------------------------------------------------------------------------- #
+def cmd_run(config):
+    KbKill(config).run()
+    return 0
+
+
+def cmd_detect(config):
+    print("=== kb-kill detect ===")
+    print(f"session : {os.environ.get('XDG_SESSION_TYPE', 'unknown')}")
+    print(f"config  : {config.source}")
+    print(f"match   : {', '.join(config.keyboards)}")
+    print(f"kill    : {config.kill_raw}")
+    print(f"wake    : {config.wake_raw}")
+    print(f"physical_fallback : {config.physical_fallback}")
+    print()
+
+    in_input_group = "input" in os.popen("id -nG").read().split()
+    if not in_input_group and os.geteuid() != 0:
+        print("WARNING: not in the 'input' group and not root - grabbing will fail.")
+        print("  sudo usermod -aG input $USER   (then log out and back in)")
+        print()
+
+    devices = open_keyboards()
+    if not devices:
+        print("No keyboards found (permission problem?).")
+        return 1
+
+    svc = KbKill(config)
+    svc.devices = devices
+    svc.pressed = {p: set() for p in devices}
+    targets = svc._resolve_targets()
+
+    print("Keyboards:")
+    for path in sorted(devices):
+        dev = devices[path]
+        kind = "virtual " if is_virtual(dev) else "physical"
+        matched = svc._name_matches(dev.name)
+        if path in targets:
+            mark = "TARGET (will be grabbed when killed)"
+        elif matched:
+            mark = "matches, but skipped (prefer virtual / fallback off)"
+        else:
+            mark = "monitored only (can trigger the hotkey)"
+        print(f"  {path:24} [{kind}] {dev.name}")
+        print(f"  {'':24}   {mark}")
+
+    if not targets:
+        print()
+        print("No target will be grabbed. If input-remapper isn't running, its "
+              "forwarded device\nwon't exist; set physical_fallback = true to "
+              "grab the physical keyboard directly.")
+    for dev in devices.values():
+        dev.close()
+    return 0
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        prog="kb-kill",
+        description="Disable/enable a target keyboard on a global hotkey.")
+    parser.add_argument("command", nargs="?", default="run",
+                        choices=["run", "detect"],
+                        help="run the service (default) or detect keyboards")
+    parser.add_argument("-c", "--config", help="path to kb-kill.conf")
+    args = parser.parse_args(argv)
+
+    try:
+        config = load_config(args.config)
+    except ConfigError as e:
+        log(str(e))
+        return 1
+
+    if args.command == "detect":
+        return cmd_detect(config)
+    return cmd_run(config)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
