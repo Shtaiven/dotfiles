@@ -35,7 +35,7 @@ repos:
         language: script
         entry: scripts/check-hardcoded-home.sh
         types: [text]
-        exclude: ^(scripts/check-hardcoded-home\.sh|stow/cosmic/)
+        exclude: ^(scripts/check-hardcoded-home\.sh|scripts/README\.md|stow/cosmic/)
 
       - id: zsh-syntax-check
         name: zsh syntax check
