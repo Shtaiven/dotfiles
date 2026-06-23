@@ -340,6 +340,8 @@ class KbKill:
     # -- device name matching ------------------------------------------------ #
     @staticmethod
     def _name_matches(group, name):
+        if "*" in group.keyboards:        # wildcard: match every keyboard
+            return True
         low = (name or "").lower()
         return any(sub in low for sub in group.keyboards)
 

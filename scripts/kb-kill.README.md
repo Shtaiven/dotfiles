@@ -63,7 +63,8 @@ virtual_keyboard = true           # input-remapper-managed; see coexistence belo
 ```
 
 `keyboards` is a string or a list of strings — case-insensitive substrings
-matched against device names (`kb-kill detect` shows the names).
+matched against device names (`kb-kill detect` shows the names). Use
+`keyboards = "*"` to match **every** keyboard.
 
 `virtual_keyboard` (default `false`): set `true` when the keyboard is fronted by
 an input-remapper "forwarded" virtual device — kb-kill then targets that virtual

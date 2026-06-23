@@ -13,7 +13,8 @@
 #   * Each [groups.<name>] table adds another group, inheriting kill_combo /
 #     wake_combo it doesn't set. virtual_keyboard defaults to false per group.
 #   * `keyboards` is a string or a list of strings: case-insensitive substrings
-#     matched against device names. Run `kb-kill detect` to see names.
+#     matched against device names. Run `kb-kill detect` to see names. Use
+#     keyboards = "*" to match every keyboard.
 #   * TOML rule: top-level keys MUST come before any [groups.*] table.
 #   * Give each group a DISTINCT combo (a shared combo just kills both groups).
 #
