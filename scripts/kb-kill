@@ -401,28 +401,35 @@ class KbKill:
         self.grabbed.discard(path)
 
     # -- state transitions --------------------------------------------------- #
+    def _global_pressed(self):
+        """Union of keys held across every monitored device.
+
+        Combos are matched against this union, not a single device, because
+        input-remapper fans one physical keyboard's keys out across several
+        virtual devices (e.g. remapped keys on "input-remapper keyboard", the
+        rest on the "...forwarded" device). Per-device matching would never see
+        the whole combo. The trade-off - holding a modifier on one keyboard and
+        a key on another would match - is harmless for hotkeys this size.
+        """
+        held = set()
+        for keys in self.pressed.values():
+            held |= keys
+        return held
+
     def _do_kill(self):
         if self.killed:
             return
         self.killed = True
-        if not self.targets:
-            log("kill: no target keyboard present yet (will grab when it appears)")
         # Lockout guard: warn (do not refuse) if killing the only keyboard. The
         # target can always wake itself, so this is never a hard lockout.
         non_targets = [p for p in self.devices if p not in self.targets]
-        if self.targets and not non_targets:
+        if not self.targets:
+            log("kill: no target keyboard present yet (will grab when it appears)")
+        elif not non_targets:
             log("warning: killing the only keyboard present "
                 "(wake hotkey on it still works)")
         for path in self.targets:
-            # If the kill combo is being held *on the target itself*, defer its
-            # grab until the keys are released so their key-ups reach the OS and
-            # no modifier gets stuck down.
-            if combo_held(self.config.kill_combo, self.pressed[path]):
-                self.deferred.add(path)
-                log(f"deferring grab of {self.devices[path].name} "
-                    "until kill keys are released")
-            else:
-                self._grab(path)
+            self._grab_or_defer(path)
         log("KILLED")
 
     def _do_wake(self):
@@ -434,11 +441,24 @@ class KbKill:
             self._ungrab(path)
         log("WOKEN")
 
+    def _grab_or_defer(self, path):
+        """Grab a target now, or defer until it has no keys held.
+
+        Grabbing a device while keys are physically down would swallow their
+        key-up events and leave those keys stuck down at the OS. So if anything
+        is held on the device (the common "kill from the laptop itself" case),
+        wait for release first - the key-ups then reach the OS normally.
+        """
+        if self.pressed.get(path):
+            self.deferred.add(path)
+            log(f"deferring grab of {self.devices[path].name} until keys released")
+        else:
+            self._grab(path)
+
     def _maybe_grab_deferred(self, path):
-        if path in self.deferred and self.killed:
-            if not combo_held(self.config.kill_combo, self.pressed[path]):
-                self.deferred.discard(path)
-                self._grab(path)
+        if path in self.deferred and self.killed and not self.pressed.get(path):
+            self.deferred.discard(path)
+            self._grab(path)
 
     # -- event handling ------------------------------------------------------ #
     def _process(self, path, event):
@@ -454,12 +474,12 @@ class KbKill:
         else:                         # autorepeat (2) - ignore for combos
             return
 
+        held = self._global_pressed()
         if not self.killed:
-            if combo_held(self.config.kill_combo, pressed):
+            if combo_held(self.config.kill_combo, held):
                 self._do_kill()
-        else:
-            if combo_held(self.config.wake_combo, pressed):
-                self._do_wake()
+        elif combo_held(self.config.wake_combo, held):
+            self._do_wake()
 
     def _read_device(self, dev, path):
         try:
@@ -566,13 +586,79 @@ def cmd_detect(config):
     return 0
 
 
+def _keyname(code):
+    name = ecodes.KEY.get(code, str(code))
+    if isinstance(name, (list, tuple)):
+        name = name[0]
+    return name
+
+
+def cmd_monitor(config):
+    """Print every key event with its device + keycode, and flag when the
+    kill/wake combos match per-device or globally. Used to diagnose how
+    input-remapper routes the target keyboard's keys."""
+    devices = open_keyboards()
+    if not devices:
+        print("No keyboards found.")
+        return 1
+
+    sel = selectors.DefaultSelector()
+    pressed = {}
+    for path, dev in devices.items():
+        pressed[path] = set(dev.active_keys())
+        sel.register(dev, selectors.EVENT_READ, path)
+
+    print("Monitoring all keyboards. Press your KILL combo "
+          f"({config.kill_raw}) on the LAPTOP keyboard.")
+    print("Ctrl+C to stop.\n")
+    try:
+        while True:
+            for key, _ in sel.select():
+                dev = key.fileobj
+                path = key.data
+                try:
+                    events = list(dev.read())
+                except OSError:
+                    continue
+                for ev in events:
+                    if ev.type != ecodes.EV_KEY:
+                        continue
+                    p = pressed[path]
+                    if ev.value == 1:
+                        p.add(ev.code)
+                    elif ev.value == 0:
+                        p.discard(ev.code)
+                    action = {1: "down", 0: "up", 2: "rept"}.get(ev.value, "?")
+                    short = dev.name[:34]
+                    glob = set().union(*pressed.values()) if pressed else set()
+                    flags = []
+                    if combo_held(config.kill_combo, p):
+                        flags.append("KILL@device")
+                    elif combo_held(config.kill_combo, glob):
+                        flags.append("KILL@global")
+                    if combo_held(config.wake_combo, p):
+                        flags.append("WAKE@device")
+                    elif combo_held(config.wake_combo, glob):
+                        flags.append("WAKE@global")
+                    tag = ("  <<< " + " ".join(flags)) if flags else ""
+                    print(f"{path:20} {short:34} {_keyname(ev.code):16} "
+                          f"{action}{tag}")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        for dev in devices.values():
+            dev.close()
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="kb-kill",
         description="Disable/enable a target keyboard on a global hotkey.")
     parser.add_argument("command", nargs="?", default="run",
-                        choices=["run", "detect"],
-                        help="run the service (default) or detect keyboards")
+                        choices=["run", "detect", "monitor"],
+                        help="run the service (default), detect keyboards, "
+                             "or monitor raw key events for debugging")
     parser.add_argument("-c", "--config", help="path to kb-kill.conf")
     args = parser.parse_args(argv)
 
@@ -584,6 +670,8 @@ def main(argv=None):
 
     if args.command == "detect":
         return cmd_detect(config)
+    if args.command == "monitor":
+        return cmd_monitor(config)
     return cmd_run(config)
 
 
