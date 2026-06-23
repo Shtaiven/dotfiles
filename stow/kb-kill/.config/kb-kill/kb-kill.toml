@@ -1,0 +1,44 @@
+# kb-kill configuration (TOML)
+#
+# Disable/enable target keyboard(s) on a global hotkey. Any keyboard may press a
+# kill hotkey; while killed, the target keyboards eat every key except the wake
+# hotkey (so a killed keyboard can always wake itself).
+#
+# ─── Format ──────────────────────────────────────────────────────────────────
+# Each "group" is a set of target keyboards with its own kill/wake hotkeys:
+#
+#   * Top-level keys (this block) form the DEFAULT group, if they include
+#     `keyboards`. Their kill_combo/wake_combo also act as DEFAULTS inherited by
+#     every [groups.*] below (virtual_keyboard is per-group, never inherited).
+#   * Each [groups.<name>] table adds another group, inheriting kill_combo /
+#     wake_combo it doesn't set. virtual_keyboard defaults to false per group.
+#   * `keyboards` is a string or a list of strings: case-insensitive substrings
+#     matched against device names. Run `kb-kill detect` to see names.
+#   * TOML rule: top-level keys MUST come before any [groups.*] table.
+#   * Give each group a DISTINCT combo (a shared combo just kills both groups).
+#
+# Hotkey tokens are joined by '+'. Modifier aliases match either side: ctrl, alt,
+# shift, super/meta/win. Pin a side with l/r: lctrl, rctrl, lalt, ralt, ...
+# Other tokens: a letter a-z, a raw KEY_* name, or a numeric keycode.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Default group: the laptop's built-in keyboard.
+keyboards  = "AT Translated Set 2 keyboard"
+kill_combo = "ctrl+alt+shift+k"
+wake_combo = "ctrl+alt+shift+u"
+
+# This keyboard is fronted by an input-remapper "forwarded" virtual device, so
+# target that virtual device and never the physical one - input-remapper keeps
+# the physical device and can always regrab it (e.g. across a restart). Set
+# false (the default) for an ordinary keyboard that kb-kill should grab directly.
+virtual_keyboard = true
+
+# Example of a second group with its own hotkey (uncomment + edit to use). It
+# inherits wake_combo from above unless overridden. An ordinary external
+# keyboard wants virtual_keyboard = false (the default), so it can be omitted.
+#
+# [groups.externals]
+# keyboards  = ["KBDfans", "solaar-keyboard"]
+# kill_combo = "ctrl+alt+shift+j"
+# wake_combo = "ctrl+alt+shift+m"
+# virtual_keyboard = false

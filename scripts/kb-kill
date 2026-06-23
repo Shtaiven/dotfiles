@@ -16,9 +16,10 @@ Design notes
   latency.
 * Coexistence with input-remapper: input-remapper grabs the physical keyboard
   (e.g. /dev/input/event3) and forwards it to a virtual "...forwarded" device.
-  kb-kill targets that *virtual* device and never the physical one, so
-  input-remapper can always (re)grab the physical device - including across an
-  input-remapper restart. See `_resolve_targets`.
+  Mark such a group `virtual_keyboard = true` and kb-kill targets only that
+  virtual device, never the physical one, so input-remapper can always
+  (re)grab the physical device - including across a restart. Ordinary groups
+  (the default) grab matching devices directly. See `_resolve_targets`.
 
 Requires: python-evdev, and read/write access to /dev/input/event* (membership
 of the `input` group is enough - root is not required).
@@ -31,6 +32,7 @@ import selectors
 import signal
 import sys
 import time
+import tomllib
 from pathlib import Path
 
 try:
@@ -91,16 +93,17 @@ MODIFIER_ALIASES = {
 }
 
 CONFIG_SEARCH = [
+    Path.home() / ".config" / "kb-kill" / "kb-kill.toml",
     Path.home() / ".config" / "kb-kill" / "kb-kill.conf",
     Path.home() / ".kb-kill",
-    Path("/etc/kb-kill/kb-kill.conf"),
+    Path("/etc/kb-kill/kb-kill.toml"),
 ]
+
+DEFAULT_KILL = "ctrl+alt+shift+k"
+DEFAULT_WAKE = "ctrl+alt+shift+u"
 
 # How often (seconds) to rescan for hotplugged / recreated devices.
 RESCAN_INTERVAL = 2.0
-# Grace before grabbing the *physical* device when physical_fallback is on,
-# kept longer than an input-remapper restart so we never steal it mid-restart.
-PHYSICAL_FALLBACK_GRACE = 8.0
 
 
 def log(msg):
@@ -115,25 +118,27 @@ class ConfigError(Exception):
 # --------------------------------------------------------------------------- #
 # Config
 # --------------------------------------------------------------------------- #
-class Config:
-    def __init__(self, keyboards, kill_combo, wake_combo, physical_fallback,
-                 kill_raw, wake_raw, source):
+class Group:
+    """One target set with its own kill/wake hotkeys."""
+
+    def __init__(self, name, keyboards, kill_combo, wake_combo,
+                 virtual_keyboard, kill_raw, wake_raw):
+        self.name = name                      # label for logs/detect
         self.keyboards = keyboards            # list[str] lowercase substrings
         self.kill_combo = kill_combo          # list[frozenset[int]]
         self.wake_combo = wake_combo          # list[frozenset[int]]
-        self.physical_fallback = physical_fallback
-        self.kill_raw = kill_raw              # original string (for display)
+        self.virtual_keyboard = virtual_keyboard
+        self.kill_raw = kill_raw              # original strings (for display)
         self.wake_raw = wake_raw
+        # runtime state (managed by KbKill)
+        self.targets = {}                     # path -> InputDevice
+        self.killed = False
+
+
+class Config:
+    def __init__(self, groups, source):
+        self.groups = groups                  # list[Group]
         self.source = source                  # Path it was loaded from
-
-
-def _parse_bool(value):
-    v = value.strip().lower()
-    if v in ("true", "yes", "on", "1"):
-        return True
-    if v in ("false", "no", "off", "0"):
-        return False
-    raise ConfigError(f"invalid boolean value: {value!r}")
 
 
 def _parse_token(token):
@@ -180,56 +185,105 @@ def find_config(explicit=None):
             raise ConfigError(f"$KB_KILL_CONFIG points at a missing file: {p}")
         return p
     for p in CONFIG_SEARCH:
-        # ~/.kb-kill may be a directory holding kb-kill.conf
+        # ~/.kb-kill may be a directory holding kb-kill.toml
         if p.is_dir():
-            inner = p / "kb-kill.conf"
+            inner = p / "kb-kill.toml"
             if inner.is_file():
                 return inner
         elif p.is_file():
             return p
     raise ConfigError(
-        "no config file found. Create ~/.config/kb-kill/kb-kill.conf with:\n"
-        "  keyboards  = AT Translated Set 2 keyboard\n"
-        "  kill_combo = ctrl+alt+shift+k\n"
-        "  wake_combo = ctrl+alt+shift+u"
+        "no config file found. Create ~/.config/kb-kill/kb-kill.toml with:\n"
+        '  keyboards  = "AT Translated Set 2 keyboard"\n'
+        '  kill_combo = "ctrl+alt+shift+k"\n'
+        '  wake_combo = "ctrl+alt+shift+u"'
     )
 
 
-def load_config(explicit=None):
-    path = find_config(explicit)
-    values = {}
-    for lineno, raw in enumerate(path.read_text().splitlines(), 1):
-        line = raw.split("#", 1)[0].strip()
-        if not line:
-            continue
-        if "=" not in line:
-            raise ConfigError(f"{path}:{lineno}: expected 'key = value', got {raw!r}")
-        key, val = line.split("=", 1)
-        values[key.strip().lower()] = val.strip()
+# Keys allowed in a group table / the top-level default group.
+_GROUP_KEYS = {"keyboards", "kill_combo", "wake_combo", "virtual_keyboard"}
 
-    if "keyboards" not in values:
-        raise ConfigError(f"{path}: missing required 'keyboards'")
-    keyboards = [k.strip().lower() for k in values["keyboards"].split(",") if k.strip()]
-    if not keyboards:
-        raise ConfigError(f"{path}: 'keyboards' is empty")
 
-    kill_raw = values.get("kill_combo", "ctrl+alt+shift+k")
-    wake_raw = values.get("wake_combo", "ctrl+alt+shift+u")
+def _as_keyboards(value, where):
+    """Coerce the `keyboards` value (string or list of strings) to a list of
+    lowercased substrings."""
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        raise ConfigError(f"{where}: 'keyboards' must be a string or list of strings")
+    kbs = [v.strip().lower() for v in value if v.strip()]
+    if not kbs:
+        raise ConfigError(f"{where}: 'keyboards' is empty")
+    return kbs
+
+
+def _build_group(name, table, defaults, where):
+    """Build a Group from a TOML table, inheriting unset combos/fallback."""
+    for key in table:
+        if key not in _GROUP_KEYS:
+            log(f"warning: {where}: unknown key {key!r} (ignored)")
+
+    kbs = _as_keyboards(table["keyboards"], where)
+    kill_raw = table.get("kill_combo", defaults["kill_combo"])
+    wake_raw = table.get("wake_combo", defaults["wake_combo"])
+    # virtual_keyboard describes one keyboard's nature, so it is per-group only
+    # (default false) and never inherited from the top-level defaults.
+    virtual = table.get("virtual_keyboard", False)
+    if not isinstance(virtual, bool):
+        raise ConfigError(f"{where}: 'virtual_keyboard' must be true or false")
+    if not isinstance(kill_raw, str) or not isinstance(wake_raw, str):
+        raise ConfigError(f"{where}: 'kill_combo'/'wake_combo' must be strings")
     try:
         kill_combo = _parse_combo(kill_raw)
         wake_combo = _parse_combo(wake_raw)
     except ConfigError as e:
+        raise ConfigError(f"{where}: {e}")
+    return Group(name, kbs, kill_combo, wake_combo, virtual, kill_raw, wake_raw)
+
+
+def load_config(explicit=None):
+    path = find_config(explicit)
+    try:
+        with open(path, "rb") as fh:
+            doc = tomllib.load(fh)
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigError(f"{path}: invalid TOML: {e}")
+    except OSError as e:
         raise ConfigError(f"{path}: {e}")
 
-    physical_fallback = False
-    if "physical_fallback" in values:
-        try:
-            physical_fallback = _parse_bool(values["physical_fallback"])
-        except ConfigError as e:
-            raise ConfigError(f"{path}: physical_fallback: {e}")
+    # Top-level keys form the default group (if they include `keyboards`) and
+    # supply defaults inherited by [groups.*].
+    sections = doc.pop("groups", {})
+    if not isinstance(sections, dict):
+        raise ConfigError(f"{path}: 'groups' must be a table ([groups.<name>])")
 
-    return Config(keyboards, kill_combo, wake_combo, physical_fallback,
-                  kill_raw, wake_raw, path)
+    defaults = {
+        "kill_combo": doc.get("kill_combo", DEFAULT_KILL),
+        "wake_combo": doc.get("wake_combo", DEFAULT_WAKE),
+    }
+
+    groups = []
+    if "keyboards" in doc:
+        groups.append(_build_group("default", doc, defaults, f"{path} [top-level]"))
+    else:
+        # No top-level group: validate stray top-level keys are known defaults.
+        for key in doc:
+            if key not in _GROUP_KEYS:
+                log(f"warning: {path}: unknown top-level key {key!r} (ignored)")
+
+    for name, table in sections.items():
+        if not isinstance(table, dict):
+            raise ConfigError(f"{path}: [groups.{name}] must be a table")
+        if "keyboards" not in table:
+            raise ConfigError(f"{path}: [groups.{name}] is missing 'keyboards'")
+        groups.append(_build_group(name, table, defaults, f"{path} [groups.{name}]"))
+
+    if not groups:
+        raise ConfigError(
+            f"{path}: no group defined. Add top-level 'keyboards = ...' and/or a "
+            "[groups.<name>] table with its own 'keyboards'."
+        )
+    return Config(groups, path)
 
 
 # --------------------------------------------------------------------------- #
@@ -269,57 +323,39 @@ def combo_held(combo, pressed):
     return all(group & pressed for group in combo)
 
 
-def combo_str(raw, combo):
-    return raw
-
-
 # --------------------------------------------------------------------------- #
 # Service
 # --------------------------------------------------------------------------- #
 class KbKill:
     def __init__(self, config):
         self.config = config
+        self.groups = config.groups   # list[Group], each with its own state
         self.sel = selectors.DefaultSelector()
         self.devices = {}       # path -> InputDevice (monitored)
         self.pressed = {}       # path -> set[int]
-        self.targets = {}       # path -> InputDevice (current kill targets)
         self.grabbed = set()    # paths currently EVIOCGRAB'd by us
-        self.deferred = set()   # target paths whose grab waits for key release
-        self.killed = False
         self.running = True
         self.need_rescan = False
-        self._no_virtual_since = None
 
     # -- device name matching ------------------------------------------------ #
-    def _name_matches(self, name):
+    @staticmethod
+    def _name_matches(group, name):
         low = (name or "").lower()
-        return any(sub in low for sub in self.config.keyboards)
+        return any(sub in low for sub in group.keyboards)
 
-    def _resolve_targets(self):
-        """Pick the devices to grab. Prefer virtual (forwarded) devices and
-        never touch the physical keyboard unless physical_fallback is on."""
+    def _resolve_targets(self, group):
+        """Pick the devices to grab for a group.
+
+        For a `virtual_keyboard` group (one fronted by an input-remapper
+        "forwarded" device), target only the virtual device(s) and never the
+        physical keyboard, so input-remapper can always keep/regrab the physical
+        device. For an ordinary group, grab whatever matches directly.
+        """
         matched = {p: d for p, d in self.devices.items()
-                   if self._name_matches(d.name)}
-        virtual = {p: d for p, d in matched.items() if is_virtual(d)}
-        physical = {p: d for p, d in matched.items() if not is_virtual(d)}
-
-        if virtual:
-            self._no_virtual_since = None
-            return virtual
-
-        if not (self.config.physical_fallback and physical):
-            self._no_virtual_since = None
-            return {}
-
-        # Physical fallback, gated by a grace period longer than an IR restart
-        # so we don't steal the physical device while input-remapper restarts.
-        now = time.monotonic()
-        if self._no_virtual_since is None:
-            self._no_virtual_since = now
-            return {}
-        if now - self._no_virtual_since >= PHYSICAL_FALLBACK_GRACE:
-            return physical
-        return {}
+                   if self._name_matches(group, d.name)}
+        if group.virtual_keyboard:
+            return {p: d for p, d in matched.items() if is_virtual(d)}
+        return matched
 
     # -- device lifecycle ---------------------------------------------------- #
     def _add_device(self, path, dev):
@@ -339,9 +375,9 @@ class KbKill:
             except OSError:
                 pass
         self.pressed.pop(path, None)
-        self.targets.pop(path, None)
+        for group in self.groups:
+            group.targets.pop(path, None)
         self.grabbed.discard(path)
-        self.deferred.discard(path)
 
     def rescan(self):
         self.need_rescan = False
@@ -361,19 +397,9 @@ class KbKill:
                 self._add_device(path, dev)
                 log(f"watching: {path} ({dev.name})")
 
-        self.targets = self._resolve_targets()
-
-        # Keep grabs consistent with state and the current target set.
-        if self.killed:
-            for path in self.targets:
-                if path not in self.grabbed and path not in self.deferred:
-                    self._grab(path)
-            for path in list(self.grabbed):
-                if path not in self.targets:
-                    self._ungrab(path)
-        else:
-            for path in list(self.grabbed):
-                self._ungrab(path)
+        for group in self.groups:
+            group.targets = self._resolve_targets(group)
+        self._reconcile_grabs()
 
     # -- grab / ungrab ------------------------------------------------------- #
     def _grab(self, path):
@@ -416,49 +442,57 @@ class KbKill:
             held |= keys
         return held
 
-    def _do_kill(self):
-        if self.killed:
-            return
-        self.killed = True
-        # Lockout guard: warn (do not refuse) if killing the only keyboard. The
-        # target can always wake itself, so this is never a hard lockout.
-        non_targets = [p for p in self.devices if p not in self.targets]
-        if not self.targets:
-            log("kill: no target keyboard present yet (will grab when it appears)")
-        elif not non_targets:
-            log("warning: killing the only keyboard present "
-                "(wake hotkey on it still works)")
-        for path in self.targets:
-            self._grab_or_defer(path)
-        log("KILLED")
+    def _reconcile_grabs(self):
+        """Make the set of grabbed devices match the union of every killed
+        group's targets.
 
-    def _do_wake(self):
-        if not self.killed:
-            return
-        self.killed = False
-        self.deferred.clear()
-        for path in list(self.grabbed):
-            self._ungrab(path)
-        log("WOKEN")
-
-    def _grab_or_defer(self, path):
-        """Grab a target now, or defer until it has no keys held.
-
-        Grabbing a device while keys are physically down would swallow their
-        key-up events and leave those keys stuck down at the OS. So if anything
-        is held on the device (the common "kill from the laptop itself" case),
-        wait for release first - the key-ups then reach the OS normally.
+        A device is grabbed once no matter how many killed groups want it, and
+        stays grabbed while any of them is killed. Grabbing a device that
+        currently has keys held would swallow their key-ups and leave them stuck
+        down at the OS, so we defer grabbing such a device until it is idle
+        (unless it is already grabbed). Each key-up re-runs this, which is what
+        eventually grabs a deferred device once released.
         """
-        if self.pressed.get(path):
-            self.deferred.add(path)
-            log(f"deferring grab of {self.devices[path].name} until keys released")
-        else:
+        desired = set()
+        for group in self.groups:
+            if group.killed:
+                desired.update(group.targets)
+
+        for path in desired:
+            if path in self.grabbed:
+                continue
+            if self.pressed.get(path):
+                log(f"deferring grab of {self.devices[path].name} until keys released")
+                continue
             self._grab(path)
 
-    def _maybe_grab_deferred(self, path):
-        if path in self.deferred and self.killed and not self.pressed.get(path):
-            self.deferred.discard(path)
-            self._grab(path)
+        for path in list(self.grabbed):
+            if path not in desired:
+                self._ungrab(path)
+
+    def _toggle_groups(self, held):
+        """Flip each group's killed state when its kill/wake combo is held."""
+        for group in self.groups:
+            if not group.killed:
+                if combo_held(group.kill_combo, held):
+                    group.killed = True
+                    self._log_kill(group)
+            elif combo_held(group.wake_combo, held):
+                group.killed = False
+                log(f"[{group.name}] WOKEN")
+
+    def _log_kill(self, group):
+        # Lockout guard: warn (do not refuse) if killing the only keyboard(s)
+        # present. A killed group can always wake itself, so this is never a
+        # hard lockout.
+        non_targets = [p for p in self.devices if p not in group.targets]
+        if not group.targets:
+            log(f"[{group.name}] kill: no target keyboard present yet "
+                "(will grab when it appears)")
+        elif not non_targets:
+            log(f"[{group.name}] warning: killing the only keyboard present "
+                "(wake hotkey on it still works)")
+        log(f"[{group.name}] KILLED")
 
     # -- event handling ------------------------------------------------------ #
     def _process(self, path, event):
@@ -467,19 +501,12 @@ class KbKill:
         pressed = self.pressed[path]
         if event.value == 1:          # key down
             pressed.add(event.code)
+            self._toggle_groups(self._global_pressed())
         elif event.value == 0:        # key up
             pressed.discard(event.code)
-            self._maybe_grab_deferred(path)
-            return
         else:                         # autorepeat (2) - ignore for combos
             return
-
-        held = self._global_pressed()
-        if not self.killed:
-            if combo_held(self.config.kill_combo, held):
-                self._do_kill()
-        elif combo_held(self.config.wake_combo, held):
-            self._do_wake()
+        self._reconcile_grabs()
 
     def _read_device(self, dev, path):
         try:
@@ -501,8 +528,9 @@ class KbKill:
         signal.signal(signal.SIGTERM, _stop)
 
         log(f"config: {self.config.source}")
-        log(f"targets match: {', '.join(self.config.keyboards)}")
-        log(f"kill = {self.config.kill_raw!r}   wake = {self.config.wake_raw!r}")
+        for g in self.groups:
+            log(f"[{g.name}] keyboards={g.keyboards} "
+                f"kill={g.kill_raw!r} wake={g.wake_raw!r}")
         self.rescan()
 
         last_scan = time.monotonic()
@@ -540,10 +568,12 @@ def cmd_detect(config):
     print("=== kb-kill detect ===")
     print(f"session : {os.environ.get('XDG_SESSION_TYPE', 'unknown')}")
     print(f"config  : {config.source}")
-    print(f"match   : {', '.join(config.keyboards)}")
-    print(f"kill    : {config.kill_raw}")
-    print(f"wake    : {config.wake_raw}")
-    print(f"physical_fallback : {config.physical_fallback}")
+    print()
+    print("Groups:")
+    for g in config.groups:
+        print(f"  [{g.name}]  keyboards={g.keyboards}")
+        print(f"  {'':9}kill={g.kill_raw}  wake={g.wake_raw}  "
+              f"virtual_keyboard={g.virtual_keyboard}")
     print()
 
     in_input_group = "input" in os.popen("id -nG").read().split()
@@ -560,27 +590,32 @@ def cmd_detect(config):
     svc = KbKill(config)
     svc.devices = devices
     svc.pressed = {p: set() for p in devices}
-    targets = svc._resolve_targets()
+    for g in config.groups:
+        g.targets = svc._resolve_targets(g)
 
+    any_target = any(g.targets for g in config.groups)
     print("Keyboards:")
     for path in sorted(devices):
         dev = devices[path]
         kind = "virtual " if is_virtual(dev) else "physical"
-        matched = svc._name_matches(dev.name)
-        if path in targets:
-            mark = "TARGET (will be grabbed when killed)"
-        elif matched:
-            mark = "matches, but skipped (prefer virtual / fallback off)"
+        target_of = [g.name for g in config.groups if path in g.targets]
+        matched_of = [g.name for g in config.groups
+                      if svc._name_matches(g, dev.name)]
+        if target_of:
+            mark = f"TARGET of {', '.join(target_of)} (grabbed when killed)"
+        elif matched_of:
+            mark = (f"matches {', '.join(matched_of)}, but skipped "
+                    "(virtual_keyboard=true ignores the physical device)")
         else:
-            mark = "monitored only (can trigger the hotkey)"
+            mark = "monitored only (can trigger any hotkey)"
         print(f"  {path:24} [{kind}] {dev.name}")
         print(f"  {'':24}   {mark}")
 
-    if not targets:
+    if not any_target:
         print()
-        print("No target will be grabbed. If input-remapper isn't running, its "
-              "forwarded device\nwon't exist; set physical_fallback = true to "
-              "grab the physical keyboard directly.")
+        print("No target will be grabbed. A virtual_keyboard group needs its "
+              "input-remapper\nforwarded device present; an ordinary group needs "
+              "a matching keyboard.")
     for dev in devices.values():
         dev.close()
     return 0
@@ -608,8 +643,9 @@ def cmd_monitor(config):
         pressed[path] = set(dev.active_keys())
         sel.register(dev, selectors.EVENT_READ, path)
 
-    print("Monitoring all keyboards. Press your KILL combo "
-          f"({config.kill_raw}) on the LAPTOP keyboard.")
+    print("Monitoring all keyboards. Press a group's kill/wake combo.")
+    for g in config.groups:
+        print(f"  [{g.name}] kill={g.kill_raw} wake={g.wake_raw}")
     print("Ctrl+C to stop.\n")
     try:
         while True:
@@ -632,14 +668,11 @@ def cmd_monitor(config):
                     short = dev.name[:34]
                     glob = set().union(*pressed.values()) if pressed else set()
                     flags = []
-                    if combo_held(config.kill_combo, p):
-                        flags.append("KILL@device")
-                    elif combo_held(config.kill_combo, glob):
-                        flags.append("KILL@global")
-                    if combo_held(config.wake_combo, p):
-                        flags.append("WAKE@device")
-                    elif combo_held(config.wake_combo, glob):
-                        flags.append("WAKE@global")
+                    for g in config.groups:
+                        if combo_held(g.kill_combo, glob):
+                            flags.append(f"KILL[{g.name}]")
+                        if combo_held(g.wake_combo, glob):
+                            flags.append(f"WAKE[{g.name}]")
                     tag = ("  <<< " + " ".join(flags)) if flags else ""
                     print(f"{path:20} {short:34} {_keyname(ev.code):16} "
                           f"{action}{tag}")

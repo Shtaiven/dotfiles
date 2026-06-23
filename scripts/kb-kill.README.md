@@ -49,23 +49,57 @@ journalctl --user -u kb-kill -f         # watch KILLED / WOKEN live
 
 ## Configuration
 
-Config is read from the first of: `--config PATH`, `$KB_KILL_CONFIG`,
-`~/.config/kb-kill/kb-kill.conf`, `~/.kb-kill`, `/etc/kb-kill/kb-kill.conf`.
+Config is [TOML](https://toml.io), read from the first of: `--config PATH`,
+`$KB_KILL_CONFIG`, `~/.config/kb-kill/kb-kill.toml`, `~/.kb-kill`,
+`/etc/kb-kill/kb-kill.toml`.
 
-```ini
-# Target keyboard(s): case-insensitive name substrings, comma-separated.
-keyboards = AT Translated Set 2 keyboard
+A simple single-keyboard config:
 
-# Hotkey to disable the target(s).
-kill_combo = ctrl+alt+shift+k
-
-# Hotkey to re-enable the target(s). Always honored on the killed keyboard.
-wake_combo = ctrl+alt+shift+u
-
-# Only grab the physical keyboard if no input-remapper "forwarded" device
-# exists. Keep false so kb-kill never holds the physical device.
-physical_fallback = false
+```toml
+keyboards  = "AT Translated Set 2 keyboard"
+kill_combo = "ctrl+alt+shift+k"
+wake_combo = "ctrl+alt+shift+u"   # always honored on the killed keyboard
+virtual_keyboard = true           # input-remapper-managed; see coexistence below
 ```
+
+`keyboards` is a string or a list of strings — case-insensitive substrings
+matched against device names (`kb-kill detect` shows the names).
+
+`virtual_keyboard` (default `false`): set `true` when the keyboard is fronted by
+an input-remapper "forwarded" virtual device — kb-kill then targets that virtual
+device and never the physical one. Leave it `false` for an ordinary keyboard,
+which kb-kill grabs directly.
+
+### Groups: per-keyboard hotkeys
+
+You can define several independent **groups**, each with its own target
+keyboards and its own kill/wake hotkeys:
+
+* The **top-level** keys (above) are the **default group** (when they include
+  `keyboards`) and also supply **defaults** that every `[groups.*]` inherits.
+* Each **`[groups.<name>]`** table adds a group; it inherits `kill_combo` and
+  `wake_combo` unless it sets its own. `virtual_keyboard` is per-group (default
+  `false`) and is **not** inherited.
+* TOML rule: top-level keys must come **before** any `[groups.*]` table.
+* Give each group a **distinct** combo — a shared combo simply kills both.
+
+```toml
+wake_combo = "ctrl+alt+shift+u"               # default, inherited below
+
+keyboards  = "AT Translated Set 2 keyboard"   # default group (the laptop)
+kill_combo = "ctrl+alt+shift+k"
+virtual_keyboard = true                       # input-remapper-managed
+
+[groups.externals]
+keyboards  = ["KBDfans", "solaar-keyboard"]
+kill_combo = "ctrl+alt+shift+j"
+wake_combo = "ctrl+alt+shift+m"               # overrides the default
+# virtual_keyboard defaults to false → grabbed directly
+```
+
+Any keyboard can trigger any group's hotkey, and each group kills/wakes
+independently. Groups should target **disjoint** keyboards; if they overlap, a
+device stays disabled while *any* group targeting it is killed.
 
 ### Hotkey syntax
 
@@ -104,10 +138,12 @@ When input-remapper manages a keyboard it grabs the **physical** device (e.g.
 * a per-keyboard `…forwarded` device for **un-remapped** (passthrough) keys, and
 * the shared `input-remapper keyboard` device for the **output of mappings**.
 
-kb-kill targets the **forwarded** (virtual) device and **never the physical
-one**, so input-remapper can always (re)grab the physical keyboard — including
-across an input-remapper restart (kb-kill re-attaches by name). This is why the
-default `physical_fallback = false`.
+Mark such a group **`virtual_keyboard = true`** and kb-kill targets the
+**forwarded** (virtual) device and **never the physical one**, so input-remapper
+can always (re)grab the physical keyboard — including across an input-remapper
+restart (kb-kill re-attaches by name). If the forwarded device isn't present
+(input-remapper not running), a `virtual_keyboard` group simply grabs nothing
+rather than risk fighting input-remapper for the physical device.
 
 Two consequences worth knowing:
 
@@ -123,15 +159,15 @@ Two consequences worth knowing:
    they exist **after** remapping (e.g. if CapsLock is mapped to Ctrl, press
    CapsLock for the `ctrl` token).
 
-If you don't use input-remapper, kb-kill grabs the physical keyboard directly
-(set `physical_fallback = true`).
+For a keyboard that input-remapper doesn't manage, leave `virtual_keyboard`
+at its default (`false`) and kb-kill grabs the physical keyboard directly.
 
 ## Files
 
 | Path | Purpose |
 |---|---|
 | `scripts/kb-kill` | the service (Python) |
-| `stow/kb-kill/.config/kb-kill/kb-kill.conf` | default config |
+| `stow/kb-kill/.config/kb-kill/kb-kill.toml` | default config |
 | `stow/kb-kill/.config/systemd/user/kb-kill.service` | systemd user unit |
 | `scripts/dots` | `post_install` hook that symlinks the binary + enables the service |
 
