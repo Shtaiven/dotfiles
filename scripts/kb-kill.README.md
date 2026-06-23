@@ -129,6 +129,31 @@ kb-kill -c PATH <cmd>    # use a specific config file
 `detect` is the place to start: it shows each keyboard's name, whether it's a
 target, and flags permission/input-group problems.
 
+## Tray icon
+
+`kb-kill-tray` is an optional tray icon (StatusNotifierItem) that shows whether
+any group is **disabled** (⛔) or **active** (⌨) and lets you toggle a group by
+clicking its menu entry. It runs as a separate process and talks to the service
+over a Unix control socket (`$XDG_RUNTIME_DIR/kb-kill.sock`), so a GUI problem
+can never affect keyboard handling.
+
+```sh
+systemctl --user enable --now kb-kill-tray
+```
+
+* Works natively on **COSMIC** and **KDE Plasma**. On **GNOME** it needs the
+  [AppIndicator extension](https://extensions.gnome.org/extension/615/appindicator-support/)
+  (GNOME has no native tray).
+* Requires PyGObject with `Gtk 3.0` and `AyatanaAppIndicator3`
+  (`gir1.2-ayatanaappindicator3-0.1` on Debian/Pop, `libayatana-appindicator`
+  on Arch).
+* The icons live in `~/.config/kb-kill/icons/` and the menu lists every group
+  from your config, so multiple groups each get their own toggle entry.
+
+The control socket is also a small JSON line protocol if you want to script it:
+send `{"cmd":"toggle","group":"<name>"}` (or `kill`/`wake`/`status`); the
+service replies/broadcasts `{"type":"state","groups":[{"name","killed","targets"}]}`.
+
 ## input-remapper coexistence
 
 kb-kill is built to run alongside [input-remapper](https://github.com/sezanzeb/input-remapper).
@@ -168,9 +193,12 @@ at its default (`false`) and kb-kill grabs the physical keyboard directly.
 | Path | Purpose |
 |---|---|
 | `scripts/kb-kill` | the service (Python) |
+| `scripts/kb-kill-tray` | optional tray icon (Python / AppIndicator) |
 | `stow/kb-kill/.config/kb-kill/kb-kill.toml` | default config |
-| `stow/kb-kill/.config/systemd/user/kb-kill.service` | systemd user unit |
-| `scripts/dots` | `post_install` hook that symlinks the binary + enables the service |
+| `stow/kb-kill/.config/kb-kill/icons/` | tray icons (awake / killed) |
+| `stow/kb-kill/.config/systemd/user/kb-kill.service` | service systemd user unit |
+| `stow/kb-kill/.config/systemd/user/kb-kill-tray.service` | tray systemd user unit |
+| `scripts/dots` | `post_install` hook that symlinks the binaries + enables the services |
 
 ## Troubleshooting
 

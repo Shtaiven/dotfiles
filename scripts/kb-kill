@@ -27,9 +27,11 @@ of the `input` group is enough - root is not required).
 
 import argparse
 import errno
+import json
 import os
 import selectors
 import signal
+import socket
 import sys
 import time
 import tomllib
@@ -104,6 +106,17 @@ DEFAULT_WAKE = "ctrl+alt+shift+u"
 
 # How often (seconds) to rescan for hotplugged / recreated devices.
 RESCAN_INTERVAL = 2.0
+
+# Selector tag for the control socket's listening fd (devices use their path
+# string as the tag; clients use ("client", conn)).
+_LISTEN = object()
+
+
+def control_socket_path():
+    base = os.environ.get("XDG_RUNTIME_DIR")
+    if base:
+        return os.path.join(base, "kb-kill.sock")
+    return f"/tmp/kb-kill-{os.getuid()}.sock"
 
 
 def log(msg):
@@ -336,6 +349,11 @@ class KbKill:
         self.grabbed = set()    # paths currently EVIOCGRAB'd by us
         self.running = True
         self.need_rescan = False
+        # control socket (for the tray): optional, never fatal
+        self._listen = None
+        self._sock_path = None
+        self.clients = {}       # conn -> recv buffer bytes
+        self._last_sig = None
 
     # -- device name matching ------------------------------------------------ #
     @staticmethod
@@ -522,6 +540,109 @@ class KbKill:
             elif e.errno != errno.EAGAIN:
                 log(f"read error on {path}: {e}")
 
+    # -- control socket (tray) ----------------------------------------------- #
+    def _open_control_socket(self):
+        path = control_socket_path()
+        try:
+            if os.path.exists(path):
+                os.unlink(path)
+            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            s.bind(path)
+            os.chmod(path, 0o600)
+            s.listen(8)
+            s.setblocking(False)
+        except OSError as e:
+            log(f"control socket disabled: {e}")
+            return
+        self._listen = s
+        self._sock_path = path
+        self.sel.register(s, selectors.EVENT_READ, _LISTEN)
+        log(f"control socket: {path}")
+
+    def _state_dict(self):
+        return {
+            "type": "state",
+            "groups": [
+                {"name": g.name, "killed": g.killed, "targets": len(g.targets)}
+                for g in self.groups
+            ],
+        }
+
+    def _send(self, conn, obj):
+        try:
+            conn.sendall((json.dumps(obj) + "\n").encode())
+        except OSError:
+            self._drop_client(conn)
+
+    def _accept_client(self):
+        try:
+            conn, _ = self._listen.accept()
+        except OSError:
+            return
+        conn.setblocking(False)
+        self.clients[conn] = b""
+        self.sel.register(conn, selectors.EVENT_READ, ("client", conn))
+        self._send(conn, self._state_dict())
+
+    def _drop_client(self, conn):
+        try:
+            self.sel.unregister(conn)
+        except (KeyError, ValueError):
+            pass
+        self.clients.pop(conn, None)
+        try:
+            conn.close()
+        except OSError:
+            pass
+
+    def _read_client(self, conn):
+        try:
+            data = conn.recv(4096)
+        except OSError:
+            self._drop_client(conn)
+            return
+        if not data:
+            self._drop_client(conn)
+            return
+        buf = self.clients.get(conn, b"") + data
+        *lines, self.clients[conn] = buf.split(b"\n")
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                self._apply_command(json.loads(line), conn)
+            except ValueError:
+                pass
+
+    def _apply_command(self, obj, conn):
+        cmd = obj.get("cmd")
+        if cmd == "status":
+            self._send(conn, self._state_dict())
+            return
+        group = next((g for g in self.groups if g.name == obj.get("group")), None)
+        if group is None:
+            return
+        if cmd == "kill":
+            group.killed = True
+        elif cmd == "wake":
+            group.killed = False
+        elif cmd == "toggle":
+            group.killed = not group.killed
+        else:
+            return
+        log(f"[{group.name}] {'KILLED' if group.killed else 'WOKEN'} (via tray)")
+        self._reconcile_grabs()
+
+    def _maybe_broadcast(self):
+        sig = tuple((g.killed, len(g.targets)) for g in self.groups)
+        if sig == self._last_sig:
+            return
+        self._last_sig = sig
+        state = self._state_dict()
+        for conn in list(self.clients):
+            self._send(conn, state)
+
     # -- main loop ----------------------------------------------------------- #
     def run(self):
         def _stop(signum, frame):
@@ -533,18 +654,29 @@ class KbKill:
         for g in self.groups:
             log(f"[{g.name}] keyboards={g.keyboards} "
                 f"kill={g.kill_raw!r} wake={g.wake_raw!r}")
+        self._open_control_socket()
         self.rescan()
+        # Seed the broadcast signature so newly-connected clients get state only
+        # via the initial send, not a spurious startup broadcast.
+        self._last_sig = tuple((g.killed, len(g.targets)) for g in self.groups)
 
         last_scan = time.monotonic()
         try:
             while self.running:
                 events = self.sel.select(timeout=RESCAN_INTERVAL)
                 for key, _ in events:
-                    self._read_device(key.fileobj, key.data)
+                    tag = key.data
+                    if tag is _LISTEN:
+                        self._accept_client()
+                    elif isinstance(tag, tuple) and tag[0] == "client":
+                        self._read_client(tag[1])
+                    else:
+                        self._read_device(key.fileobj, tag)
                 now = time.monotonic()
                 if self.need_rescan or (now - last_scan) >= RESCAN_INTERVAL:
                     self.rescan()
                     last_scan = now
+                self._maybe_broadcast()
         except KeyboardInterrupt:
             pass
         finally:
@@ -555,6 +687,22 @@ class KbKill:
             self._ungrab(path)
         for path in list(self.devices):
             self._remove_device(path)
+        for conn in list(self.clients):
+            self._drop_client(conn)
+        if self._listen is not None:
+            try:
+                self.sel.unregister(self._listen)
+            except (KeyError, ValueError):
+                pass
+            try:
+                self._listen.close()
+            except OSError:
+                pass
+            if self._sock_path and os.path.exists(self._sock_path):
+                try:
+                    os.unlink(self._sock_path)
+                except OSError:
+                    pass
         log("stopped; keyboards restored")
 
 
