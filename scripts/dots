@@ -169,37 +169,10 @@ def post_install(pkg: str) -> None:
         else:
             print("  nnn plugins: already installed")
     elif pkg == "kb-kill":
-        bin_dir = Path.home() / ".local" / "bin"
-        bin_dir.mkdir(parents=True, exist_ok=True)
-        for name in ("kb-kill", "kb-kill-tray"):
-            link = bin_dir / name
-            source = DOTFILES_DIR / "scripts" / name
-            if link.exists() or link.is_symlink():
-                print(f"  {name}: already installed")
-            else:
-                print(f"  Installing {name}...")
-                link.symlink_to(source)
-
-        def _offer_service(unit, prompt):
-            active = subprocess.run(
-                ["systemctl", "--user", "is-enabled", f"{unit}.service"],
-                capture_output=True,
-                text=True,
-            )
-            if active.stdout.strip() == "enabled":
-                print(f"  {unit} service: already enabled")
-            elif _confirm(prompt):
-                subprocess.run(
-                    ["systemctl", "--user", "enable", "--now", f"{unit}.service"],
-                )
-            else:
-                print(f"  {unit} service: skipped (enable with: "
-                      f"systemctl --user enable --now {unit})")
-
-        if shutil.which("systemctl"):
-            _offer_service("kb-kill", "  Enable kb-kill service now? [y/N] ")
-            _offer_service("kb-kill-tray",
-                           "  Enable kb-kill tray icon now? [y/N] ")
+        # kb-kill is a self-contained project with its own installer; stow only
+        # deploys the personal config. Point the user at it.
+        print("  kb-kill: config stowed. Install the daemon + tray with:")
+        print(f"           {DOTFILES_DIR / 'scripts' / 'kb-kill' / 'install.sh'}")
 
 
 def cmd_install(args: argparse.Namespace) -> int:

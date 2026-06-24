@@ -1,8 +1,9 @@
 [Unit]
 Description=kb-kill-tray - tray icon for kb-kill
 Documentation=https://github.com/seisinger/dotfiles
-After=graphical-session.target kb-kill.service
-Wants=kb-kill.service
+# kb-kill itself is a system service; the tray reconnects on its own, so no
+# ordering dependency on it is needed here.
+After=graphical-session.target
 PartOf=graphical-session.target
 
 [Service]

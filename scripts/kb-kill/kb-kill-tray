@@ -40,23 +40,38 @@ from gi.repository import GLib, Gtk  # noqa: E402
 APP_ID = "kb-kill"
 ICON_AWAKE = "kb-kill-awake"
 ICON_KILLED = "kb-kill-killed"
-ICON_DIR = os.path.expanduser("~/.config/kb-kill/icons")
 RECONNECT_SECONDS = 2
 
 
+def icon_dir():
+    """Locate the tray icons. Prefer icons shipped alongside this script (the
+    self-contained project layout), then a system install, then the user config."""
+    here = os.path.dirname(os.path.realpath(__file__))
+    for candidate in (os.path.join(here, "icons"),
+                      "/usr/local/share/kb-kill/icons",
+                      os.path.expanduser("~/.config/kb-kill/icons")):
+        if os.path.isdir(candidate):
+            return candidate
+    return None
+
+
 def socket_path():
-    base = os.environ.get("XDG_RUNTIME_DIR")
-    if base:
-        return os.path.join(base, "kb-kill.sock")
-    return f"/tmp/kb-kill-{os.getuid()}.sock"
+    for candidate in ("/run/kb-kill/control.sock",
+                      os.path.join(os.environ.get("XDG_RUNTIME_DIR", ""),
+                                   "kb-kill.sock")):
+        if candidate and os.path.exists(candidate):
+            return candidate
+    # default to the system path even if not yet present (reconnect will retry)
+    return "/run/kb-kill/control.sock"
 
 
 class Tray:
     def __init__(self):
         self.ind = AppIndicator3.Indicator.new(
             APP_ID, ICON_AWAKE, AppIndicator3.IndicatorCategory.HARDWARE)
-        if os.path.isdir(ICON_DIR):
-            self.ind.set_icon_theme_path(ICON_DIR)
+        icons = icon_dir()
+        if icons:
+            self.ind.set_icon_theme_path(icons)
         self.ind.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
         self.ind.set_title("kb-kill")
         self.sock = None

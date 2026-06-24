@@ -6,7 +6,7 @@ have their own READMEs:
 | Tool | Description | Docs |
 |---|---|---|
 | `dots` | Dotfiles management wrapping GNU Stow (install / remove / adopt / …) | [dots.README.md](./dots.README.md) |
-| `kb-kill` | Disable/enable a target keyboard with a global hotkey, as a service | [kb-kill.README.md](./kb-kill.README.md) |
+| `kb-kill/` | Disable/enable a target keyboard with a global hotkey (self-contained sub-project, slated to move to its own repo) | [kb-kill/README.md](./kb-kill/README.md) |
 | `term-colors` | Print the terminal's ANSI color palette as blocks | [term-colors.README.md](./term-colors.README.md) |
 
 ## pre-commit hooks

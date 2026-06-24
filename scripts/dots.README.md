@@ -44,8 +44,9 @@ Some packages run extra setup after stowing, in `post_install()`:
 
 * `zsh` → offers to clone [Prezto](https://github.com/sorin-ionescu/prezto)
 * `shell` → offers to install nnn plugins
-* `kb-kill` → symlinks the `kb-kill` binary into `~/.local/bin` and offers to
-  enable its systemd user service (see [kb-kill.README.md](./kb-kill.README.md))
+* `kb-kill` → stows only the personal config; the daemon + tray are installed by
+  the project's own `scripts/kb-kill/install.sh` (see
+  [kb-kill/README.md](./kb-kill/README.md))
 
 ## Examples
 

@@ -1,0 +1,55 @@
+[Unit]
+Description=kb-kill - disable/enable a target keyboard on a global hotkey
+Documentation=https://github.com/seisinger/dotfiles
+After=multi-user.target
+
+[Service]
+Type=simple
+# @CONFIG@ is replaced by install.sh with the owning user's config path.
+ExecStart=/usr/local/bin/kb-kill run --config @CONFIG@
+Restart=on-failure
+RestartSec=2
+
+# --- sandboxing -------------------------------------------------------------
+# Runs as root only to read /dev/input and grab keyboards; it needs nothing else.
+RuntimeDirectory=kb-kill
+RuntimeDirectoryMode=0755
+NoNewPrivileges=true
+# CAP_DAC_READ_SEARCH: traverse the owning user's 0700 home dirs to read the
+#   config under ~/.config (read-only DAC bypass -> can read, never write).
+# CAP_CHOWN: chown the control socket to the tray user's group so only that
+#   group (plus root) can reach it (the SO_PEERCRED uid check is the real gate).
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_CHOWN
+AmbientCapabilities=CAP_DAC_READ_SEARCH CAP_CHOWN
+# No network of any kind -> a compromised process cannot exfiltrate.
+RestrictAddressFamilies=AF_UNIX
+IPAddressDeny=any
+# Only input devices, nothing else under /dev.
+DevicePolicy=closed
+DeviceAllow=char-input rw
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RemoveIPC=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+# Re-allow the chown family (stripped above as part of @privileged) so the
+# daemon can set the control socket's group; paired with CAP_CHOWN above.
+SystemCallFilter=@chown
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

@@ -29,9 +29,11 @@ import argparse
 import errno
 import json
 import os
+import pwd
 import selectors
 import signal
 import socket
+import struct
 import sys
 import time
 import tomllib
@@ -94,10 +96,38 @@ MODIFIER_ALIASES = {
     "rmeta": frozenset({ecodes.KEY_RIGHTMETA}),
 }
 
+def _invoking_home():
+    """Home directory of the user who invoked us, even under sudo/pkexec.
+
+    A root `kb-kill detect`/`monitor` run via sudo gets HOME=/root, so a plain
+    Path.home() would miss the user's config and force an explicit --config.
+    Recover the real user from SUDO_USER (sudo) or PKEXEC_UID (polkit) and take
+    their home from the passwd db; fall back to Path.home() when unprivileged or
+    when there's no caller to recover (e.g. a bare systemd service, which passes
+    --config anyway).
+    """
+    if os.geteuid() == 0:
+        name = os.environ.get("SUDO_USER")
+        if not name:
+            uid = os.environ.get("PKEXEC_UID", "")
+            if uid.isdigit():
+                try:
+                    name = pwd.getpwuid(int(uid)).pw_name
+                except KeyError:
+                    name = None
+        if name and name != "root":
+            try:
+                return Path(pwd.getpwnam(name).pw_dir)
+            except KeyError:
+                pass
+    return Path.home()
+
+
+_HOME = _invoking_home()
 CONFIG_SEARCH = [
-    Path.home() / ".config" / "kb-kill" / "kb-kill.toml",
-    Path.home() / ".config" / "kb-kill" / "kb-kill.conf",
-    Path.home() / ".kb-kill",
+    _HOME / ".config" / "kb-kill" / "kb-kill.toml",
+    _HOME / ".config" / "kb-kill" / "kb-kill.conf",
+    _HOME / ".kb-kill",
     Path("/etc/kb-kill/kb-kill.toml"),
 ]
 
@@ -107,12 +137,24 @@ DEFAULT_WAKE = "ctrl+alt+shift+u"
 # How often (seconds) to rescan for hotplugged / recreated devices.
 RESCAN_INTERVAL = 2.0
 
+# Control-socket DoS bounds.
+MAX_CLIENTS = 8           # concurrent control connections
+MAX_LINE = 4096           # bytes buffered per client before a newline; drop if exceeded
+
 # Selector tag for the control socket's listening fd (devices use their path
 # string as the tag; clients use ("client", conn)).
 _LISTEN = object()
 
 
 def control_socket_path():
+    """Where the control socket lives.
+
+    As the root system daemon it lives in /run/kb-kill (created by the unit's
+    RuntimeDirectory=); when run unprivileged (e.g. for testing) it falls back to
+    the user's runtime dir.
+    """
+    if os.geteuid() == 0:
+        return "/run/kb-kill/control.sock"
     base = os.environ.get("XDG_RUNTIME_DIR")
     if base:
         return os.path.join(base, "kb-kill.sock")
@@ -149,9 +191,11 @@ class Group:
 
 
 class Config:
-    def __init__(self, groups, source):
+    def __init__(self, groups, source, control_socket, control_uid):
         self.groups = groups                  # list[Group]
         self.source = source                  # Path it was loaded from
+        self.control_socket = control_socket  # bool: expose the tray control socket
+        self.control_uid = control_uid        # int|None: uid allowed to command us
 
 
 def _parse_token(token):
@@ -270,6 +314,29 @@ def load_config(explicit=None):
     if not isinstance(sections, dict):
         raise ConfigError(f"{path}: 'groups' must be a table ([groups.<name>])")
 
+    # Global (non-group) control-socket options. Pop them out before building
+    # groups so they don't trip the per-group "unknown key" warning.
+    control_socket = doc.pop("control_socket", False)
+    control_user = doc.pop("control_user", None)
+    control_uid = doc.pop("control_uid", None)
+    if not isinstance(control_socket, bool):
+        raise ConfigError(f"{path}: 'control_socket' must be true or false")
+    if control_uid is not None and not isinstance(control_uid, int):
+        raise ConfigError(f"{path}: 'control_uid' must be an integer uid")
+    if control_user is not None:
+        if not isinstance(control_user, str):
+            raise ConfigError(f"{path}: 'control_user' must be a string")
+        try:
+            control_uid = pwd.getpwnam(control_user).pw_uid
+        except KeyError:
+            raise ConfigError(f"{path}: control_user {control_user!r} not found")
+    if control_uid is None:
+        # Default: whoever owns the config file may command the daemon.
+        try:
+            control_uid = os.stat(path).st_uid
+        except OSError:
+            control_uid = None
+
     defaults = {
         "kill_combo": doc.get("kill_combo", DEFAULT_KILL),
         "wake_combo": doc.get("wake_combo", DEFAULT_WAKE),
@@ -296,7 +363,7 @@ def load_config(explicit=None):
             f"{path}: no group defined. Add top-level 'keyboards = ...' and/or a "
             "[groups.<name>] table with its own 'keyboards'."
         )
-    return Config(groups, path)
+    return Config(groups, path, control_socket, control_uid)
 
 
 # --------------------------------------------------------------------------- #
@@ -583,14 +650,26 @@ class KbKill:
 
     # -- control socket (tray) ----------------------------------------------- #
     def _open_control_socket(self):
+        if not self.config.control_socket:
+            log("control socket: disabled (control_socket = false)")
+            return
         path = control_socket_path()
         try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
             if os.path.exists(path):
                 os.unlink(path)
             s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             s.bind(path)
-            os.chmod(path, 0o600)
-            s.listen(8)
+            # Defense-in-depth on top of the SO_PEERCRED check: let the allowed
+            # user's group reach the socket, nobody else.
+            os.chmod(path, 0o660)
+            if self.config.control_uid is not None:
+                try:
+                    gid = pwd.getpwuid(self.config.control_uid).pw_gid
+                    os.chown(path, 0, gid)
+                except (KeyError, OSError):
+                    pass
+            s.listen(MAX_CLIENTS)
             s.setblocking(False)
         except OSError as e:
             log(f"control socket disabled: {e}")
@@ -598,7 +677,7 @@ class KbKill:
         self._listen = s
         self._sock_path = path
         self.sel.register(s, selectors.EVENT_READ, _LISTEN)
-        log(f"control socket: {path}")
+        log(f"control socket: {path} (allowed uid: {self.config.control_uid})")
 
     def _state_dict(self):
         return {
@@ -619,6 +698,23 @@ class KbKill:
         try:
             conn, _ = self._listen.accept()
         except OSError:
+            return
+        # Authenticate the peer by kernel-verified credentials (SO_PEERCRED):
+        # only the allowed uid (or root) may command the daemon.
+        try:
+            creds = conn.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED,
+                                    struct.calcsize("3i"))
+            _pid, uid, _gid = struct.unpack("3i", creds)
+        except OSError:
+            conn.close()
+            return
+        if uid not in (0, self.config.control_uid):
+            log(f"control: rejected connection from uid {uid}")
+            conn.close()
+            return
+        if len(self.clients) >= MAX_CLIENTS:
+            log("control: client cap reached, refusing connection")
+            conn.close()
             return
         conn.setblocking(False)
         self.clients[conn] = b""
@@ -646,7 +742,13 @@ class KbKill:
             self._drop_client(conn)
             return
         buf = self.clients.get(conn, b"") + data
-        *lines, self.clients[conn] = buf.split(b"\n")
+        *lines, rest = buf.split(b"\n")
+        # DoS bound: drop a client that floods bytes without a newline.
+        if len(rest) > MAX_LINE:
+            log("control: dropping client (over-long line)")
+            self._drop_client(conn)
+            return
+        self.clients[conn] = rest
         for line in lines:
             line = line.strip()
             if not line:
