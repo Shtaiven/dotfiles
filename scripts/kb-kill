@@ -349,6 +349,10 @@ class KbKill:
         self.grabbed = set()    # paths currently EVIOCGRAB'd by us
         self.running = True
         self.need_rescan = False
+        # config hot-reload
+        self._config_path = config.source
+        self._config_mtime = self._mtime(config.source) if config.source else None
+        self._reload_requested = False
         # control socket (for the tray): optional, never fatal
         self._listen = None
         self._sock_path = None
@@ -420,6 +424,43 @@ class KbKill:
         for group in self.groups:
             group.targets = self._resolve_targets(group)
         self._reconcile_grabs()
+
+    # -- config hot-reload --------------------------------------------------- #
+    @staticmethod
+    def _mtime(path):
+        try:
+            return os.stat(path).st_mtime
+        except OSError:
+            return None
+
+    def _maybe_reload(self):
+        """Reload the config if its file changed on disk."""
+        if self._config_path is None:
+            return
+        m = self._mtime(self._config_path)
+        if m is not None and m != self._config_mtime:
+            self._config_mtime = m
+            self._reload()
+
+    def _reload(self):
+        try:
+            new = load_config(self._config_path)
+        except ConfigError as e:
+            log(f"config reload failed, keeping current config: {e}")
+            return
+        # Preserve each surviving group's killed state by name, so a reload never
+        # surprise-enables a disabled keyboard.
+        prev = {g.name: g.killed for g in self.groups}
+        for g in new.groups:
+            g.killed = prev.get(g.name, False)
+        self.config = new
+        self.groups = new.groups
+        for g in self.groups:
+            g.targets = self._resolve_targets(g)
+        self._reconcile_grabs()
+        self._last_sig = None       # force a fresh state broadcast to the tray
+        log(f"config reloaded: {len(self.groups)} group(s) "
+            f"[{', '.join(g.name for g in self.groups)}]")
 
     # -- grab / ungrab ------------------------------------------------------- #
     def _grab(self, path):
@@ -648,7 +689,11 @@ class KbKill:
         def _stop(signum, frame):
             raise KeyboardInterrupt
 
+        def _hup(signum, frame):
+            self._reload_requested = True
+
         signal.signal(signal.SIGTERM, _stop)
+        signal.signal(signal.SIGHUP, _hup)
 
         log(f"config: {self.config.source}")
         for g in self.groups:
@@ -672,8 +717,13 @@ class KbKill:
                         self._read_client(tag[1])
                     else:
                         self._read_device(key.fileobj, tag)
+                if self._reload_requested:
+                    self._reload_requested = False
+                    self._config_mtime = self._mtime(self._config_path)
+                    self._reload()
                 now = time.monotonic()
                 if self.need_rescan or (now - last_scan) >= RESCAN_INTERVAL:
+                    self._maybe_reload()
                     self.rescan()
                     last_scan = now
                 self._maybe_broadcast()

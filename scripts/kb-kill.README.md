@@ -66,6 +66,12 @@ virtual_keyboard = true           # input-remapper-managed; see coexistence belo
 matched against device names (`kb-kill detect` shows the names). Use
 `keyboards = "*"` to match **every** keyboard.
 
+The config is **hot-reloaded**: edit the file and the running service picks it up
+within ~2 s (or send it `SIGHUP`). A group that is currently killed keeps that
+state across the reload (so a reload never surprise-enables a disabled keyboard),
+and if the new file fails to parse the error is logged and the previous config is
+kept. The tray updates its menu automatically when groups change.
+
 `virtual_keyboard` (default `false`): set `true` when the keyboard is fronted by
 an input-remapper "forwarded" virtual device — kb-kill then targets that virtual
 device and never the physical one. Leave it `false` for an ordinary keyboard,
