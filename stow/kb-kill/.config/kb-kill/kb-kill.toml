@@ -1,20 +1,31 @@
-# kb-kill configuration (TOML)
+# kb-kill configuration (TOML) — shipped default
 #
-# Disable/enable target keyboard(s) on a global hotkey. Any keyboard may press a
-# kill hotkey; while killed, the target keyboards eat every key except the wake
-# hotkey (so a killed keyboard can always wake itself).
+# This default is INTENTIONALLY EMPTY: it defines no group, so out of the box
+# kb-kill does NOTHING — it only monitors and can never disable a keyboard.
+# There is no built-in hotkey; a keyboard can be killed ONLY by a combo you set
+# here yourself. Until you uncomment and edit a group below, nothing happens.
 #
-# ─── Format ──────────────────────────────────────────────────────────────────
+# This file is picked up automatically: the kb-kill-push service in your session
+# reads it and hands it to the root daemon, which follows whichever user is
+# currently in control of the seat. There is nothing to point the daemon at — it
+# just uses the active user's config. Edits are re-pushed and applied live.
+#
+# ─── How to enable it ─────────────────────────────────────────────────────────
+# 1. Find your keyboard's name:   sudo kb-kill-daemon detect
+# 2. Uncomment the default group below and set `keyboards` to that name.
+# 3. Keep (or change) the kill/wake combos — both are REQUIRED; there is no
+#    hidden default. Save; it applies live.
+#
+# ─── Groups ──────────────────────────────────────────────────────────────────
 # Each "group" is a set of target keyboards with its own kill/wake hotkeys:
 #
-#   * Top-level keys (this block) form the DEFAULT group, if they include
+#   * Top-level keys (uncommented, below) form the DEFAULT group, if they include
 #     `keyboards`. Their kill_combo/wake_combo also act as DEFAULTS inherited by
-#     every [groups.*] below (virtual_keyboard is per-group, never inherited).
+#     every [groups.*] table (virtual_keyboard is per-group, never inherited).
 #   * Each [groups.<name>] table adds another group, inheriting kill_combo /
 #     wake_combo it doesn't set. virtual_keyboard defaults to false per group.
 #   * `keyboards` is a string or a list of strings: case-insensitive substrings
-#     matched against device names. Run `kb-kill detect` to see names. Use
-#     keyboards = "*" to match every keyboard.
+#     matched against device names. Use keyboards = "*" to match every keyboard.
 #   * TOML rule: top-level keys MUST come before any [groups.*] table.
 #   * Give each group a DISTINCT combo (a shared combo just kills both groups).
 #
@@ -23,29 +34,21 @@
 # Other tokens: a letter a-z, a raw KEY_* name, or a numeric keycode.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Default group: the laptop's built-in keyboard.
-keyboards  = "AT Translated Set 2 keyboard"
-kill_combo = "ctrl+alt+shift+k"
-wake_combo = "ctrl+alt+shift+u"
+# ─── Default group (uncomment + edit to enable) ───────────────────────────────
+keyboards = "AT Translated Set 2 keyboard" # your keyboard (see `detect`)
+kill_combo = "ctrl+alt+shift+k"            # required — no default
+wake_combo = "ctrl+alt+shift+u"            # required — no default
 
-# This keyboard is fronted by an input-remapper "forwarded" virtual device, so
-# target that virtual device and never the physical one - input-remapper keeps
-# the physical device and can always regrab it (e.g. across a restart). Set
-# false (the default) for an ordinary keyboard that kb-kill should grab directly.
+# Set true only if this keyboard is fronted by an input-remapper "forwarded"
+# virtual device: kb-kill then targets that virtual device and never the
+# physical one, so input-remapper keeps/regrabs the physical device. Leave false
+# (the default) for an ordinary keyboard, which kb-kill grabs directly.
 virtual_keyboard = true
 
-# Expose the tray control socket. The root daemon authenticates the connecting
-# peer by uid (SO_PEERCRED); control_user is who may command it. The socket
-# carries only group state, never keystrokes.
-control_socket = true
-control_user = "steven"
-
-# Example of a second group with its own hotkey (uncomment + edit to use). It
-# inherits wake_combo from above unless overridden. An ordinary external
-# keyboard wants virtual_keyboard = false (the default), so it can be omitted.
+# ─── A second group (optional) ────────────────────────────────────────────────
+# Inherits the top-level wake_combo unless it sets its own.
 #
 # [groups.externals]
-# keyboards  = ["KBDfans", "solaar-keyboard"]
+# keyboards  = ["KBDfans", "some-other-keyboard"]
 # kill_combo = "ctrl+alt+shift+j"
 # wake_combo = "ctrl+alt+shift+m"
-# virtual_keyboard = false
