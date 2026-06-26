@@ -168,11 +168,6 @@ def post_install(pkg: str) -> None:
                 print("  nnn plugins: skipped")
         else:
             print("  nnn plugins: already installed")
-    elif pkg == "kb-kill":
-        # kb-kill is a self-contained project with its own installer; stow only
-        # deploys the personal config. Point the user at it.
-        print("  kb-kill: config stowed. Install the daemon + tray with:")
-        print(f"           {DOTFILES_DIR / 'scripts' / 'kb-kill' / 'install.sh'}")
 
 
 def cmd_install(args: argparse.Namespace) -> int:
@@ -365,7 +360,9 @@ def _find_broken_symlinks(root: Path) -> list[Path]:
     return broken
 
 
-def _classify_file(src: Path, dest: Path, new: list, changed: list, unchanged: list) -> None:
+def _classify_file(
+    src: Path, dest: Path, new: list, changed: list, unchanged: list
+) -> None:
     if not dest.exists():
         new.append(dest)
         return
@@ -378,7 +375,9 @@ def _classify_file(src: Path, dest: Path, new: list, changed: list, unchanged: l
         changed.append(dest)
 
 
-def _plan_merge(src: Path, dest: Path, pkg_resolved: Path) -> tuple[list[Path], list[Path], list[Path]]:
+def _plan_merge(
+    src: Path, dest: Path, pkg_resolved: Path
+) -> tuple[list[Path], list[Path], list[Path]]:
     """Walk src and classify what _merge_copy would do — returns (new, changed, unchanged)."""
     new: list[Path] = []
     changed: list[Path] = []
@@ -508,7 +507,9 @@ def cmd_adopt(args: argparse.Namespace) -> int:
 
     if not dry:
         pkg_path.mkdir(parents=True, exist_ok=True)
-    pkg_resolved = pkg_path.resolve() if pkg_path.exists() else (STOW_DIR.resolve() / args.package)
+    pkg_resolved = (
+        pkg_path.resolve() if pkg_path.exists() else (STOW_DIR.resolve() / args.package)
+    )
 
     total_broken: list[Path] = []
     total_new: list[Path] = []
@@ -1107,7 +1108,9 @@ _dots_bash() {{
 complete -F _dots_bash dots""")
 
     else:
-        print(f"Error: unsupported shell '{shell}'. Choose bash or zsh.", file=sys.stderr)
+        print(
+            f"Error: unsupported shell '{shell}'. Choose bash or zsh.", file=sys.stderr
+        )
         return 1
 
     return 0

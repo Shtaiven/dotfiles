@@ -44,9 +44,6 @@ Some packages run extra setup after stowing, in `post_install()`:
 
 * `zsh` → offers to clone [Prezto](https://github.com/sorin-ionescu/prezto)
 * `shell` → offers to install nnn plugins
-* `kb-kill` → stows only the personal config; the daemon + tray are installed by
-  the project's own `scripts/kb-kill/install.sh` (see
-  [kb-kill/README.md](./kb-kill/README.md))
 
 ## Examples
 
