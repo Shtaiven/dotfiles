@@ -35,15 +35,15 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ─── Default group (uncomment + edit to enable) ───────────────────────────────
-keyboards = "AT Translated Set 2 keyboard" # your keyboard (see `detect`)
-kill_combo = "ctrl+alt+shift+k"            # required — no default
-wake_combo = "ctrl+alt+shift+u"            # required — no default
+# keyboards = "AT Translated Set 2 keyboard" # your keyboard (see `detect`)
+# kill_combo = "ctrl+alt+shift+k"            # required — no default
+# wake_combo = "ctrl+alt+shift+u"            # required — no default
 
 # Set true only if this keyboard is fronted by an input-remapper "forwarded"
 # virtual device: kb-kill then targets that virtual device and never the
 # physical one, so input-remapper keeps/regrabs the physical device. Leave false
 # (the default) for an ordinary keyboard, which kb-kill grabs directly.
-virtual_keyboard = true
+# virtual_keyboard = true
 
 # ─── A second group (optional) ────────────────────────────────────────────────
 # Inherits the top-level wake_combo unless it sets its own.
@@ -52,3 +52,9 @@ virtual_keyboard = true
 # keyboards  = ["KBDfans", "some-other-keyboard"]
 # kill_combo = "ctrl+alt+shift+j"
 # wake_combo = "ctrl+alt+shift+m"
+
+[groups.laptop]
+keyboards = "AT Translated Set 2 keyboard" # your keyboard (see `detect`)
+kill_combo = "ctrl+alt+shift+k"            # required — no default
+wake_combo = "ctrl+alt+shift+u"            # required — no default
+virtual_keyboard = true
