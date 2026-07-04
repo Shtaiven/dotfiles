@@ -1,60 +1,7 @@
-# kb-kill configuration (TOML) — shipped default
-#
-# This default is INTENTIONALLY EMPTY: it defines no group, so out of the box
-# kb-kill does NOTHING — it only monitors and can never disable a keyboard.
-# There is no built-in hotkey; a keyboard can be killed ONLY by a combo you set
-# here yourself. Until you uncomment and edit a group below, nothing happens.
-#
-# This file is picked up automatically: the kb-kill-push service in your session
-# reads it and hands it to the root daemon, which follows whichever user is
-# currently in control of the seat. There is nothing to point the daemon at — it
-# just uses the active user's config. Edits are re-pushed and applied live.
-#
-# ─── How to enable it ─────────────────────────────────────────────────────────
-# 1. Find your keyboard's name:   sudo kb-kill-daemon detect
-# 2. Uncomment the default group below and set `keyboards` to that name.
-# 3. Keep (or change) the kill/wake combos — both are REQUIRED; there is no
-#    hidden default. Save; it applies live.
-#
-# ─── Groups ──────────────────────────────────────────────────────────────────
-# Each "group" is a set of target keyboards with its own kill/wake hotkeys:
-#
-#   * Top-level keys (uncommented, below) form the DEFAULT group, if they include
-#     `keyboards`. Their kill_combo/wake_combo also act as DEFAULTS inherited by
-#     every [groups.*] table (virtual_keyboard is per-group, never inherited).
-#   * Each [groups.<name>] table adds another group, inheriting kill_combo /
-#     wake_combo it doesn't set. virtual_keyboard defaults to false per group.
-#   * `keyboards` is a string or a list of strings: case-insensitive substrings
-#     matched against device names. Use keyboards = "*" to match every keyboard.
-#   * TOML rule: top-level keys MUST come before any [groups.*] table.
-#   * Give each group a DISTINCT combo (a shared combo just kills both groups).
-#
-# Hotkey tokens are joined by '+'. Modifier aliases match either side: ctrl, alt,
-# shift, super/meta/win. Pin a side with l/r: lctrl, rctrl, lalt, ralt, ...
-# Other tokens: a letter a-z, a raw KEY_* name, or a numeric keycode.
-# ─────────────────────────────────────────────────────────────────────────────
-
-# ─── Default group (uncomment + edit to enable) ───────────────────────────────
-# keyboards = "AT Translated Set 2 keyboard" # your keyboard (see `detect`)
-# kill_combo = "ctrl+alt+shift+k"            # required — no default
-# wake_combo = "ctrl+alt+shift+u"            # required — no default
-
-# Set true only if this keyboard is fronted by an input-remapper "forwarded"
-# virtual device: kb-kill then targets that virtual device and never the
-# physical one, so input-remapper keeps/regrabs the physical device. Leave false
-# (the default) for an ordinary keyboard, which kb-kill grabs directly.
-# virtual_keyboard = true
-
-# ─── A second group (optional) ────────────────────────────────────────────────
-# Inherits the top-level wake_combo unless it sets its own.
-#
-# [groups.externals]
-# keyboards  = ["KBDfans", "some-other-keyboard"]
-# kill_combo = "ctrl+alt+shift+j"
-# wake_combo = "ctrl+alt+shift+m"
-
 [groups.laptop]
-keyboards = "AT Translated Set 2 keyboard" # your keyboard (see `detect`)
-kill_combo = "ctrl+alt+shift+k"            # required — no default
-wake_combo = "ctrl+alt+shift+u"            # required — no default
-virtual_keyboard = true
+label = "Laptop KB + Trackpad"
+keyboards = ["AT Translated Set 2"]
+pointers = ["DELL","Synaptics", "ALPS TrackPoint"]
+kill_combo = "ctrl+alt+shift+k"
+wake_combo = "ctrl+alt+shift+w"
+virtual = false
