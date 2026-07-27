@@ -1,7 +1,13 @@
-[groups.laptop]
-label = "Laptop KB + Trackpad"
+[groups.laptop_keyboards]
+label = "Laptop Keyboards"
 keyboards = ["AT Translated Set 2"]
-pointers = ["DELL","Synaptics", "ALPS TrackPoint"]
 kill_combo = "ctrl+alt+shift+k"
-wake_combo = "ctrl+alt+shift+w"
+wake_combo = "ctrl+alt+shift+k"
+virtual = true
+
+[groups.laptop_trackpads]
+label = "Laptop Trackpads"
+pointers = ["DELL*Touchpad", "Synaptics", "ALPS TrackPoint"]
+kill_combo = "ctrl+alt+shift+p"
+wake_combo = "ctrl+alt+shift+p"
 virtual = false
