@@ -168,6 +168,37 @@ def post_install(pkg: str) -> None:
                 print("  nnn plugins: skipped")
         else:
             print("  nnn plugins: already installed")
+    elif pkg == "smile":
+        app_id = "it.mijorus.smile"
+        if not shutil.which("flatpak"):
+            print(f"  {app_id}: skipped check (flatpak not found)")
+        elif (
+            subprocess.run(["flatpak", "info", app_id], capture_output=True).returncode
+            == 0
+        ):
+            print(f"  {app_id}: already installed")
+        else:
+            print(f"  {app_id}: not installed — the shortcut has nothing to launch")
+            print(f"         install it with: flatpak install flathub {app_id}")
+        if shutil.which("wtype"):
+            print("  wtype: already installed")
+        else:
+            print("  wtype: not found — autopaste cannot type emoji without it")
+            print("         install it with: sudo apt install wtype")
+            print("         (needs a compositor with zwp_virtual_keyboard_v1:")
+            print("          COSMIC, KDE or wlroots — not GNOME)")
+        unit = "smile-autopaste.service"
+        enabled = subprocess.run(
+            ["systemctl", "--user", "is-enabled", unit],
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        if enabled == "enabled":
+            print(f"  {unit}: enabled")
+        else:
+            print(f"  {unit}: stowed but not enabled")
+            print("         systemctl --user daemon-reload")
+            print(f"         systemctl --user enable --now {unit}")
 
 
 def cmd_install(args: argparse.Namespace) -> int:

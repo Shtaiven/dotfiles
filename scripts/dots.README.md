@@ -44,6 +44,9 @@ Some packages run extra setup after stowing, in `post_install()`:
 
 * `zsh` → offers to clone [Prezto](https://github.com/sorin-ionescu/prezto)
 * `shell` → offers to install nnn plugins
+* `smile` → reports whether the `it.mijorus.smile` flatpak and `wtype` are
+  present, and whether `smile-autopaste.service` is enabled (reports only,
+  installs nothing)
 
 ## Examples
 
