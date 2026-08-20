@@ -1,40 +1,55 @@
 #!/bin/bash
-# Press ctrl+v whenever Smile broadcasts that it copied an emoji.
+# Deliver the emoji Smile just copied into the focused window.
 #
-# Smile cannot synthesise input on Wayland: Picker.py only calls xdotool on X11,
-# so on Wayland it emits CopiedEmojiBroadcast and stops. Something external has
-# to deliver the emoji, and here that means replaying a paste.
+# Smile cannot synthesise input on Wayland: Picker.py only calls xdotool in an
+# `XDG_SESSION_TYPE != wayland` branch, so on Wayland it emits
+# CopiedEmojiBroadcast and stops. The signal carries the emoji as its argument.
 #
-# Typing the emoji from the signal payload instead (`type <emoji>`) does not work
-# with dotool: it maps characters onto keys of the active XKB layout, and emoji
-# are not in any layout, so it refuses with
-#   dotool: WARNING: impossible character for layout: <emoji>
-# DOTOOL_XKB_LAYOUT does not help -- no layout contains them. wtype would work
-# (it uploads a generated keymap over zwp_virtual_keyboard_v1, which cosmic-comp
-# implements), but it is not installed here.
+# wtype types the emoji itself: no clipboard dependency, and it works with a
+# terminal focused (ctrl+v is not paste there, ctrl+shift+v is). wtype uploads a
+# generated keymap over zwp_virtual_keyboard_v1, which cosmic-comp implements.
+# This is COSMIC/KDE/wlroots only -- Mutter does not implement that protocol.
 #
-# Use dotoolc, not dotool: a one-shot `dotool` creates a uinput device, writes,
-# and exits before the compositor binds the device, so the keystroke is silently
-# dropped (measured: 3 of 3 lost on cosmic-comp). dotoold keeps one device open.
+# dotool is deliberately not used: it maps characters onto keys of the active XKB
+# layout and emoji are in no layout ("impossible character for layout"), so it can
+# only replay ctrl+v, which needs the clipboard and does nothing in a terminal.
+#
+# Delivery has to wait: Smile emits this from
+# default_hiding_action() in the same breath as set_visible(False), so the
+# compositor has not handed keyboard focus back to your window yet. Input
+# synthesised immediately goes to a surface that is going away. This is routing,
+# not mechanism -- wtype needs the wait exactly as much as ctrl+v did.
 
 set -u
 
-PIPE="${DOTOOL_PIPE:-/tmp/dotool-pipe}"
+SETTLE=0.1 # seconds to wait for focus to return to the target window
 
-if ! command -v dotoolc >/dev/null 2>&1; then
-  echo "Error: dotoolc is not installed or not in PATH" >&2
+if ! command -v wtype >/dev/null 2>&1; then
+  echo "Error: wtype is not installed or not in PATH" >&2
   exit 1
 fi
 
 dbus-monitor --session "type='signal',interface='it.mijorus.smile',member='CopiedEmojiBroadcast',path='/it/mijorus/smile/actions'" |
   while read -r line; do
     case "$line" in
-      *member=CopiedEmojiBroadcast*)
-        if [ ! -p "$PIPE" ]; then
-          echo "dotoold is not running ($PIPE missing); keystroke dropped" >&2
-          continue
-        fi
-        echo 'key ctrl+v' | dotoolc
+      *member=CopiedEmojiBroadcast*) ;;
+      *) continue ;;
+    esac
+
+    # The argument is on the next line, as:    string "<emoji>"
+    IFS= read -r arg || break
+    case "$arg" in
+      *string\ \"*\") ;;
+      *)
+        echo "unexpected signal payload: $arg" >&2
+        continue
         ;;
     esac
+
+    emoji=${arg#*\"}
+    emoji=${emoji%\"*}
+    [ -n "$emoji" ] || continue
+
+    sleep "$SETTLE"
+    wtype -- "$emoji"
   done

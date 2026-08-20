@@ -1,7 +1,6 @@
 [Unit]
 Description=Smile Autopaste Service for Smile
-After=graphical-session.target dotoold.service
-Requires=dotoold.service
+After=graphical-session.target
 
 [Service]
 Type=simple

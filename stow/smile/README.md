@@ -29,59 +29,87 @@ Measured after wiring it up: 0.006s warm, 1.4s on the cold fallback.
 | path | purpose |
 | --- | --- |
 | `.local/bin/smile-toggle` | activate Smile over D-Bus, fall back to `flatpak run` |
-| `.local/bin/smile-autopaste` | presses ctrl+v via `dotoolc` on Smile's `CopiedEmojiBroadcast` signal |
+| `.local/bin/smile-autopaste` | types the emoji via `wtype` on Smile's `CopiedEmojiBroadcast` signal |
 | `.config/autostart/smile-hidden.desktop` | start Smile hidden at login so it stays resident |
 | `.config/systemd/user/smile-autopaste.service` | supervise `smile-autopaste` |
-| `.config/systemd/user/dotoold.service` | keep one uinput device open for the session |
 
 ## Autopaste
 
 Smile cannot synthesise input on Wayland -- `Picker.py` calls xdotool only in an
 `XDG_SESSION_TYPE != wayland` branch -- so it emits `CopiedEmojiBroadcast` and
-stops. `smile-autopaste` listens for that and replays ctrl+v.
+stops. `smile-autopaste` listens for that and delivers the emoji itself.
 
-Two things about this that are not obvious:
+**Backend is wtype**, which types the emoji carried in the signal payload. It
+uploads a generated keymap over `zwp_virtual_keyboard_v1`, which cosmic-comp
+implements. Verified end to end through the service: `🎉👍🏻👨‍👩‍👧` arrived intact
+(skin-tone modifier and ZWJ sequence included) with the clipboard holding
+unrelated text throughout, and `🎉` arrived in a **terminal**, which the old
+ctrl+v backend could never do -- ctrl+v is not paste there, ctrl+shift+v is.
 
-**It must go through `dotoolc`, not `dotool`.** A one-shot `dotool` creates a
-uinput device, writes, and exits before cosmic-comp binds the device, so the
-keystroke is silently dropped. Measured with a reversible `key volumeup`:
+**Delivery must wait for focus.** `default_hiding_action()` calls
+`set_visible(False)` and emits the signal in the same breath, so at that instant
+cosmic-comp has not handed keyboard focus back to the window you were in, and
+input synthesised immediately goes to a surface that is going away. `SETTLE`
+covers that handover. It was first proven at 0.25s on the ctrl+v backend --
+journal showed signal at `11:28:53.074`, keystroke at `11:28:53.328`, paste
+landed -- and is set to 0.1s now. 0.1s is not measured against the handover;
+if an emoji ever fails to appear, raise it before suspecting anything else. This is about input
+routing, not the backend -- the compositor delivers to whatever surface holds
+focus, so wtype needs the wait exactly as much as ctrl+v did. Without it every
+link checks out (emoji copied, broadcast on the bus, backend alive) and nothing
+appears, which makes it the confusing failure.
 
-| how the keystroke is sent | result |
-| --- | --- |
-| `echo 'key ctrl+v' \| dotool` | 3 of 3 lost |
-| `echo 'key ctrl+v' \| dotoolc`, dotoold running | lands every time |
+### Why not dotool
 
-That is why `dotoold.service` exists and `smile-autopaste.service` has
-`Requires=dotoold.service`.
+dotool was the original backend and is no longer used. Two findings from it, kept
+so they are not rediscovered:
 
-**Typing the emoji instead of pasting it does not work with dotool.** The signal
-payload carries the text, so `type <emoji>` looks like the cleaner design -- no
-clipboard, and it would fix ctrl+v not being paste in a terminal. But dotool maps
-characters onto keys of the active XKB layout and emoji are in no layout:
+`dotool` cannot type emoji. It maps characters onto keys of the active XKB layout,
+and emoji are in no layout:
 
 ```
 dotool: WARNING: impossible character for layout: 🎉
 ```
 
-`DOTOOL_XKB_LAYOUT`/`DOTOOL_XKB_VARIANT` cannot help. Verified in a focused
-window: `type CONTROL-OK` arrives, `type 🎉` produces nothing.
+`DOTOOL_XKB_LAYOUT`/`DOTOOL_XKB_VARIANT` cannot help -- they only select a
+different layout. Verified in a focused window: `type CONTROL-OK` arrives,
+`type 🎉` produces nothing. That left only replaying ctrl+v, which depends on the
+clipboard and does nothing at all in a terminal.
 
-`wtype` would work -- it uploads a generated keymap over
-`zwp_virtual_keyboard_v1`, which cosmic-comp implements (the interface is in the
-`cosmic-comp` binary) -- and is packaged as `wtype 0.4-3`. Switching to it would
-drop the clipboard dependency and make autopaste work in terminals too.
+And ctrl+v had to go through `dotoolc`, not `dotool`: a one-shot `dotool` creates
+a uinput device, writes, and exits before cosmic-comp binds the device. Measured
+with a reversible `key volumeup`:
 
-## Known limitation
+| how the keystroke is sent | result |
+| --- | --- |
+| `echo 'key volumeup' \| dotool` | 3 of 3 lost |
+| `echo 'key volumeup' \| dotoolc`, dotoold running | lands every time |
 
-ctrl+v is not paste in a terminal (that is ctrl+shift+v), so autopaste does
-nothing when a terminal has focus. Only a typing-based backend fixes that.
+That needed a `dotoold.service` holding a uinput device open for the whole
+session. wtype needs no daemon, so that unit is gone.
+
+### Portability
+
+wtype is the less portable choice, worth knowing if this package is ever reused:
+
+| session | wtype |
+| --- | --- |
+| COSMIC, sway, Hyprland (wlroots) | works |
+| KDE Plasma Wayland | works, KWin implements the protocol |
+| GNOME Wayland | does not work, Mutter does not implement virtual-keyboard-unstable-v1 |
+| GNOME/KDE on X11 | not needed, Smile calls xdotool itself |
+
+GNOME is out of scope for this package. If it ever matters: the Smile
+Complementary Extension pastes inside the shell there, and Smile then emits
+`CopiedEmoji` rather than `CopiedEmojiBroadcast`, which this script does not
+listen for -- so GNOME needs the extension, not this.
 
 ## Install
 
 ```sh
 dots install smile   # choose [o]verwrite for smile-autopaste.service
 systemctl --user daemon-reload
-systemctl --user enable --now dotoold.service smile-autopaste.service
+systemctl --user enable --now smile-autopaste.service
 ```
 
 `~/.config/systemd/user/smile-autopaste.service` already exists as a real file
@@ -111,8 +139,6 @@ the process survives picking an emoji and later activations stay on the 5ms path
 
 ## Requires
 
-* `dotool`, `dotoold` and `dotoolc` on PATH (https://sr.ht/~geb/dotool/)
-* write access to `/dev/uinput`. `/etc/udev/rules.d/80-dotool.rules` grants it
-  per-login via an ACL (`getfacl /dev/uinput` should list you), so membership of
-  the `input` group is not required
+* `wtype` (`apt install wtype`), and a compositor implementing
+  `zwp_virtual_keyboard_v1` -- see Portability
 * the `it.mijorus.smile` Flatpak: `flatpak install flathub it.mijorus.smile`
