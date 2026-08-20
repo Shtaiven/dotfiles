@@ -1,0 +1,13 @@
+[Unit]
+Description=Smile Autopaste Service for Smile
+After=graphical-session.target dotoold.service
+Requires=dotoold.service
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/smile-autopaste
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

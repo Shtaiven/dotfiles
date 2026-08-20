@@ -1,0 +1,20 @@
+#!/bin/sh
+# Show Smile (emoji picker) with the least possible latency.
+#
+# `flatpak run it.mijorus.smile` costs ~0.5s (occasionally ~3s) even when Smile
+# is already resident: it builds a throwaway bwrap + xdg-dbus-proxy sandbox only
+# to relay a GApplication activation to the running instance, then exits.
+# Sending that activation ourselves costs ~5ms instead.
+#
+# Try D-Bus first and let it fail rather than probing with `busctl --user list`,
+# which costs ~0.25s on its own. Smile is not DBusActivatable (flatpak exports
+# no .service file for it), so a failure means nothing is running yet.
+
+APP_ID=it.mijorus.smile
+
+gdbus call --session \
+  --dest "$APP_ID" \
+  --object-path /it/mijorus/smile \
+  --method org.gtk.Application.Activate "{}" >/dev/null 2>&1 && exit 0
+
+exec flatpak run "$APP_ID"

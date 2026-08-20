@@ -1,0 +1,13 @@
+[Unit]
+Description=dotool daemon (persistent uinput device for synthetic input)
+Documentation=https://sr.ht/~geb/dotool/
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/dotoold
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

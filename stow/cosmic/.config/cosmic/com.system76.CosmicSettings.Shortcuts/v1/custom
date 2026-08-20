@@ -5,7 +5,7 @@
         ],
         key: "e",
         description: Some("Smile"),
-    ): Spawn("flatpak run it.mijorus.smile"),
+    ): Spawn("$HOME/.local/bin/smile-toggle"),
     (
         modifiers: [
             Super,

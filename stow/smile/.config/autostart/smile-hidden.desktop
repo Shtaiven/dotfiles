@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Smile (hidden)
+Comment=Keep the emoji picker resident so Super+E opens instantly
+Exec=flatpak run it.mijorus.smile --start-hidden
+Icon=it.mijorus.smile
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
