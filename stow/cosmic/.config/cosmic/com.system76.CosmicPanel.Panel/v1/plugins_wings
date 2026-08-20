@@ -1,5 +1,6 @@
 Some(([
     "io.github.cosmic_utils.minimon-applet",
+    "dev.mart.MrStatus",
 ], [
     "dev.DBrox.CosmicPrivacyIndicator",
     "com.system76.CosmicAppletStatusArea",

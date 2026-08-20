@@ -75,10 +75,10 @@
                 alpha: 255,
             ),
             graph3: (
-                red: 44,
-                green: 87,
-                blue: 101,
-                alpha: 140,
+                red: 125,
+                green: 174,
+                blue: 163,
+                alpha: 64,
             ),
         ),
         heat: (
@@ -159,6 +159,6 @@
         ),
     ),
     percentage: false,
-    show_allocated: false,
+    show_allocated: true,
     stack_values: false,
 )
