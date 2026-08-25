@@ -230,8 +230,13 @@ _eval_cached dots "dots_completion.$_shell" dots completion "$_shell"
 # carapace
 _eval_cached carapace "carapace_init.$_shell" carapace _carapace "$_shell"
 
-# pixi
-_eval_cached pixi "pixi_completion.$_shell" pixi completion --shell "$_shell"
+# pixi — carapace ships a first-class pixi completer that resolves task, environment
+# and package names from the workspace, which pixi's own clap-generated script cannot
+# do. So only fall back to pixi's own when carapace is absent: sourcing it costs ~75ms
+# per shell (>500KB) for a strictly less capable result.
+if ! command -v carapace >/dev/null 2>&1; then
+	_eval_cached pixi "pixi_completion.$_shell" pixi completion --shell "$_shell"
+fi
 
 unset _shell
 
