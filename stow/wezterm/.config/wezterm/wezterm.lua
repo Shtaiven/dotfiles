@@ -199,7 +199,40 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_wid
 	}
 end)
 
+-- Rename the current tab. Opens an inline prompt overlay pre-filled with the
+-- existing title; empty input clears it so the tab falls back to the pane title.
+-- Wrapped in a callback so that initial_value is read at invocation time rather
+-- than once at config load.
+local rename_tab = wezterm.action_callback(function(window, pane)
+	window:perform_action(
+		wezterm.action.PromptInputLine({
+			description = wezterm.format({
+				{ Attribute = { Intensity = "Bold" } },
+				{ Foreground = { Color = ACTIVE_FG_COLOR } },
+				{ Text = "Rename tab:" },
+			}),
+			initial_value = window:active_tab():get_title(),
+			action = wezterm.action_callback(function(win, _, line)
+				-- line is nil if the prompt was cancelled with Esc
+				if line ~= nil then
+					win:active_tab():set_title(line)
+				end
+			end),
+		}),
+		pane
+	)
+end)
+
 -- Keybindings
+config.keys = {
+	-- Overrides the default ReloadConfiguration binding, which is redundant here:
+	-- automatically_reload_config defaults to true, and reload is still in the
+	-- command palette.
+	{ key = "r", mods = "CTRL|SHIFT", action = rename_tab },
+}
+
+-- smart-splits appends to config.keys, so it must come after the table above.
+-- It registers nvim-aware move (ALT|hjkl) and resize (CTRL|ALT|hjkl) bindings.
 local ok, smart_splits = pcall(wezterm.plugin.require, "https://github.com/mrjones2014/smart-splits.nvim")
 if ok then
 	smart_splits.apply_to_config(config, {
@@ -210,5 +243,47 @@ if ok then
 		},
 	})
 end
+
+-- Command palette
+-- Only WezTerm's built-in commands populate the palette; anything bound to an
+-- action_callback (our rename, plus every smart-splits binding) is invisible
+-- there by default. Label them by "mods|key" and the handler below pulls the
+-- real action objects out of config.keys, so the palette invokes exactly what
+-- the key does. Bindings with no label here are skipped, and if the smart-splits
+-- pcall above failed its entries simply never match.
+--
+-- These entries cannot display their shortcut. The palette's right-aligned key
+-- column renders from ExpandedCommand.keys, which WezTerm hardcodes to an empty
+-- vec for everything augment-command-palette returns. Spelling the shortcut into
+-- `doc` does surface it, but only inline as "<brief>. <doc>", which looks
+-- inconsistent next to the built-in entries -- so leave `doc` unset.
+local PALETTE_LABELS = {
+	["CTRL|SHIFT|r"] = { brief = "Rename tab", icon = "md_rename_box" },
+
+	["ALT|h"] = { brief = "Activate pane: left", icon = "md_arrow_left_box" },
+	["ALT|j"] = { brief = "Activate pane: down", icon = "md_arrow_down_box" },
+	["ALT|k"] = { brief = "Activate pane: up", icon = "md_arrow_up_box" },
+	["ALT|l"] = { brief = "Activate pane: right", icon = "md_arrow_right_box" },
+
+	["CTRL|ALT|h"] = { brief = "Resize pane: left", icon = "md_arrow_expand_horizontal" },
+	["CTRL|ALT|j"] = { brief = "Resize pane: down", icon = "md_arrow_expand_vertical" },
+	["CTRL|ALT|k"] = { brief = "Resize pane: up", icon = "md_arrow_expand_vertical" },
+	["CTRL|ALT|l"] = { brief = "Resize pane: right", icon = "md_arrow_expand_horizontal" },
+}
+
+wezterm.on("augment-command-palette", function()
+	local entries = {}
+	for _, assignment in ipairs(config.keys) do
+		local label = PALETTE_LABELS[assignment.mods .. "|" .. assignment.key]
+		if label then
+			table.insert(entries, {
+				brief = label.brief,
+				icon = label.icon,
+				action = assignment.action,
+			})
+		end
+	end
+	return entries
+end)
 
 return config
