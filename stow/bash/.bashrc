@@ -7,10 +7,18 @@ HISTCONTROL=ignoreboth
 shopt -s histappend
 HISTSIZE=1000
 HISTFILESIZE=5000
+# Save multi-line commands as one history entry with embedded newlines, so a
+# recalled command is a single editable buffer
+shopt -s cmdhist lithist
 
 # UP and DOWN do partial history search
 bind '"\e[A": history-search-backward'
 bind '"\e[B": history-search-forward'
+
+# Alt+Enter inserts a literal newline: build multi-line commands in one
+# editable buffer instead of the PS2 continuation prompt (readline can't
+# edit previous lines once at PS2). Enter still runs the whole buffer.
+bind '"\e\C-m": "\C-v\C-j"'
 
 # check the window size after each command
 shopt -s checkwinsize

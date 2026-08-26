@@ -229,6 +229,10 @@ config.keys = {
 	-- automatically_reload_config defaults to true, and reload is still in the
 	-- command palette.
 	{ key = "r", mods = "CTRL|SHIFT", action = rename_tab },
+	-- Alt+Enter must reach the shell (readline/ZLE bind it to insert a newline
+	-- in the command buffer), so fullscreen moves to F11.
+	{ key = "Enter", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
+	{ key = "F11", action = wezterm.action.ToggleFullScreen },
 }
 
 -- smart-splits appends to config.keys, so it must come after the table above.

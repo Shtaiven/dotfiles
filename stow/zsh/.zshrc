@@ -39,6 +39,36 @@ for f in "$HOME"/.shell.d/*.sh(N-.); do
 done
 unset f
 
+# Multi-line editing: Prezto binds the arrows to history-substring-search,
+# which always jumps to history — even mid-buffer in a multi-line command.
+# These wrappers move within the buffer first and only search history from
+# the top/bottom line (like zsh's default up-line-or-history).
+if (( $+widgets[history-substring-search-up] )); then
+  function up-line-or-substring-search() {
+    if [[ $LBUFFER == *$'\n'* ]]; then
+      zle up-line
+    else
+      zle history-substring-search-up
+    fi
+  }
+  function down-line-or-substring-search() {
+    if [[ $RBUFFER == *$'\n'* ]]; then
+      zle down-line
+    else
+      zle history-substring-search-down
+    fi
+  }
+  zle -N up-line-or-substring-search
+  zle -N down-line-or-substring-search
+  bindkey '^[[A' up-line-or-substring-search
+  bindkey '^[OA' up-line-or-substring-search
+  bindkey '^[[B' down-line-or-substring-search
+  bindkey '^[OB' down-line-or-substring-search
+fi
+
+# Alt+Enter inserts a literal newline (matches the bash binding in .bashrc)
+bindkey '^[^M' self-insert-unmodified
+
 # zoxide uses _files -/ which emits multiple tag groups, causing duplicate rows
 # when group-name '' is set (e.g. by Prezto). _path_files -/ avoids this.
 # See: https://github.com/ajeetdsouza/zoxide/issues/491
