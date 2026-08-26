@@ -30,8 +30,8 @@ fi
 
 # fd / fzf
 if command -v fd >/dev/null 2>&1; then
-	export FZF_CTRL_T_COMMAND="fd --hidden --follow --exclude \".git\" . $HOME"
-	export FZF_ALT_C_COMMAND="fd -t d --hidden --follow --exclude \".git\" . $HOME"
+	export FZF_CTRL_T_COMMAND="fd --hidden --exclude \".git\" . $HOME"
+	export FZF_ALT_C_COMMAND="fd -t d --hidden --exclude \".git\" . $HOME"
 
 	_fzf_compgen_path() {
 		fd --type f --hidden --follow --exclude .git . "$1"
