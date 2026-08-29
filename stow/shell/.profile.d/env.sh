@@ -14,6 +14,13 @@ path_append() { case ":$PATH:" in *:"$1":*) ;; *) PATH="$PATH:$1" ;; esac }
 [ -d "$HOME/.lmstudio/bin" ] && path_append "$HOME/.lmstudio/bin"
 export PATH
 
+# pnpm
+if [ -d "$HOME/.local/share/pnpm" ]; then
+	export PNPM_HOME="$HOME/.local/share/pnpm"
+	path_prepend "$PNPM_HOME/bin"
+	export PATH
+fi
+
 # Pager
 export PAGER='less'
 export LESS='-g -i -M -R -S -w -z-4'
