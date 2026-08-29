@@ -42,8 +42,5 @@ fi
 # cargo
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
-# Vulkan fix for nvidia gpu
-export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/nvidia_icd.json"
-
 # envman
 [ -s "$HOME/.config/envman/load.sh" ] && . "$HOME/.config/envman/load.sh"
