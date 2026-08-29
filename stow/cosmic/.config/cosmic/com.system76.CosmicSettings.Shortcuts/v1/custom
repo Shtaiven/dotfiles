@@ -9,12 +9,6 @@
     (
         modifiers: [
             Super,
-        ],
-        key: "x",
-    ): Spawn("/home/steven/.pixi/bin/ixonlauncher"),
-    (
-        modifiers: [
-            Super,
             Shift,
         ],
         key: "semicolon",

@@ -1739,5 +1739,5 @@ Some((
     created: None,
     updated: None,
     source: Some(Saved),
-    path: Some("/home/steven/.var/app/dev.edfloreshz.CosmicTweaks/data/themes/cosmic/Gruvbox Material Dark Orange Highlight.ron"),
+    path: None,
 ))

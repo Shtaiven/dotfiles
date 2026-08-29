@@ -3,6 +3,7 @@ local config = {}
 
 -- General
 config.pane_focus_follows_mouse = false
+config.enable_wayland = false
 
 -- Startup
 config.check_for_updates = false
@@ -228,11 +229,11 @@ config.keys = {
 	-- Overrides the default ReloadConfiguration binding, which is redundant here:
 	-- automatically_reload_config defaults to true, and reload is still in the
 	-- command palette.
-	{ key = "r", mods = "CTRL|SHIFT", action = rename_tab },
+	{ key = "r",     mods = "CTRL|SHIFT",                     action = rename_tab },
 	-- Alt+Enter must reach the shell (readline/ZLE bind it to insert a newline
 	-- in the command buffer), so fullscreen moves to F11.
-	{ key = "Enter", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
-	{ key = "F11", action = wezterm.action.ToggleFullScreen },
+	{ key = "Enter", mods = "ALT",                            action = wezterm.action.DisableDefaultAssignment },
+	{ key = "F11",   action = wezterm.action.ToggleFullScreen },
 }
 
 -- smart-splits appends to config.keys, so it must come after the table above.
