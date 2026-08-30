@@ -4,3 +4,5 @@
 .pixi/*
 !.pixi/config.toml
 __pycache__
+.uuid
+**/.logseq/graphs/

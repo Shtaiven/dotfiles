@@ -2,6 +2,10 @@ return {
 	"mrjones2014/smart-splits.nvim",
 	cond = not vim.g.vscode,
 	lazy = false,
+	opts = {
+		-- resize one cell per keypress; matches the tmux resize-pane amount
+		default_amount = 1,
+	},
 	keys = {
 		{
 			"<A-h>",

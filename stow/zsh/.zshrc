@@ -67,7 +67,7 @@ if (( $+widgets[history-substring-search-up] )); then
 fi
 
 # Alt+Enter inserts a literal newline (matches the bash binding in .bashrc)
-bindkey '^[^M' self-insert-unmodified
+bindkey '^[^M' self-insert-unmeta
 
 # zoxide uses _files -/ which emits multiple tag groups, causing duplicate rows
 # when group-name '' is set (e.g. by Prezto). _path_files -/ avoids this.
