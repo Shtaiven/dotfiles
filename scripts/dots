@@ -391,6 +391,26 @@ def _find_broken_symlinks(root: Path) -> list[Path]:
     return broken
 
 
+def tracked_files(pkg: str) -> set[Path]:
+    """Absolute paths of files under stow/<pkg> that git tracks (from the index).
+
+    Read from the index, not the worktree, so it stays correct even after
+    `--overwrite` has deleted the package directory.
+    """
+    res = subprocess.run(
+        ["git", "-C", str(DOTFILES_DIR), "ls-files", "-z", "--", f"stow/{pkg}"],
+        capture_output=True,
+        text=True,
+    )
+    if res.returncode != 0:
+        print(
+            f"Error: git ls-files failed for '{pkg}': {res.stderr.strip()}",
+            file=sys.stderr,
+        )
+        return set()
+    return {DOTFILES_DIR / rel for rel in res.stdout.split("\0") if rel}
+
+
 def _classify_file(
     src: Path, dest: Path, new: list, changed: list, unchanged: list
 ) -> None:
@@ -407,12 +427,23 @@ def _classify_file(
 
 
 def _plan_merge(
-    src: Path, dest: Path, pkg_resolved: Path
-) -> tuple[list[Path], list[Path], list[Path]]:
-    """Walk src and classify what _merge_copy would do — returns (new, changed, unchanged)."""
+    src: Path, dest: Path, pkg_resolved: Path, tracked: set[Path] | None = None
+) -> tuple[list[Path], list[Path], list[Path], list[Path]]:
+    """Walk src and classify what _merge_copy would do.
+
+    Returns (new, changed, unchanged, skipped); skipped is always empty unless
+    `tracked` is given, in which case it holds the untracked destinations.
+    """
     new: list[Path] = []
     changed: list[Path] = []
     unchanged: list[Path] = []
+    skipped: list[Path] = []
+
+    def take(real: Path, d: Path) -> None:
+        if tracked is not None and d not in tracked:
+            skipped.append(d)
+        else:
+            _classify_file(real, d, new, changed, unchanged)
 
     def visit(s: Path, d: Path) -> None:
         if s.is_symlink():
@@ -429,49 +460,66 @@ def _plan_merge(
                 for entry in real.iterdir():
                     visit(entry, d / entry.name)
             else:
-                _classify_file(real, d, new, changed, unchanged)
+                take(real, d)
             return
         if s.is_dir():
             for entry in s.iterdir():
                 visit(entry, d / entry.name)
         elif s.is_file():
-            _classify_file(s, d, new, changed, unchanged)
+            take(s, d)
 
     visit(src, dest)
-    return new, changed, unchanged
+    return new, changed, unchanged, skipped
 
 
-def _merge_copy(src: Path, dest: Path, pkg_resolved: Path) -> None:
+def _merge_copy(
+    src: Path, dest: Path, pkg_resolved: Path, tracked: set[Path] | None = None
+) -> tuple[int, int]:
     """Copy src to dest, merging into existing dest tree and dereferencing symlinks.
 
     Symlinks that already point inside pkg_resolved are skipped (already adopted).
     Broken symlinks are silently skipped (callers should clean them first).
+    If `tracked` is given, only destinations in that set are written — untracked
+    live files are left behind, and no directory is created just to hold them.
+    Returns (copied, skipped) file counts.
     """
+    def place(real: Path, d: Path) -> tuple[int, int]:
+        if tracked is not None and d not in tracked:
+            return 0, 1
+        d.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(real, d, follow_symlinks=True)
+        return 1, 0
+
+    def descend(entries, d: Path) -> tuple[int, int]:
+        # With a tracked filter, let place() create only the dirs it needs, so
+        # untracked-only subtrees don't leave empty directories behind.
+        if tracked is None:
+            d.mkdir(parents=True, exist_ok=True)
+        copied = skipped = 0
+        for entry in entries:
+            c, s = _merge_copy(entry, d / entry.name, pkg_resolved, tracked)
+            copied += c
+            skipped += s
+        return copied, skipped
+
     if src.is_symlink():
         try:
             real = src.resolve(strict=True)
         except (FileNotFoundError, OSError):
-            return
+            return 0, 0
         try:
             real.relative_to(pkg_resolved)
-            return
+            return 0, 0
         except ValueError:
             pass
         if real.is_dir():
-            dest.mkdir(parents=True, exist_ok=True)
-            for entry in real.iterdir():
-                _merge_copy(entry, dest / entry.name, pkg_resolved)
-        else:
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(real, dest, follow_symlinks=True)
-        return
+            return descend(real.iterdir(), dest)
+        return place(real, dest)
     if src.is_dir():
-        dest.mkdir(parents=True, exist_ok=True)
-        for entry in src.iterdir():
-            _merge_copy(entry, dest / entry.name, pkg_resolved)
-    elif src.is_file():
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest, follow_symlinks=True)
+        return descend(src.iterdir(), dest)
+    if src.is_file():
+        return place(src, dest)
+    return 0, 0
 
 
 def _place_file(real_src: Path, dest: Path) -> int:
@@ -530,6 +578,17 @@ def cmd_adopt(args: argparse.Namespace) -> int:
     pkg_path = STOW_DIR / args.package
     dry = getattr(args, "dry_run", False)
 
+    tracked: set[Path] | None = None
+    if getattr(args, "tracked", False):
+        tracked = tracked_files(args.package)
+        if not tracked:
+            print(
+                f"Error: git tracks no files under stow/{args.package}, so "
+                "--tracked would adopt nothing.",
+                file=sys.stderr,
+            )
+            return 1
+
     if pkg_path.exists() and args.overwrite:
         if dry:
             print(f"  Would rmtree: {pkg_path}")
@@ -546,6 +605,7 @@ def cmd_adopt(args: argparse.Namespace) -> int:
     total_new: list[Path] = []
     total_changed: list[Path] = []
     total_unchanged: list[Path] = []
+    total_skipped: list[Path] = []
 
     for file_path in args.files:
         src = Path(file_path).expanduser().absolute()
@@ -574,17 +634,27 @@ def cmd_adopt(args: argparse.Namespace) -> int:
         dest = pkg_path / rel
 
         if dry:
-            new, changed, unchanged = _plan_merge(src, dest, pkg_resolved)
+            new, changed, unchanged, skipped = _plan_merge(
+                src, dest, pkg_resolved, tracked
+            )
             total_new.extend(new)
             total_changed.extend(changed)
             total_unchanged.extend(unchanged)
+            total_skipped.extend(skipped)
             for p in new:
                 print(f"  Would add:       {p.relative_to(STOW_DIR)}")
             for p in changed:
                 print(f"  Would overwrite: {p.relative_to(STOW_DIR)}")
+            for p in skipped:
+                print(f"  Would skip:      {p.relative_to(STOW_DIR)} (untracked)")
         else:
-            _merge_copy(src, dest, pkg_resolved)
-            print(f"  Adopted: {rel}")
+            copied, n_skipped = _merge_copy(src, dest, pkg_resolved, tracked)
+            suffix = (
+                f" ({copied} file(s), {n_skipped} untracked skipped)"
+                if tracked is not None
+                else ""
+            )
+            print(f"  Adopted: {rel}{suffix}")
 
     if dry:
         print(
@@ -592,7 +662,12 @@ def cmd_adopt(args: argparse.Namespace) -> int:
             f"{len(total_broken)} broken symlink(s) to remove, "
             f"{len(total_new)} file(s) to add, "
             f"{len(total_changed)} file(s) to overwrite, "
-            f"{len(total_unchanged)} unchanged."
+            f"{len(total_unchanged)} unchanged"
+            + (
+                f", {len(total_skipped)} untracked file(s) skipped."
+                if tracked is not None
+                else "."
+            )
         )
         print("Re-run without --dry-run to apply.")
         return 0
@@ -1068,6 +1143,7 @@ _dots() {{
                 adopt)
                     _arguments \\
                         '(-o --overwrite)'{{-o,--overwrite}}'[overwrite existing package]' \\
+                        '(-t --tracked)'{{-t,--tracked}}'[only adopt files already tracked by git]' \\
                         '(-i --install -n --no-install -c --copy)'{{-i,--install}}'[install after creating]' \\
                         '(-i --install -n --no-install -c --copy)'{{-n,--no-install}}'[don'"'"'t install after creating]' \\
                         '(-i --install -n --no-install -c --copy)'{{-c,--copy}}'[copy-managed package: real files, no re-stow]' \\
@@ -1122,7 +1198,7 @@ _dots_bash() {{
         adopt)
             if [ "$cword" -eq 2 ]; then
                 case $cur in
-                    -*) COMPREPLY=($(compgen -W "-o --overwrite -i --install -n --no-install -c --copy" -- "$cur")) ;;
+                    -*) COMPREPLY=($(compgen -W "-o --overwrite -t --tracked -i --install -n --no-install -c --copy" -- "$cur")) ;;
                 esac
             else
                 COMPREPLY=($(compgen -f -- "$cur"))
@@ -1294,6 +1370,12 @@ def main() -> int:
             "Use --overwrite to wipe the existing package directory first\n"
             "(start fresh) rather than merging. Use --dry-run to preview.\n"
             "\n"
+            "Use --tracked to adopt only the files git already tracks under\n"
+            "stow/<package> — new or gitignored files in the live directory are\n"
+            "left alone. The tracked set comes from the git index, so it works\n"
+            "with --overwrite (wipe, then restore just the tracked files from the\n"
+            "host) and with or without --copy.\n"
+            "\n"
             "Use --copy for copy-managed packages (the reverse of\n"
             "`dots install --copy`): live files are copied into stow as real\n"
             "files and re-stowing is skipped, since the live files already are\n"
@@ -1307,6 +1389,7 @@ def main() -> int:
             "  dots adopt -o nvim ~/.config/nvim                # wipe stow/nvim and re-adopt\n"
             "  dots adopt -i tmux ~/.tmux.conf                  # adopt and re-install non-interactively\n"
             "  dots adopt -c -o cosmic ~/.config/cosmic         # refresh copy-managed pkg from host\n"
+            "  dots adopt -c -t cosmic ~/.config/cosmic         # refresh only the files already tracked\n"
         ),
         formatter_class=fmt,
     )
@@ -1321,6 +1404,13 @@ def main() -> int:
         "--overwrite",
         action="store_true",
         help="Delete the existing stow/<package> directory before copying",
+    )
+    p_adopt.add_argument(
+        "-t",
+        "--tracked",
+        action="store_true",
+        help="Only adopt files git already tracks under stow/<package>; "
+        "untracked and gitignored live files are skipped",
     )
     p_adopt.add_argument(
         "--dry-run",

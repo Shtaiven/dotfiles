@@ -19,7 +19,7 @@ initial setup. Run `dots checkhealth` to confirm.
 | `dots install <pkg>…` | Symlink a package's files into `~`. On conflict, prompts to adopt / overwrite (with backup) / skip. |
 | `dots remove <pkg>…` | Remove the symlinks a package created (source files kept). |
 | `dots list [--installed\|--not-installed\|--unmanaged]` | Show every package and its status: `installed`, `not installed`, or `partial`. |
-| `dots adopt <pkg> <path>…` | Capture live files from `~` into a package, then re-stow them as symlinks. |
+| `dots adopt <pkg> <path>…` | Capture live files from `~` into a package, then re-stow them as symlinks. `--tracked` limits it to files git already tracks. |
 | `dots update` | `git pull` the repo — only on `main` with a clean tree. |
 | `dots dir [pkg]` | Print the absolute path to the repo root, or to `stow/<pkg>`. |
 | `dots edit <pkg>` | Open `stow/<pkg>/` in `$EDITOR`. |
@@ -38,6 +38,22 @@ When a target already exists with different content, `dots install` offers:
 * **copy** (`-c`) — copy real files instead of symlinking, for apps that save via
   atomic rename and would otherwise clobber stow symlinks (e.g. COSMIC)
 
+## Adopting only tracked files (`adopt --tracked`)
+
+By default `adopt` pulls in everything under the paths you give it, including
+files the repo has never tracked. `-t` / `--tracked` restricts the copy to files
+git already has in the index under `stow/<pkg>` — new and gitignored live files
+are skipped, and directories that contain only untracked files aren't created.
+
+It reads the index rather than the worktree, so it composes with the other
+flags: `-o --tracked` wipes the package and restores just its tracked files from
+the host, and it works with or without `--copy`. Combine with `--dry-run` to see
+exactly what would be skipped.
+
+```sh
+dots adopt -c -t cosmic ~/.config/cosmic  # refresh only what's already tracked
+```
+
 ## Post-install hooks
 
 Some packages run extra setup after stowing, in `post_install()`:
@@ -54,6 +70,7 @@ Some packages run extra setup after stowing, in `post_install()`:
 dots install zsh nvim shell     # install several packages
 dots list --not-installed       # what's not linked yet
 dots adopt cosmic ~/.config/cosmic   # pull live changes back into the repo
+dots adopt -c -t cosmic ~/.config/cosmic  # ...only the files already tracked
 cd "$(dots dir nvim)"           # jump to a package directory
 dots completion zsh >> ~/.zshrc # enable tab-completion
 ```
