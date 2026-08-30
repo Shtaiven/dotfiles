@@ -1,0 +1,59 @@
+#!/bin/sh
+# Run an AppImage against the host's Qt so it honours QT_QPA_PLATFORMTHEME.
+#
+# AppImages bundle their own (usually old) Qt and ship no platformthemes plugin,
+# so QT_QPA_PLATFORMTHEME resolves to nothing. The host's plugin can't be loaded
+# into it either: Qt refuses plugins built against a newer Qt than the process.
+#
+# Fix: preload the host libraries whose SONAMEs match the bundled ones. The
+# dependency is then already satisfied and the bundled copy never loads, so the
+# app runs on host Qt and finds the host platform theme. Nothing inside the
+# AppImage is modified, so updates keep working.
+#
+# The preload list is the intersection of (bundled libs) and (host libs),
+# recomputed whenever the AppImage changes, so new Qt modules and SONAME bumps
+# are picked up automatically.
+set -eu
+
+print_env=0
+if [ "${1:-}" = "--print-env" ]; then
+	print_env=1
+	shift
+fi
+
+app=${1:?usage: appimage-host-qt [--print-env] <path-to.AppImage> [args...]}
+shift
+
+libdir=${APPIMAGE_HOST_LIBDIR:-/usr/lib64}
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/appimage-host-qt"
+cache="$cache_dir/$(stat -c '%s-%Y' "$app")-$(basename "$app").preload"
+
+if [ ! -f "$cache" ]; then
+	mkdir -p "$cache_dir"
+	tmp=$(mktemp -d)
+	pre=""
+	if (cd "$tmp" && "$app" --appimage-extract 'usr/lib/*.so*' >/dev/null 2>&1); then
+		for f in "$tmp"/squashfs-root/usr/lib/*.so*; do
+			[ -e "$f" ] || continue
+			b=${f##*/}
+			[ -e "$libdir/$b" ] && pre="$pre$libdir/$b:"
+		done
+	fi
+	rm -rf "$tmp"
+	printf '%s' "$pre" >"$cache"
+fi
+
+preload=$(cat "$cache")
+
+# --print-env emits the vars as a single line to paste into a launcher that only
+# accepts environment variables (e.g. Gear Lever). Re-run it after an update if
+# the app ever stops picking up the theme.
+if [ "$print_env" -eq 1 ]; then
+	printf 'QT_PLUGIN_PATH=%s/qt6/plugins LD_PRELOAD=%s\n' "$libdir" "${preload%:}"
+	exit 0
+fi
+
+[ -n "$preload" ] && export LD_PRELOAD="$preload${LD_PRELOAD:-}"
+[ -d "$libdir/qt6/plugins" ] && export QT_PLUGIN_PATH="$libdir/qt6/plugins"
+
+exec "$app" "$@"
