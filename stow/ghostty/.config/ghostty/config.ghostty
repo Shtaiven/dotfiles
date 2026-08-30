@@ -14,6 +14,9 @@ cursor-style = bar
 cursor-style-blink = false
 mouse-hide-while-typing = true
 
+# ── Window ────────────────────────────────────────────────────────────
+resize-overlay = never
+
 # ── Tab bar / titlebar ─────────────────────────────────────────────────
 gtk-titlebar-style = tabs
 gtk-wide-tabs = true
