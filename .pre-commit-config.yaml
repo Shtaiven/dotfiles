@@ -5,7 +5,11 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^stow/cosmic/
+      # COSMIC writes its config values with no trailing newline and rewrites
+      # them on every settings change, so fixing EOF here churns forever.
       - id: end-of-file-fixer
+        exclude: ^stow/cosmic/
       - id: check-added-large-files
       - id: check-json
         exclude: ^stow/input-remapper/

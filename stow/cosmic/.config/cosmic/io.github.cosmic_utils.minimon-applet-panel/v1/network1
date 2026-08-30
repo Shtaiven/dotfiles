@@ -1,7 +1,7 @@
 (
-    chart_visible: true,
+    chart_visible: false,
     value_visible: false,
-    label_visible: true,
+    label_visible: false,
     icon_visible: false,
     chart: Line,
     colors: (
