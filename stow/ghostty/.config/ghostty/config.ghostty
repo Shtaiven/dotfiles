@@ -19,7 +19,8 @@ resize-overlay = never
 
 # ── Tab bar / titlebar ─────────────────────────────────────────────────
 gtk-titlebar-style = tabs
-gtk-wide-tabs = true
+gtk-wide-tabs = false
+gtk-toolbar-style = flat
 
 # ── Keybinds ───────────────────────────────────────────────────────────
 keybind = ctrl+shift+r=prompt_tab_title
@@ -51,7 +52,7 @@ keybind = ctrl+alt+shift+arrow_right=resize_split:right,9
 keybind = ctrl+alt+shift+arrow_up=resize_split:up,18
 keybind = ctrl+alt+shift+arrow_down=resize_split:down,18
 
-# Screen dumps moved from j to d (dumps)
+# ── Screen Dumps ───────────────────────────────────────────────────────
 keybind = ctrl+shift+j=unbind
 keybind = ctrl+alt+shift+j=unbind
 keybind = super+ctrl+shift+j=unbind
