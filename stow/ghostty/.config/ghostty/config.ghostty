@@ -25,12 +25,27 @@ gtk-wide-tabs = true
 keybind = ctrl+shift+r=prompt_tab_title
 keybind = f11=toggle_fullscreen
 
+# ── Tabs ───────────────────────────────────────────────────────────────
+keybind = ctrl+shift+home=previous_tab
+keybind = ctrl+shift+end=next_tab
+# Adding alt moves the tab instead of going to it.
+keybind = ctrl+alt+shift+home=move_tab:-1
+keybind = ctrl+alt+shift+end=move_tab:1
+
 # ── Splits ─────────────────────────────────────────────────────────────
 # Rebind these to prevent conflict with COSMIC
 keybind = super+ctrl+shift+arrow_left=unbind
 keybind = super+ctrl+shift+arrow_right=unbind
 keybind = super+ctrl+shift+arrow_up=unbind
 keybind = super+ctrl+shift+arrow_down=unbind
+
+# Pane focus on ctrl+shift+arrows, which default to previous_tab/next_tab.
+# Tabs are on ctrl+tab / ctrl+shift+tab, so those defaults are free to reuse.
+keybind = ctrl+shift+arrow_left=goto_split:left
+keybind = ctrl+shift+arrow_right=goto_split:right
+keybind = ctrl+shift+arrow_up=goto_split:up
+keybind = ctrl+shift+arrow_down=goto_split:down
+
 keybind = ctrl+alt+shift+arrow_left=resize_split:left,9
 keybind = ctrl+alt+shift+arrow_right=resize_split:right,9
 keybind = ctrl+alt+shift+arrow_up=resize_split:up,18
