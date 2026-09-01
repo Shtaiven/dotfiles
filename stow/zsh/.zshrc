@@ -93,4 +93,13 @@ fi
 function _set_title_to_dir() { print -Pn '\e]0;%~\a' }
 add-zsh-hook precmd _set_title_to_dir
 
+# Ghostty shell integration. Ghostty auto-injects it only into the shell it
+# spawns, so a hand-launched `zsh` (also `exec zsh`, tmux, `sudo -E zsh`) gets
+# no OSC 133 prompt marks and cursor-click-to-move does not work. Loaded last so
+# Prezto's zle widgets are already in place. The entrypoint self-guards on
+# _ghostty_state, so this is a no-op when Ghostty already injected it.
+if [[ -n "$GHOSTTY_RESOURCES_DIR" ]]; then
+  source "$GHOSTTY_RESOURCES_DIR"/shell-integration/zsh/ghostty-integration
+fi
+
 # >>> dotfiles sentinel — nothing should be added below this line (pre-commit will flag installer additions) >>>

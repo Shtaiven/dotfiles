@@ -12,6 +12,7 @@ adjust-underline-position = 25%
 # ── Cursor ─────────────────────────────────────────────────────────────
 cursor-style = bar
 cursor-style-blink = false
+cursor-click-to-move = true
 mouse-hide-while-typing = true
 
 # ── Window ────────────────────────────────────────────────────────────
@@ -25,6 +26,7 @@ gtk-toolbar-style = flat
 # ── Keybinds ───────────────────────────────────────────────────────────
 keybind = ctrl+shift+r=prompt_tab_title
 keybind = f11=toggle_fullscreen
+keybind = ctrl+shift+z=toggle_split_zoom
 
 # ── Tabs ───────────────────────────────────────────────────────────────
 keybind = ctrl+shift+home=previous_tab

@@ -78,9 +78,30 @@ xterm* | rxvt* | screen* | tmux*)
 		[[ "$cmd" == __* || "$cmd" == trap* || "$cmd" == printf* ]] && return
 		__set_title "$(__title_prefix)$(__truncate_cmd "$cmd")"
 	}
-	PROMPT_COMMAND="__prompt_begin;${PROMPT_COMMAND:-:};__prompt_end"
+	# Re-sourcing this rc must not wrap PROMPT_COMMAND again; skipping also keeps
+	# hooks appended after the first wrap (e.g. Ghostty's) outside the wrapper.
+	if [[ "${PROMPT_COMMAND[*]:-}" != *"__prompt_begin"* ]]; then
+		PROMPT_COMMAND="__prompt_begin;${PROMPT_COMMAND:-:};__prompt_end"
+	fi
 	trap '__preexec_title' DEBUG
 	;;
 esac
+
+# Ghostty prompt marking (OSC 133) for cursor-click-to-move.
+# On bash < 5.3 Ghostty runs its preexec hook in a command substitution, so
+# _ghostty_executing never returns to 1 and its precmd stops re-marking PS1
+# after the first prompt. Harmless normally (the marks leak into PS1 and stay),
+# but starship rebuilds PS1 every prompt, so they vanish. Re-arm the flag.
+# Ghostty defines its own functions only after it sources this rc, so there is
+# nothing to probe for here; the flag test in the body is the real guard - unset
+# means the integration never loaded and this is a no-op.
+if [[ -n "$GHOSTTY_RESOURCES_DIR" ]] &&
+	((BASH_VERSINFO[0] < 5 || (BASH_VERSINFO[0] == 5 && BASH_VERSINFO[1] < 3))); then
+	__ghostty_rearm() { [[ "${_ghostty_executing-}" == 0 ]] && _ghostty_executing=1; return 0; }
+	# Re-sourcing this rc must not append the hook twice.
+	if [[ "${PROMPT_COMMAND[*]:-}" != *"__ghostty_rearm"* ]]; then
+		PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND; }__ghostty_rearm"
+	fi
+fi
 
 # >>> dotfiles sentinel — nothing should be added below this line (pre-commit will flag installer additions) >>>
