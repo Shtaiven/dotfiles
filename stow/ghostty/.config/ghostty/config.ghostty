@@ -15,6 +15,16 @@ cursor-style-blink = false
 cursor-click-to-move = true
 mouse-hide-while-typing = true
 
+# ── Shell integration ──────────────────────────────────────────────────
+# Omitted features keep their defaults (cursor, title, path on; sudo off).
+# ssh-env: send COLORTERM + TERM_PROGRAM* to the remote (needs AcceptEnv in its
+#   sshd_config) and use TERM=xterm-256color so it isn't an unknown terminal.
+# ssh-terminfo: install xterm-ghostty into the remote's ~/.terminfo instead
+#   (infocmp locally, tic remotely) and keep TERM=xterm-ghostty when it works,
+#   falling back to ssh-env's xterm-256color when it doesn't.
+# Installed hosts are cached; manage with `ghostty +ssh-cache`.
+shell-integration-features = ssh-env,ssh-terminfo
+
 # ── Window ────────────────────────────────────────────────────────────
 resize-overlay = never
 
