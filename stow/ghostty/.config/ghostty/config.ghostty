@@ -65,7 +65,7 @@ keybind = ctrl+alt+shift+end=move_tab:1
 split-preserve-zoom = navigation
 
 # Default 0.7 dims unfocused splits heavily against gruvbox dark.
-unfocused-split-opacity = 0.85
+unfocused-split-opacity = 0.8
 
 # Rebind these to prevent conflict with COSMIC
 keybind = super+ctrl+shift+arrow_left=unbind
