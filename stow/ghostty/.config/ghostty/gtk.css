@@ -1,0 +1,44 @@
+/*
+ * GTK overrides for Ghostty's built-in stylesheet.
+ *
+ * NOTE: this system has GTK 4.14.5, and CSS color-mix() needs 4.16+. Every
+ * built-in rule quoted below uses color-mix(), so all of them are dropped as
+ * invalid here and the widgets fall back to GTK/libadwaita defaults. Use
+ * alpha() or a solid color instead.
+ *
+ *
+ * Bell border color. Built-in ties it to libadwaita's accent color:
+ *   .surface .bell-overlay {
+ *     border-color: color-mix(in srgb, var(--accent-color), transparent 50%);
+ *   }
+ *
+ * Override with gruvbox material yellow (theme palette 3/11) at 80% alpha
+ * (the built-in mixes its accent color at 50%, which reads too muddy here).
+ */
+.surface .bell-overlay {
+  border-color: alpha(#d8a657, 0.8);
+  /*
+   * Matches the COSMIC window corner: its theme has no single "window radius",
+   * but a scale (xs 4 / s 8 / m 16 / l 32) in
+   * ~/.config/cosmic/com.system76.CosmicTheme.Dark/v1/corner_radii, and
+   * cosmic-comp rounds windows with radius_m.
+   *
+   * The inner corner radius is derived, not settable: inner = radius - width,
+   * and Ghostty sets no border-width (libadwaita supplies it, likely 1px), so
+   * the inner curve comes out ~1px tighter than the window's.
+   */
+  border-radius: 16px;
+}
+
+/*
+ * Split separator. Built-in:
+ *   .window .split paned > separator {
+ *     background-color: color-mix(in srgb, var(--window-bg-color), transparent 0%);
+ *   }
+ *
+ * That is inert on GTK 4.14, which also means `split-divider-color` from the
+ * theme (#504945, gruvbox bg2) never reaches the GTK separator. Set it here.
+ */
+.window .split paned > separator {
+  background-color: #504945;
+}

@@ -27,11 +27,25 @@ shell-integration-features = ssh-env,ssh-terminfo
 
 # ── Window ────────────────────────────────────────────────────────────
 resize-overlay = never
+# y is 1pt under x: with balance off the ink fills the cell edge-to-edge
+# horizontally but stops ~1.9px short of the ascender, so equal padding
+# reads as a wider top gap. Integers only.
+window-padding-x = 4
+window-padding-y = 3
+window-padding-balance = false
 
 # ── Tab bar / titlebar ─────────────────────────────────────────────────
 gtk-titlebar-style = tabs
 gtk-wide-tabs = false
 gtk-toolbar-style = flat
+
+# ── Bell ───────────────────────────────────────────────────────────────
+# Adds to the defaults (attention, title). COSMIC largely ignores the GTK
+# urgency hint that `attention` sets, so draw a border on the alerted surface.
+bell-features = border
+# The border color is not a config option; it comes from Ghostty's built-in GTK
+# stylesheet (libadwaita --accent-color). Override it with gruvbox yellow.
+gtk-custom-css = gtk.css
 
 # ── Keybinds ───────────────────────────────────────────────────────────
 keybind = ctrl+shift+r=prompt_tab_title
@@ -46,6 +60,13 @@ keybind = ctrl+alt+shift+home=move_tab:-1
 keybind = ctrl+alt+shift+end=move_tab:1
 
 # ── Splits ─────────────────────────────────────────────────────────────
+# Move the zoom to the newly focused split instead of unzooming (pairs with
+# toggle_split_zoom + goto_split below).
+split-preserve-zoom = navigation
+
+# Default 0.7 dims unfocused splits heavily against gruvbox dark.
+unfocused-split-opacity = 0.85
+
 # Rebind these to prevent conflict with COSMIC
 keybind = super+ctrl+shift+arrow_left=unbind
 keybind = super+ctrl+shift+arrow_right=unbind
@@ -63,6 +84,7 @@ keybind = ctrl+alt+shift+arrow_left=resize_split:left,9
 keybind = ctrl+alt+shift+arrow_right=resize_split:right,9
 keybind = ctrl+alt+shift+arrow_up=resize_split:up,18
 keybind = ctrl+alt+shift+arrow_down=resize_split:down,18
+keybind = ctrl+alt+shift+equal=equalize_splits
 
 # ── Screen Dumps ───────────────────────────────────────────────────────
 keybind = ctrl+shift+j=unbind
