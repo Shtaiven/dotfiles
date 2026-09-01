@@ -11,6 +11,13 @@
             Super,
             Shift,
         ],
+        key: "m",
+    ): Minimize,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
         key: "semicolon",
     ): Resizing(Inwards),
     (
