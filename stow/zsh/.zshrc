@@ -89,8 +89,10 @@ if (( ${+commands[zoxide]} )); then
   }
 fi
 
-# Set terminal title to current directory (updates tmux pane_title via OSC 0)
-function _set_title_to_dir() { print -Pn '\e]0;%~\a' }
+# Set terminal title to the last three path components (updates tmux pane_title
+# via OSC 0). Runs after Prezto's terminal module, which sets the full path on
+# OSC 2, so this wins. __truncate_path in .bashrc mirrors the same format.
+function _set_title_to_dir() { print -Pn '\e]0;%(4~|…/%3~|%~)\a' }
 add-zsh-hook precmd _set_title_to_dir
 
 # Ghostty shell integration. Ghostty auto-injects it only into the shell it

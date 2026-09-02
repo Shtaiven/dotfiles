@@ -58,15 +58,37 @@ case "$TERM" in
 xterm* | rxvt* | screen* | tmux*)
 	__set_title() { printf '\e]0;%s\a' "$1"; }
 	__title_prefix() { [[ -n "$SSH_TTY" ]] && printf '%s' "${USER}@${HOSTNAME%%.*}: "; }
+	# Last three path components, ~-abbreviated: mirrors zsh's
+	# %(4~|…/%3~|%~) in .zshrc so both shells title the same way.
 	__truncate_path() {
 		local p="${1/#$HOME/\~}"
-		(( ${#p} > 15 )) && p="...${p: -12}"
-		printf '%s' "$p"
+		local IFS=/
+		local -a parts
+		read -ra parts <<<"${p#/}"
+		if (( ${#parts[@]} > 3 )); then
+			printf '…/%s/%s/%s' "${parts[-3]}" "${parts[-2]}" "${parts[-1]}"
+		else
+			printf '%s' "$p"
+		fi
 	}
-	__truncate_cmd() {
-		local c="$1"
-		(( ${#c} > 15 )) && c="${c:0:12}..."
-		printf '%s' "$c"
+	# Command name for the title: basename of the first word that is not an env
+	# assignment, sudo/ssh, or a flag. Mirrors Prezto's terminal module
+	# (${${2[(wr)^(*=*|sudo|ssh|-*)]}:t}), whose window title is untruncated, so
+	# `sudo VAR=1 /usr/bin/nvim -f x` titles as `nvim` in both shells. Prezto
+	# leaves the title empty when no word qualifies (e.g. a bare `sudo`); fall
+	# back to the first word instead.
+	__title_cmd() {
+		local -a words
+		read -ra words <<<"$1"
+		local w
+		for w in "${words[@]}"; do
+			case "$w" in
+			*=* | sudo | ssh | -*) continue ;;
+			esac
+			printf '%s' "${w##*/}"
+			return
+		done
+		printf '%s' "${words[0]##*/}"
 	}
 	__title_skip=true
 	__prompt_begin() { __title_skip=true; }
@@ -76,7 +98,7 @@ xterm* | rxvt* | screen* | tmux*)
 		[[ "${COMP_LINE+x}" ]] && return
 		local cmd="${BASH_COMMAND}"
 		[[ "$cmd" == __* || "$cmd" == trap* || "$cmd" == printf* ]] && return
-		__set_title "$(__title_prefix)$(__truncate_cmd "$cmd")"
+		__set_title "$(__title_prefix)$(__title_cmd "$cmd")"
 	}
 	# Re-sourcing this rc must not wrap PROMPT_COMMAND again; skipping also keeps
 	# hooks appended after the first wrap (e.g. Ghostty's) outside the wrapper.
