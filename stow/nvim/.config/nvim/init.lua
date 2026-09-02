@@ -140,6 +140,10 @@ vim.keymap.set("n", "<leader>ll", "<cmd>Lazy<cr>", { desc = "[L]azy open" })
 vim.keymap.set("n", "<leader>lu", "<cmd>Lazy update<cr>", { desc = "[L]azy [U]pdate" })
 vim.keymap.set("n", "<leader>ls", "<cmd>Lazy sync<cr>", { desc = "[L]azy [S]ync" })
 vim.keymap.set("n", "<leader>lc", "<cmd>Lazy clean<cr>", { desc = "[L]azy [C]lean" })
+-- Artifacts that live outside the plugin repos and so are not covered by `Lazy update`:
+-- treesitter parsers (rebuilt on a tree-sitter ABI bump) and the mason registry.
+vim.keymap.set("n", "<leader>lt", "<cmd>TSUpdate<cr>", { desc = "[L]azy [T]reesitter update" })
+vim.keymap.set("n", "<leader>lm", "<cmd>MasonUpdate<cr>", { desc = "[L]azy [M]ason registry" })
 
 -- Window keymaps
 vim.keymap.set("n", "<leader>wv", "<C-w>v", { desc = "[W]indow split [V]ertical" })

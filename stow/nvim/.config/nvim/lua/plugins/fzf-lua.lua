@@ -11,6 +11,9 @@ return {
 		"ibhagwan/fzf-lua",
 		cond = not vim.g.vscode,
 		dependencies = { "nvim-tree/nvim-web-devicons" },
+		-- `cmd` so `:FzfLua ...` from other specs' keymaps (e.g. the git pickers
+		-- in git.lua) can lazy-load this plugin; `keys` alone would not.
+		cmd = "FzfLua",
 		keys = {
 			{
 				"<leader><space>",

@@ -45,6 +45,17 @@ return {
 				end,
 			})
 
+			-- `build = ":TSUpdate"` only fires when lazy sees the plugin itself as
+			-- dirty, so parsers go stale when Neovim bumps the tree-sitter ABI
+			-- without the plugin moving. Re-run it after every update/sync.
+			vim.api.nvim_create_autocmd("User", {
+				pattern = { "LazyUpdate", "LazySync" },
+				group = vim.api.nvim_create_augroup("treesitter_after_lazy", { clear = true }),
+				callback = function()
+					vim.cmd("TSUpdate")
+				end,
+			})
+
 			-- NOTE: `incremental_selection` (your old <c-space> mappings) has no
 			-- equivalent on the main branch and was dropped.
 		end,
