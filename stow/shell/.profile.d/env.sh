@@ -7,6 +7,7 @@ path_prepend() { case ":$PATH:" in *:"$1":*) ;; *) PATH="$1:$PATH" ;; esac }
 path_append() { case ":$PATH:" in *:"$1":*) ;; *) PATH="$PATH:$1" ;; esac }
 
 # Common PATH
+[ -d "$HOME/.bun/bin" ] && path_prepend "$HOME/.bun/bin"
 [ -d "$HOME/.pixi/bin" ] && path_prepend "$HOME/.pixi/bin"
 [ -d "$HOME/.local/bin" ] && path_prepend "$HOME/.local/bin"
 [ -d "$HOME/local/bin" ] && path_prepend "$HOME/local/bin"
