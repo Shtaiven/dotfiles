@@ -108,3 +108,10 @@
     blame = delta
     reflog = delta
     grep = delta
+
+# Authenticate GitHub HTTPS fetches via the gh CLI.
+# Anonymous HTTPS git requests are rate-limited per-IP: lazy.nvim fires one
+# fetch per plugin concurrently and GitHub answers most with 401, which git
+# turns into "could not read Username for 'https://github.com'".
+[credential "https://github.com"]
+    helper = !gh auth git-credential
