@@ -172,6 +172,53 @@ vim.keymap.set("n", "<leader>ci", function()
 	vim.diagnostic.config({ virtual_text = not vim.diagnostic.config().virtual_text })
 end, { desc = "[C]ode [I]nline diagnostics toggle" })
 
+-- [[ Large file guard ]]
+-- Treesitter is the dominant cost on large buffers: on an 80k-line file a cold
+-- open measured ~740ms and a post-edit reparse of just the visible window ~206ms.
+-- Regex syntax costs ~0.13ms/line instead, so over the threshold we hand
+-- highlighting back to it. `vim.treesitter.stop()` re-fires the `syntaxset`
+-- FileType autocmd, which restores regex syntax for us.
+--
+-- This MUST be synchronous. Deferring it (vim.schedule/defer_fn) measures the
+-- same as no guard at all, because the parse has already been paid by then.
+--
+-- Two paths start treesitter and both need covering:
+--   1. lua/plugins/treesitter.lua's own FileType autocmd (checks big_file itself)
+--   2. Neovim's runtime ftplugins for lua/markdown/help/query, which call
+--      vim.treesitter.start() directly -- stop() below undoes those.
+local big_file_group = vim.api.nvim_create_augroup("BigFile", { clear = true })
+local BIG_FILE_BYTES = 1024 * 1024
+local BIG_FILE_LINES = 20000
+
+-- Size is all we can check before the buffer is read; the line count is a
+-- fallback for many-short-lines files that slip under the byte limit.
+vim.api.nvim_create_autocmd("BufReadPre", {
+	group = big_file_group,
+	callback = function(ev)
+		local ok, stat = pcall(vim.uv.fs_stat, vim.api.nvim_buf_get_name(ev.buf))
+		if ok and stat and stat.size > BIG_FILE_BYTES then
+			vim.b[ev.buf].big_file = true
+		end
+	end,
+})
+
+-- Registered after lazy.nvim setup, so this runs after both the ftplugin and
+-- the treesitter.lua autocmd on the same FileType event.
+vim.api.nvim_create_autocmd("FileType", {
+	group = big_file_group,
+	callback = function(ev)
+		if not vim.b[ev.buf].big_file and vim.api.nvim_buf_line_count(ev.buf) > BIG_FILE_LINES then
+			vim.b[ev.buf].big_file = true
+		end
+		if not vim.b[ev.buf].big_file then
+			return
+		end
+		vim.treesitter.stop(ev.buf)
+		-- fall back to the ftplugin's indentexpr (e.g. GetLuaIndent())
+		vim.bo[ev.buf].indentexpr = ""
+	end,
+})
+
 -- [[ Highlight on yank ]]
 -- See `:help vim.highlight.on_yank()`
 local highlight_group = vim.api.nvim_create_augroup("YankHighlight", { clear = true })

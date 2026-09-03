@@ -34,6 +34,10 @@ return {
 			vim.api.nvim_create_autocmd("FileType", {
 				group = vim.api.nvim_create_augroup("treesitter_setup", { clear = true }),
 				callback = function(ev)
+					-- see the large file guard in init.lua
+					if vim.b[ev.buf].big_file then
+						return
+					end
 					-- pcall: vim.treesitter.start() errors if no parser for this filetype
 					if not pcall(vim.treesitter.start, ev.buf) then
 						return
