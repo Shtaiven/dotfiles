@@ -16,8 +16,13 @@ return {
 	{
 		"williamboman/mason.nvim",
 		cond = not vim.g.vscode,
+		-- NOTE: mason.nvim has no `ensure_installed` option (that is mason-lspconfig
+		-- for servers / mason-tool-installer for everything else). Tools used by
+		-- conform must be installed by hand: `:MasonInstall stylua`.
 		opts = {
-			ensure_installed = { "stylua" },
+			ui = {
+				border = "rounded",
+			},
 		},
 	},
 }

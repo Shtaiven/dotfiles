@@ -44,8 +44,12 @@ return {
 				nmap("<leader>cs", require("fzf-lua").lsp_document_symbols, "[C]ode [S]ymbols")
 				nmap("<leader>ws", require("fzf-lua").lsp_workspace_symbols, "[W]orkspace [S]ymbols")
 
-				nmap("K", vim.lsp.buf.hover, "Hover Documentation")
-				nmap("<leader>ck", vim.lsp.buf.signature_help, "[C]ode Signature Help")
+				nmap("K", function()
+					vim.lsp.buf.hover({ border = "rounded" })
+				end, "Hover Documentation")
+				nmap("<leader>ck", function()
+					vim.lsp.buf.signature_help({ border = "rounded" })
+				end, "[C]ode Signature Help")
 
 				nmap("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 				nmap("<leader>wa", vim.lsp.buf.add_workspace_folder, "[W]orkspace [A]dd Folder")
@@ -68,15 +72,6 @@ return {
 
 			local capabilities = vim.lsp.protocol.make_client_capabilities()
 			capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
-
-			vim.keymap.set("n", "<leader>mm", "<cmd>Mason<cr>", { desc = "[M]ason open" })
-			vim.keymap.set("n", "<leader>mu", "<cmd>MasonUpdate<cr>", { desc = "[M]ason [U]pdate" })
-
-			require("mason").setup({
-				ui = {
-					border = "rounded",
-				},
-			})
 
 			local mason_lspconfig = require("mason-lspconfig")
 			mason_lspconfig.setup({
@@ -112,5 +107,6 @@ return {
 	{
 		"folke/lazydev.nvim",
 		ft = "lua",
+		opts = {},
 	},
 }

@@ -23,9 +23,9 @@ return {
 	},
 	{
 		"danilamihailov/beacon.nvim",
-		opts = {
-			ft_ignore = { "distant-window" },
-		},
+		-- opts must stay (even empty) so lazy calls setup(); upstream's lua rewrite
+		-- dropped the ft_ignore option and hardcodes its ignore list instead.
+		opts = {},
 	},
 	{ "lukas-reineke/virt-column.nvim", opts = {} },
 	{
@@ -33,7 +33,7 @@ return {
 		dependencies = { "nvim-lua/plenary.nvim" },
 		event = "VimEnter",
 		keys = {
-			{ "<leader>ft", "<cmd>TodoTelescope<cr>", desc = "[F]ind [T]odos" },
+			{ "<leader>ft", "<cmd>TodoFzfLua<cr>", desc = "[F]ind [T]odos" },
 		},
 		opts = {},
 	},

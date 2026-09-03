@@ -87,10 +87,19 @@ vim.keymap.set({ "n", "v" }, "<Space>", "<Nop>", { silent = true })
 vim.keymap.set("n", "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 vim.keymap.set("n", "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
 
--- Rounded borders for LSP floating windows
-vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, { border = "rounded" })
-vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.signature_help, { border = "rounded" })
-vim.diagnostic.config({ float = { border = "rounded" } })
+-- Rounded borders for LSP floating windows. Hover/signature borders are passed
+-- at the call site now (see the K and <leader>ck maps in lua/plugins/lsp.lua);
+-- vim.lsp.with() is deprecated.
+vim.diagnostic.config({
+	float = { border = "rounded" },
+	-- vim.diagnostic.jump() has no float-on-arrival of its own, unlike the
+	-- goto_next()/goto_prev() it replaces; this restores it for every jump.
+	jump = {
+		on_jump = function(_, bufnr)
+			vim.diagnostic.open_float({ bufnr = bufnr, scope = "cursor", focus = false })
+		end,
+	},
+})
 
 -- Change directory to current file
 vim.keymap.set("n", "<leader>cd", "<cmd>cd %:h<cr>", { desc = "[C]hange [D]irectory to current file" })
@@ -144,6 +153,8 @@ vim.keymap.set("n", "<leader>lc", "<cmd>Lazy clean<cr>", { desc = "[L]azy [C]lea
 -- treesitter parsers (rebuilt on a tree-sitter ABI bump) and the mason registry.
 vim.keymap.set("n", "<leader>lt", "<cmd>TSUpdate<cr>", { desc = "[L]azy [T]reesitter update" })
 vim.keymap.set("n", "<leader>lm", "<cmd>MasonUpdate<cr>", { desc = "[L]azy [M]ason registry" })
+-- mason.nvim has no lazy-load trigger, so `:Mason` exists from startup.
+vim.keymap.set("n", "<leader>lM", "<cmd>Mason<cr>", { desc = "[L]azy [M]ason UI" })
 
 -- Window keymaps
 vim.keymap.set("n", "<leader>wv", "<C-w>v", { desc = "[W]indow split [V]ertical" })
@@ -152,20 +163,18 @@ vim.keymap.set("n", "<leader>wc", "<C-w>c", { desc = "[W]indow [C]lose" })
 vim.keymap.set("n", "<leader>wo", "<C-w>o", { desc = "[W]indow close [O]thers" })
 
 -- Diagnostic keymaps
-vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, { desc = "Prev diagnostic" })
-vim.keymap.set("n", "]d", vim.diagnostic.goto_next, { desc = "Next diagnostic" })
-vim.keymap.set("n", "[e", function()
-	vim.diagnostic.goto_prev({ severity = vim.diagnostic.severity.ERROR })
-end, { desc = "Prev error" })
-vim.keymap.set("n", "]e", function()
-	vim.diagnostic.goto_next({ severity = vim.diagnostic.severity.ERROR })
-end, { desc = "Next error" })
-vim.keymap.set("n", "[w", function()
-	vim.diagnostic.goto_prev({ severity = vim.diagnostic.severity.WARN })
-end, { desc = "Prev warning" })
-vim.keymap.set("n", "]w", function()
-	vim.diagnostic.goto_next({ severity = vim.diagnostic.severity.WARN })
-end, { desc = "Next warning" })
+local function diagnostic_jump(count, severity)
+	return function()
+		vim.diagnostic.jump({ count = count, severity = severity })
+	end
+end
+
+vim.keymap.set("n", "[d", diagnostic_jump(-1), { desc = "Prev diagnostic" })
+vim.keymap.set("n", "]d", diagnostic_jump(1), { desc = "Next diagnostic" })
+vim.keymap.set("n", "[e", diagnostic_jump(-1, vim.diagnostic.severity.ERROR), { desc = "Prev error" })
+vim.keymap.set("n", "]e", diagnostic_jump(1, vim.diagnostic.severity.ERROR), { desc = "Next error" })
+vim.keymap.set("n", "[w", diagnostic_jump(-1, vim.diagnostic.severity.WARN), { desc = "Prev warning" })
+vim.keymap.set("n", "]w", diagnostic_jump(1, vim.diagnostic.severity.WARN), { desc = "Next warning" })
 vim.keymap.set("n", "<leader>ce", vim.diagnostic.open_float, { desc = "[C]ode [E]rror float" })
 vim.keymap.set("n", "<leader>cq", vim.diagnostic.setloclist, { desc = "[C]ode [Q]uickfix list" })
 vim.keymap.set("n", "<leader>ci", function()
@@ -220,11 +229,11 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 -- [[ Highlight on yank ]]
--- See `:help vim.highlight.on_yank()`
+-- See `:help vim.hl.on_yank()`
 local highlight_group = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
 vim.api.nvim_create_autocmd("TextYankPost", {
 	callback = function()
-		vim.highlight.on_yank()
+		vim.hl.on_yank()
 	end,
 	group = highlight_group,
 	pattern = "*",
