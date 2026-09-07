@@ -29,6 +29,21 @@ initial setup. Run `dots checkhealth` to confirm.
 
 Run `dots <command> --help` for full options and examples.
 
+## Symlinks are always per-file (`--no-folding`)
+
+`dots` runs stow with `--no-folding`, so installing creates real directories in
+`~` and symlinks only the files inside them — never a link to a whole package
+directory. Without it, stow "folds" a directory whose target doesn't exist yet
+(`~/.config/nvim -> ~/.dotfiles/stow/nvim/.config/nvim`), which means any new
+file the app writes there lands inside the repo, and untracked siblings can't
+coexist with stowed ones.
+
+Installing also unfolds directory symlinks left over from earlier installs, so
+re-running `dots install <pkg>` migrates a folded package to per-file links.
+Note that files living in the repo only because they were written through a
+folded link are *not* symlinked back after unfolding — commit or delete them
+first.
+
 ## Conflict handling (`install`)
 
 When a target already exists with different content, `dots install` offers:

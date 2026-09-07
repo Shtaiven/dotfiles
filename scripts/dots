@@ -41,7 +41,7 @@ def stow_force_overwrite(pkg: str) -> int:
 
         if not conflicts:
             # Unexpected failure — just try anyway
-            return run_stow(["-S", pkg]).returncode
+            return run_stow_install([], pkg).returncode
 
         if backup_dir is None:
             backup_dir = Path(tempfile.mkdtemp(prefix=f"dots-overwrite-{pkg}-"))
@@ -60,12 +60,77 @@ def stow_force_overwrite(pkg: str) -> int:
     if backup_dir:
         print(f"  Backup of overwritten files: {backup_dir}")
 
-    return run_stow(["-S", pkg]).returncode
+    return run_stow_install([], pkg).returncode
 
 
 def run_stow(args: list[str], capture: bool = False) -> subprocess.CompletedProcess:
-    cmd = ["stow", "-d", str(STOW_DIR), "-t", str(TARGET_DIR)] + args
+    # --no-folding keeps stow from symlinking a whole directory when the target
+    # doesn't exist yet: real directories are created and only files are linked.
+    # That way an app writing a new file into ~/.config/<app> can't drop it into
+    # the repo, and untracked siblings can live next to stowed files.
+    cmd = ["stow", "--no-folding", "-d", str(STOW_DIR), "-t", str(TARGET_DIR)] + args
     return subprocess.run(cmd, cwd=DOTFILES_DIR, capture_output=capture, text=True)
+
+
+def unfold_pkg_dirs(pkg: str) -> list[tuple[Path, str]]:
+    """Replace directory symlinks pointing into stow/<pkg> with real directories.
+
+    --no-folding only stops stow from *creating* folded directory links; it
+    leaves existing ones alone, and `stow -S` treats them as already stowed.
+    Unfolding first lets a re-install converge packages that were stowed before
+    --no-folding onto per-file symlinks.
+
+    Returns the (target, link_target) pairs it replaced, so a failed stow can be
+    rolled back by refold_pkg_dirs().
+    """
+    pkg_dir = STOW_DIR / pkg
+    pkg_prefix = str(pkg_dir.resolve())
+    unfolded: list[tuple[Path, str]] = []
+
+    # Top-down, so a parent is unfolded before its children are examined.
+    for root, dirs, _files in os.walk(pkg_dir):
+        for name in dirs:
+            target = TARGET_DIR / (Path(root) / name).relative_to(pkg_dir)
+            if not target.is_symlink():
+                continue
+            try:
+                resolved = os.path.realpath(target)
+            except OSError:
+                continue
+            if resolved == pkg_prefix or resolved.startswith(pkg_prefix + os.sep):
+                link_target = os.readlink(target)
+                target.unlink()
+                target.mkdir()
+                unfolded.append((target, link_target))
+
+    return unfolded
+
+
+def refold_pkg_dirs(unfolded: list[tuple[Path, str]]) -> None:
+    """Undo unfold_pkg_dirs() after a failed stow, restoring the old links.
+
+    stow aborts without touching the filesystem when it hits a conflict, so the
+    directories it was going to fill are still empty and safe to replace. Any
+    that aren't are left alone: a partial install is better than a guess.
+    """
+    # Bottom-up, so a child is restored before its parent is relinked away.
+    for target, link_target in reversed(unfolded):
+        try:
+            target.rmdir()
+        except OSError:
+            continue
+        target.symlink_to(link_target)
+
+
+def run_stow_install(
+    args: list[str], pkg: str, capture: bool = False
+) -> subprocess.CompletedProcess:
+    """Stow a package as individual file symlinks, never a folded directory."""
+    unfolded = unfold_pkg_dirs(pkg)
+    result = run_stow(args + ["-S", pkg], capture=capture)
+    if result.returncode != 0:
+        refold_pkg_dirs(unfolded)
+    return result
 
 
 def get_stowed_packages() -> dict[str, list[Path]]:
@@ -217,7 +282,7 @@ def cmd_install(args: argparse.Namespace) -> int:
         conflicts = has_conflicts(pkg)
 
         if not conflicts:
-            result = run_stow(["-S", pkg])
+            result = run_stow_install([], pkg)
             if result.returncode == 0:
                 print(f"Installed: {pkg}")
                 post_install(pkg)
@@ -234,7 +299,7 @@ def cmd_install(args: argparse.Namespace) -> int:
             print(f"Installed (overwritten): {pkg}")
             post_install(pkg)
         elif args.adopt:
-            result = run_stow(["--adopt", "-S", pkg])
+            result = run_stow_install(["--adopt"], pkg)
             if result.returncode == 0:
                 print(f"Installed (adopted existing files): {pkg}")
                 post_install(pkg)
@@ -249,7 +314,7 @@ def cmd_install(args: argparse.Namespace) -> int:
             print("  [s]kip")
             choice = input("  Choice [a/o/c/s]: ").strip().lower()
             if choice == "a":
-                result = run_stow(["--adopt", "-S", pkg])
+                result = run_stow_install(["--adopt"], pkg)
                 if result.returncode == 0:
                     print(f"Installed (adopted): {pkg}")
                     post_install(pkg)
@@ -693,7 +758,7 @@ def cmd_adopt(args: argparse.Namespace) -> int:
         # Re-stow cleanly: unstow first (ignore failure if not currently stowed),
         # then re-stow with --adopt to absorb any straggling real files.
         run_stow(["-D", args.package], capture=True)
-        result = run_stow(["--adopt", "-S", args.package])
+        result = run_stow_install(["--adopt"], args.package)
         if result.returncode == 0:
             print(f"Installed: {args.package}")
         else:
