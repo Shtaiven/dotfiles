@@ -1,6 +1,9 @@
 return {
 	{
 		"tpope/vim-fugitive",
+		-- `cmd` so `:Git`/`:GBrowse` typed by hand work before any fugitive keymap
+		-- has fired (same reason fzf-lua declares `cmd = "FzfLua"`).
+		cmd = { "Git", "GBrowse" },
 		keys = {
 			{ "<leader>gs", "<cmd>Git<cr>", desc = "[G]it [S]tatus" },
 			{ "<leader>gb", "<cmd>Git blame<cr>", desc = "[G]it [B]lame" },
@@ -8,6 +11,11 @@ return {
 			{ "<leader>go", "<cmd>FzfLua git_branches<cr>", desc = "[G]it check[O]ut branch" },
 			{ "<leader>ga", "<cmd>FzfLua git_stash<cr>", desc = "[G]it stash [A]pply" },
 			{ "<leader>gp", "<cmd>Git stash pop<cr>", desc = "[G]it stash [P]op" },
+			-- :GBrowse needs a per-forge handler; vim-rhubarb below supplies the
+			-- GitHub one. `:` rather than `<cmd>` in visual mode so the '<,'> range
+			-- comes along and the URL points at the selected lines.
+			{ "<leader>gw", ":GBrowse<cr>", mode = { "n", "x" }, desc = "[G]it [W]eb open" },
+			{ "<leader>gW", ":GBrowse!<cr>", mode = { "n", "x" }, desc = "[G]it [W]eb copy URL" },
 		},
 	},
 	"tpope/vim-rhubarb",
