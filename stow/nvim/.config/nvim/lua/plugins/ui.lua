@@ -78,6 +78,18 @@ return {
 				end,
 			})
 
+			-- lualine only refreshes the tabline on its 1s timer or the events in
+			-- options.refresh.events, none of which cover a buffer being deleted. Without this,
+			-- a closed buffer (e.g. the oil buffer cleaned up after opening a file from it)
+			-- keeps rendering as a gray inactive tabline entry for up to a second.
+			vim.api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
+				callback = function()
+					vim.schedule(function()
+						require("lualine").refresh()
+					end)
+				end,
+			})
+
 			-- When opening a file from fzf-lua, the buffer ends up unlisted (buflisted=false).
 			-- fzf-lua's previewer loads files as unlisted buffers and deletes them on close;
 			-- when the file is selected, the buffer is recreated via bufadd() which also starts

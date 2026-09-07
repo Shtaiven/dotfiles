@@ -172,6 +172,10 @@ return {
 		lazy = false,
 		opts = {
 			default_file_explorer = true,
+			-- Oil buffers are listed so lualine's tabline shows them while browsing, but oil
+			-- keeps its hidden buffers around for 2s after you open a file from it, leaving a
+			-- gray inactive "Oil" entry in the tabline. Clean them up immediately instead.
+			cleanup_delay_ms = 0,
 			buf_options = {
 				buflisted = true,
 			},
