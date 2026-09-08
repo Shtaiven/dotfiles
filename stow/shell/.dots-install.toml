@@ -1,0 +1,58 @@
+description = "shell-agnostic config: env, aliases and CLI tool init"
+
+[[program]]
+name = "bat"
+bin = ["bat", "batcat"]
+pixi = "bat"
+expose = ["bat"]
+note = "pager for --help output and the nnn preview pane"
+
+[[program]]
+name = "carapace"
+pixi = "carapace"
+expose = ["carapace"]
+note = "multi-shell completion engine; tools.sh prefers it over per-tool scripts"
+
+[[program]]
+name = "fd"
+bin = ["fd", "fdfind"]
+pixi = "fd-find"
+expose = ["fd"]
+note = "used by the fzf key bindings"
+
+[[program]]
+name = "fzf"
+pixi = "fzf"
+expose = ["fzf"]
+note = "fuzzy finder behind the shell key bindings"
+
+[[program]]
+name = "nnn"
+pixi = "nnn"
+expose = ["nnn"]
+note = "file manager wired up in tools.sh"
+
+[[program]]
+name = "ripgrep"
+bin = ["rg"]
+pixi = "ripgrep"
+expose = ["rg"]
+
+[[program]]
+name = "zoxide"
+pixi = "zoxide"
+expose = ["zoxide"]
+note = "directory jumper; z/zi are defined in aliases.sh"
+
+[[program]]
+name = "cargo"
+manual = "https://rustup.rs"
+optional = true
+note = "only needed to build Rust tooling from source"
+
+[[command]]
+name = "nnn plugins"
+run = "curl -Ls https://raw.githubusercontent.com/jarun/nnn/master/plugins/getplugs | sh"
+check = "$XDG_CONFIG_HOME/nnn/plugins/preview-tui"
+requires = ["curl"]
+note = "installs preview-tui, which NNN_PLUG in tools.sh binds"

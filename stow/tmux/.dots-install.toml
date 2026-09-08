@@ -1,0 +1,12 @@
+description = "tmux configuration"
+
+[[program]]
+name = "tmux"
+pixi = "tmux"
+expose = ["tmux"]
+
+[[program]]
+name = "fzf"
+pixi = "fzf"
+expose = ["fzf"]
+note = "backs the session/window switcher bindings"

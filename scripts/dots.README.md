@@ -16,7 +16,7 @@ initial setup. Run `dots checkhealth` to confirm.
 
 | Command | What it does |
 |---|---|
-| `dots install <pkg>…` | Symlink a package's files into `~`. On conflict, prompts to adopt / overwrite (with backup) / skip. |
+| `dots install <pkg>…` | Symlink a package's files into `~`, then apply its `.dots-install.toml`. On conflict, prompts to adopt / overwrite (with backup) / skip. `-y` accepts every post-install action, `--no-post` skips them. |
 | `dots remove <pkg>…` | Remove the symlinks a package created (source files kept). |
 | `dots list [--installed\|--not-installed\|--unmanaged]` | Show every package and its status: `installed`, `not installed`, or `partial`. |
 | `dots adopt <pkg> <path>…` | Capture live files from `~` into a package, then re-stow them as symlinks. `--tracked` limits it to files git already tracks. |
@@ -24,7 +24,7 @@ initial setup. Run `dots checkhealth` to confirm.
 | `dots dir [pkg]` | Print the absolute path to the repo root, or to `stow/<pkg>`. |
 | `dots edit <pkg>` | Open `stow/<pkg>/` in `$EDITOR`. |
 | `dots deploy <user@host>` | `scp` the repo to a remote host, optionally running `bootstrap.sh`. |
-| `dots checkhealth` | Sanity-check the environment (stow installed, repo location, `dots` on PATH). |
+| `dots checkhealth` | Sanity-check the environment (stow installed, repo location, `dots` on PATH) plus every stowed package's declared dependencies. |
 | `dots completion <bash\|zsh>` | Emit a shell completion script to stdout. |
 
 Run `dots <command> --help` for full options and examples.
@@ -69,20 +69,96 @@ exactly what would be skipped.
 dots adopt -c -t cosmic ~/.config/cosmic  # refresh only what's already tracked
 ```
 
-## Post-install hooks
+## Post-install (`.dots-install.toml`)
 
-Some packages run extra setup after stowing, in `post_install()`:
+A package declares what it needs in `stow/<pkg>/.dots-install.toml`, next to the
+config it belongs to — no per-package branches inside `dots`. `dots install`
+applies it after stowing, and `dots checkhealth` reports it. The file is stow's
+only ignored name (`--ignore='\.dots-install\.toml'`), so it never lands in `~`;
+the copy-install, drift and `adopt --overwrite` paths skip it too.
 
-* `zsh` → offers to clone [Prezto](https://github.com/sorin-ionescu/prezto)
-* `shell` → offers to install nnn plugins
-* `smile` → reports whether the `it.mijorus.smile` flatpak and `wtype` are
-  present, and whether `smile-autopaste.service` is enabled (reports only,
-  installs nothing)
+Every install is a `[y/N]` prompt that prints the exact command first. `-y` /
+`--yes` accepts them all (useful on a fresh machine), `--no-post` skips the file
+entirely.
+
+```toml
+description = "zsh + Prezto"          # shown as the checkhealth section title
+
+[[program]]                            # something that must exist on the system
+name = "fd"                            # required — display name
+bin = ["fd", "fdfind"]                 # binaries to probe (default: [name])
+pixi = "fd-find"                       # pixi global install <spec>
+expose = ["fd"]                        # --expose names for that install
+flatpak = "it.mijorus.smile"           # flatpak install <remote> <id>
+flatpak_remote = "flathub"             # default "flathub"
+apt = "wtype"                          # PRINTED, never run
+dnf = "wtype"                          # PRINTED, never run
+manual = "https://rustup.rs"           # printed instructions
+note = "why the package needs it"
+optional = true                        # checkhealth warns instead of erroring
+
+[[git]]                                # a clone the config sources at runtime
+name = "Prezto"
+repo = "https://github.com/sorin-ionescu/prezto.git"
+dest = "~/.zprezto"
+check = "~/.zprezto/init.zsh"          # presence probe (default: dest)
+recursive = true                       # clone --recursive
+
+[[command]]                            # an installer to offer
+name = "nnn plugins"
+run = "curl -Ls .../getplugs | sh"     # runs via `sh -c`
+check = "~/.config/nnn/plugins/preview-tui"   # path that exists once done
+check_cmd = "..."                      # ...or a command whose exit status is the probe
+requires = ["curl"]                    # binaries needed to run it
+
+[[service]]                            # a systemd unit the package ships
+unit = "smile-autopaste.service"
+scope = "user"                         # "user" (default) or "system"
+enable = true                          # default true
+restart = true                         # default true
+```
+
+Paths take `~` and `$VARS`, with `$XDG_CONFIG_HOME` and friends falling back to
+their spec defaults when the host never exported them. A malformed file, an
+entry missing a required key,
+or an unknown key is reported and skipped — a typo in a manifest never blocks a
+package from being stowed.
+
+### What dots will and won't run
+
+* **pixi, flatpak, git clones, `[[command]]` scripts** — offered with a prompt.
+  The first usable installer for a program wins, so `pixi` takes precedence over
+  `flatpak` when both are declared and pixi is on `PATH`.
+* **`apt` / `dnf`, `manual`, `scope = "system"` services** — printed for you to
+  run. These need `sudo` or vary per host, so `dots` never executes them.
+* **systemd user units** — `daemon-reload` always runs, since the unit file was
+  just relinked. A unit that isn't enabled yet prompts before
+  `enable --now`; one that's already enabled is restarted with no prompt, which
+  is the point of re-stowing its config. Set `restart = false` to leave it be.
+
+`dots remove` is the inverse of stowing only — it unlinks files and does not
+undo post-install steps, so a cloned repo stays cloned and an enabled unit stays
+enabled. Disable those yourself if you mean to.
+
+### Packages that ship one
+
+| Package | Declares |
+|---|---|
+| `bat` | bat |
+| `git` | git, delta |
+| `nvim` | nvim |
+| `shell` | bat, carapace, fd, fzf, nnn, ripgrep, zoxide, cargo (manual), nnn plugins |
+| `smile` | Smile flatpak, wtype (apt/dnf), `smile-autopaste.service` |
+| `starship` | starship |
+| `tmux` | tmux, fzf |
+| `wezterm` | wezterm (manual) |
+| `zsh` | zsh, Prezto clone |
 
 ## Examples
 
 ```sh
 dots install zsh nvim shell     # install several packages
+dots install -y zsh shell       # ...accepting every post-install action
 dots list --not-installed       # what's not linked yet
 dots adopt cosmic ~/.config/cosmic   # pull live changes back into the repo
 dots adopt -c -t cosmic ~/.config/cosmic  # ...only the files already tracked

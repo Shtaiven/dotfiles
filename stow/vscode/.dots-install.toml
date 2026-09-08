@@ -1,0 +1,7 @@
+description = "VS Code static Gruvbox Material Hard Dark theme (no marketplace extension)"
+
+[[program]]
+name = "Visual Studio Code"
+bin = ["code"]
+manual = "https://code.visualstudio.com/docs/setup/linux — Microsoft apt repo, or `flatpak install com.visualstudio.code`"
+note = "the editor the theme is for; nothing else is needed — VS Code scans ~/.vscode/extensions itself"

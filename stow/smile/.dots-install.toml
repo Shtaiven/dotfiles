@@ -1,0 +1,20 @@
+description = "Smile emoji picker: global shortcut + autopaste service"
+
+[[program]]
+name = "Smile"
+flatpak = "it.mijorus.smile"
+note = "the emoji picker smile-toggle launches"
+
+[[program]]
+name = "wtype"
+apt = "wtype"
+dnf = "wtype"
+note = """autopaste cannot type emoji without it; needs a compositor with \
+zwp_virtual_keyboard_v1 (COSMIC, KDE or wlroots — not GNOME)"""
+
+[[service]]
+unit = "smile-autopaste.service"
+scope = "user"
+enable = true
+restart = true
+note = "watches the clipboard and types the picked emoji into the focused window"

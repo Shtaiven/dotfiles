@@ -1,0 +1,7 @@
+description = "starship prompt configuration"
+
+[[program]]
+name = "starship"
+pixi = "starship"
+expose = ["starship"]
+note = "both .bashrc and .zshrc init this prompt"

@@ -1,0 +1,15 @@
+description = "zsh + Prezto"
+
+[[program]]
+name = "zsh"
+pixi = "zsh"
+expose = ["zsh"]
+note = "the shell these files configure"
+
+[[git]]
+name = "Prezto"
+repo = "https://github.com/sorin-ionescu/prezto.git"
+dest = "~/.zprezto"
+check = "~/.zprezto/init.zsh"
+recursive = true
+note = ".zshrc sources ~/.zprezto/init.zsh"
