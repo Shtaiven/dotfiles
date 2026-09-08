@@ -23,9 +23,37 @@ TARGET_DIR = Path.home()
 # wants. It describes the package rather than belonging in $HOME, so stow is
 # told to ignore it (STOW_IGNORE_RE) and the copy/drift walkers skip it too.
 INSTALL_MANIFESTS = (".dots-install.toml", "dots-install.toml")
-# Anchored on both ends: stow's --ignore is a suffix match, so an unanchored
-# pattern would also swallow a real dotfile named e.g. theme.dots-install.toml.
+# --ignore is an unanchored search over the package-relative path, so anchor
+# both ends or this also swallows a real dotfile like theme.dots-install.toml.
 STOW_IGNORE_RE = r"^\.?dots-install\.toml$"
+
+# GNU Stow skips these on its own (Stow.pm's __DATA__ list). Mirrored here so
+# `dots list` and `dots install --copy` agree with what stow actually does —
+# otherwise a package's README.md reads as permanently "not linked".
+# Patterns without a "/" match a path segment; those with one match the path.
+STOW_BUILTIN_SEGMENTS = (
+    r"RCS",
+    r".+,v",
+    r"CVS",
+    r"\.\#.+",
+    r"\.cvsignore",
+    r"\.svn",
+    r"_darcs",
+    r"\.hg",
+    r"\.git",
+    r"\.gitignore",
+    r"\.gitmodules",
+    r".+~",
+    r"\#.*\#",
+)
+STOW_BUILTIN_PATHS = (
+    r"^/README.*",
+    r"^/LICENSE.*",
+    r"^/COPYING",
+    r"^/\.stow-local-ignore$",
+)
+_BUILTIN_SEGMENT_RE = re.compile("^(" + "|".join(STOW_BUILTIN_SEGMENTS) + ")$")
+_BUILTIN_PATH_RE = re.compile("(^|/)(" + "|".join(STOW_BUILTIN_PATHS) + ")(/|$)")
 
 
 def stow_force_overwrite(pkg: str) -> int:
@@ -38,7 +66,7 @@ def stow_force_overwrite(pkg: str) -> int:
     backup_dir: Path | None = None
 
     for _ in range(100):  # hard cap to prevent infinite loops
-        sim = run_stow(["--simulate", "-S", pkg], capture=True)
+        sim = run_stow(pkg, ["--simulate", "-S", pkg], capture=True)
         if sim.returncode == 0:
             break
 
@@ -74,20 +102,18 @@ def stow_force_overwrite(pkg: str) -> int:
     return run_stow_install([], pkg).returncode
 
 
-def run_stow(args: list[str], capture: bool = False) -> subprocess.CompletedProcess:
+def run_stow(
+    pkg: str, args: list[str], capture: bool = False
+) -> subprocess.CompletedProcess:
     # --no-folding keeps stow from symlinking a whole directory when the target
     # doesn't exist yet: real directories are created and only files are linked.
     # That way an app writing a new file into ~/.config/<app> can't drop it into
     # the repo, and untracked siblings can live next to stowed files.
-    cmd = [
-        "stow",
-        "--no-folding",
-        f"--ignore={STOW_IGNORE_RE}",
-        "-d",
-        str(STOW_DIR),
-        "-t",
-        str(TARGET_DIR),
-    ] + args
+    cmd = ["stow", "--no-folding", f"--ignore={STOW_IGNORE_RE}"]
+    # The package's own [install] ignore patterns, so stow skips the files the
+    # package says belong in the repo rather than in $HOME.
+    cmd += [f"--ignore={pat}" for pat in package_ignores(pkg)]
+    cmd += ["-d", str(STOW_DIR), "-t", str(TARGET_DIR)] + args
     return subprocess.run(cmd, cwd=DOTFILES_DIR, capture_output=capture, text=True)
 
 
@@ -146,7 +172,7 @@ def run_stow_install(
 ) -> subprocess.CompletedProcess:
     """Stow a package as individual file symlinks, never a folded directory."""
     unfolded = unfold_pkg_dirs(pkg)
-    result = run_stow(args + ["-S", pkg], capture=capture)
+    result = run_stow(pkg, args + ["-S", pkg], capture=capture)
     if result.returncode != 0:
         refold_pkg_dirs(unfolded)
     return result
@@ -164,12 +190,13 @@ def get_stowed_packages() -> dict[str, list[Path]]:
         pkg_prefix = str(stow_resolved / pkg_name)
         links: list[Path] = []
 
+        ignored = ignore_matcher(pkg_name)
         for root, dirs, files in os.walk(pkg_dir):
             for name in list(dirs) + files:
-                if name in INSTALL_MANIFESTS:
-                    continue
                 stow_entry = Path(root) / name
                 rel = stow_entry.relative_to(pkg_dir)
+                if ignored(rel.as_posix()):
+                    continue
                 target_entry = TARGET_DIR / rel
                 if target_entry.is_symlink():
                     try:
@@ -198,7 +225,7 @@ def get_stowed_packages() -> dict[str, list[Path]]:
 
 def has_conflicts(pkg: str) -> bool:
     """Dry-run stow to check for conflicts."""
-    result = run_stow(["--simulate", "-S", pkg], capture=True)
+    result = run_stow(pkg, ["--simulate", "-S", pkg], capture=True)
     return result.returncode != 0
 
 
@@ -258,6 +285,7 @@ def _confirm(prompt: str) -> bool:
 #   overwrite = true                # on conflict, take the repo's version
 #   adopt = true                    # on conflict, absorb the live file
 #   reason = "COSMIC rewrites its config by atomic rename"
+#   ignore = ["\\.md$", "^docs/"]     # files in the package that stay in the repo
 #
 # apt/dnf are never executed: system package managers need sudo and differ per
 # host, so dots prints the command and leaves it to you. `system`-scope services
@@ -273,7 +301,7 @@ MANIFEST_TOP_KEYS = {
 }
 # Mutually exclusive, mirroring `dots install`'s own -c/-o/-a group.
 INSTALL_MODES = ("copy", "overwrite", "adopt")
-INSTALL_KEYS = set(INSTALL_MODES) | {"reason"}
+INSTALL_KEYS = set(INSTALL_MODES) | {"reason", "ignore"}
 MANIFEST_ITEM_KEYS = {
     "program": {
         "name",
@@ -355,12 +383,26 @@ def _as_list(value) -> list[str]:
     return [str(v) for v in value]
 
 
+# Parsed manifests, keyed by package. The drift walkers, the ignore matcher and
+# post_install all want the same file, and re-reading it would repeat every
+# validation warning once per caller.
+_MANIFEST_CACHE: dict[str, dict | None] = {}
+
+
 def load_manifest(pkg: str) -> dict | None:
     """Parse stow/<pkg>/.dots-install.toml, or None if absent/broken.
 
     Warnings are printed and the bad entry dropped rather than raised: a typo in
     a manifest must not stop a package from being stowed.
     """
+    if pkg in _MANIFEST_CACHE:
+        return _MANIFEST_CACHE[pkg]
+    manifest = _load_manifest_uncached(pkg)
+    _MANIFEST_CACHE[pkg] = manifest
+    return manifest
+
+
+def _load_manifest_uncached(pkg: str) -> dict | None:
     found = [p for p in (STOW_DIR / pkg / n for n in INSTALL_MANIFESTS) if p.is_file()]
     if not found:
         return None
@@ -398,10 +440,20 @@ def load_manifest(pkg: str) -> dict | None:
         bad(f"[install] {' and '.join(chosen)} are mutually exclusive — ignoring both")
         chosen = []
 
+    ignore = []
+    for pat in _as_list(install.get("ignore")):
+        try:
+            re.compile(pat)
+        except re.error as exc:
+            bad(f"[install] ignore: {pat!r} is not a valid regex ({exc}) — skipped")
+            continue
+        ignore.append(pat)
+
     manifest: dict = {
         "description": raw.get("description", ""),
         "mode": chosen[0] if chosen else None,
         "reason": install.get("reason", ""),
+        "ignore": ignore,
     }
     for section in ("program", "git", "command", "service"):
         entries = raw.get(section, [])
@@ -424,6 +476,60 @@ def load_manifest(pkg: str) -> dict | None:
             kept.append(entry)
         manifest[section] = kept
     return manifest
+
+
+def package_ignores(pkg: str) -> list[str]:
+    """The package's own --ignore patterns, from [install] ignore."""
+    manifest = load_manifest(pkg)
+    return list(manifest["ignore"]) if manifest else []
+
+
+def _uses_stow_ignore_file(pkg: str) -> bool:
+    """True if stow would read an ignore file instead of its built-in list.
+
+    stow prefers stow/<pkg>/.stow-local-ignore, then ~/.stow-global-ignore, and
+    falls back to the built-in list only if neither exists. This repo has
+    neither, but if one appears, mirroring the built-in list here would report
+    the wrong thing — so the built-in rules are dropped rather than guessed.
+    """
+    return (STOW_DIR / pkg / ".stow-local-ignore").exists() or (
+        TARGET_DIR / ".stow-global-ignore"
+    ).exists()
+
+
+def ignore_matcher(pkg: str):
+    r"""Return a predicate: would stow skip this package-relative path?
+
+    Mirrors Stow.pm's ignore() so the drift listing and --copy agree with what
+    stowing actually does:
+
+      * --ignore patterns  — stow wraps each as qr{($pat)\z}, so the pattern is
+        end-anchored but free at the start, matched against the package-relative
+        path (`--ignore=guide` does NOT match guide.md; `guide.*` does)
+      * built-in segments  — fully anchored against one path segment
+      * built-in paths     — matched against the path with a leading slash
+
+    stow tests every path as it descends, so a match on a parent directory
+    prunes its whole subtree; walking the prefixes reproduces that.
+    """
+    patterns = [
+        re.compile(f"({pat})\\Z") for pat in (STOW_IGNORE_RE, *package_ignores(pkg))
+    ]
+    builtins = not _uses_stow_ignore_file(pkg)
+
+    def ignored(rel: str) -> bool:
+        parts = rel.split("/")
+        for i in range(1, len(parts) + 1):
+            sub = "/".join(parts[:i])
+            if any(p.search(sub) for p in patterns):
+                return True
+            if builtins and _BUILTIN_SEGMENT_RE.match(parts[i - 1]):
+                return True
+            if builtins and _BUILTIN_PATH_RE.search("/" + sub):
+                return True
+        return False
+
+    return ignored
 
 
 def _program_label(prog: dict) -> str:
@@ -781,7 +887,7 @@ def cmd_remove(args: argparse.Namespace) -> int:
                 shutil.copytree(target, symlink)
 
         # Run stow -D to clean up any remaining state
-        run_stow(["-D", pkg])
+        run_stow(pkg, ["-D", pkg])
         print(f"Removed: {pkg} (files copied back to {TARGET_DIR})")
 
     return 0
@@ -801,11 +907,12 @@ def get_package_drift(
     repo_only: list[Path] = []
     unmanaged: list[Path] = []
 
+    ignored = ignore_matcher(pkg)
     for root, _dirs, files in os.walk(pkg_dir):
         for name in files:
-            if name in INSTALL_MANIFESTS:
-                continue
             rel = (Path(root) / name).relative_to(pkg_dir)
+            if ignored(rel.as_posix()):
+                continue
             target = TARGET_DIR / rel
 
             # Check if this target or any ancestor directory is already stow-managed
@@ -1023,15 +1130,18 @@ def _place_file(real_src: Path, dest: Path) -> int:
     return 1
 
 
-def _copy_install_tree(src: Path, dest: Path) -> int:
+def _copy_install_tree(src: Path, dest: Path, ignored, rel: str = "") -> int:
     """Copy src→dest as real files, dereferencing symlinks and replacing any
     existing dest (symlink or file) with an independent copy. Returns file count.
 
     Unlike stowing, this leaves no symlinks behind — useful for apps that save
     config via atomic rename (e.g. COSMIC), which would clobber a stow symlink.
+
+    `ignored` is the package's stow-equivalent ignore predicate, applied to the
+    package-relative path `rel` so copying skips exactly what stowing would.
     """
-    if src.name in INSTALL_MANIFESTS:
-        return 0  # package metadata, not a dotfile
+    if rel and ignored(rel):
+        return 0
     if src.is_symlink():
         try:
             real = src.resolve(strict=True)
@@ -1043,7 +1153,8 @@ def _copy_install_tree(src: Path, dest: Path) -> int:
                 dest.unlink()
             dest.mkdir(parents=True, exist_ok=True)
             for entry in real.iterdir():
-                count += _copy_install_tree(entry, dest / entry.name)
+                child = f"{rel}/{entry.name}" if rel else entry.name
+                count += _copy_install_tree(entry, dest / entry.name, ignored, child)
             return count
         return _place_file(real, dest)
     if src.is_dir():
@@ -1052,7 +1163,8 @@ def _copy_install_tree(src: Path, dest: Path) -> int:
             dest.unlink()
         dest.mkdir(parents=True, exist_ok=True)
         for entry in src.iterdir():
-            count += _copy_install_tree(entry, dest / entry.name)
+            child = f"{rel}/{entry.name}" if rel else entry.name
+            count += _copy_install_tree(entry, dest / entry.name, ignored, child)
         return count
     if src.is_file():
         return _place_file(src, dest)
@@ -1061,8 +1173,7 @@ def _copy_install_tree(src: Path, dest: Path) -> int:
 
 def copy_install(pkg: str) -> int:
     """Install a package by copying real files into the target (no symlinks)."""
-    pkg_path = STOW_DIR / pkg
-    return _copy_install_tree(pkg_path, TARGET_DIR)
+    return _copy_install_tree(STOW_DIR / pkg, TARGET_DIR, ignore_matcher(pkg))
 
 
 def cmd_adopt(args: argparse.Namespace) -> int:
@@ -1197,7 +1308,7 @@ def cmd_adopt(args: argparse.Namespace) -> int:
     if do_install:
         # Re-stow cleanly: unstow first (ignore failure if not currently stowed),
         # then re-stow with --adopt to absorb any straggling real files.
-        run_stow(["-D", args.package], capture=True)
+        run_stow(args.package, ["-D", args.package], capture=True)
         result = run_stow_install(["--adopt"], args.package)
         if result.returncode == 0:
             print(f"Installed: {args.package}")
