@@ -56,7 +56,13 @@ dots install -y zsh shell     # install a package and accept its post-install st
 cat "$(dots dir shell)/.dots-install.toml"   # see what a package declares
 ```
 
-See [scripts/dots.README.md](scripts/dots.README.md) for the file format.
+The same file can declare how a package wants to be installed, so you don't have
+to remember per-package flags — `stow/cosmic` sets `[install] copy = true`
+because COSMIC would otherwise clobber a symlink, and `dots install cosmic`
+just does the right thing.
+
+See [scripts/dots.README.md](scripts/dots.README.md) for the file format
+(`dots-install.toml` without the leading dot works too).
 
 Two things aren't tied to a single package and `dots checkhealth` checks them
 separately:

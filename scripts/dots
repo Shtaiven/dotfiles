@@ -17,12 +17,15 @@ DOTFILES_DIR = Path(__file__).resolve().parent.parent
 STOW_DIR = DOTFILES_DIR / "stow"
 TARGET_DIR = Path.home()
 
-# Per-package post-install manifest. Lives at stow/<pkg>/.dots-install.toml and
-# declares the programs, clones, commands and services the package's config
-# needs. It describes the package rather than belonging in $HOME, so stow is
+# Per-package post-install manifest. Lives at stow/<pkg>/.dots-install.toml (or
+# without the leading dot — both names work) and declares the programs, clones,
+# commands and services the package's config needs, plus the install mode it
+# wants. It describes the package rather than belonging in $HOME, so stow is
 # told to ignore it (STOW_IGNORE_RE) and the copy/drift walkers skip it too.
-INSTALL_MANIFEST = ".dots-install.toml"
-STOW_IGNORE_RE = r"\.dots-install\.toml"
+INSTALL_MANIFESTS = (".dots-install.toml", "dots-install.toml")
+# Anchored on both ends: stow's --ignore is a suffix match, so an unanchored
+# pattern would also swallow a real dotfile named e.g. theme.dots-install.toml.
+STOW_IGNORE_RE = r"^\.?dots-install\.toml$"
 
 
 def stow_force_overwrite(pkg: str) -> int:
@@ -163,7 +166,7 @@ def get_stowed_packages() -> dict[str, list[Path]]:
 
         for root, dirs, files in os.walk(pkg_dir):
             for name in list(dirs) + files:
-                if name == INSTALL_MANIFEST:
+                if name in INSTALL_MANIFESTS:
                     continue
                 stow_entry = Path(root) / name
                 rel = stow_entry.relative_to(pkg_dir)
@@ -249,11 +252,27 @@ def _confirm(prompt: str) -> bool:
 #   restart = true                  # default true
 #   note = "…"
 #
+#   [install]                       # how this package wants to be installed
+#   copy = true                     # always copy real files (like install --copy)
+#   overwrite = true                # on conflict, take the repo's version
+#   adopt = true                    # on conflict, absorb the live file
+#   reason = "COSMIC rewrites its config by atomic rename"
+#
 # apt/dnf are never executed: system package managers need sudo and differ per
 # host, so dots prints the command and leaves it to you. `system`-scope services
 # are printed the same way. Everything else is offered with a [y/N] prompt.
 
-MANIFEST_TOP_KEYS = {"description", "program", "git", "command", "service"}
+MANIFEST_TOP_KEYS = {
+    "description",
+    "install",
+    "program",
+    "git",
+    "command",
+    "service",
+}
+# Mutually exclusive, mirroring `dots install`'s own -c/-o/-a group.
+INSTALL_MODES = ("copy", "overwrite", "adopt")
+INSTALL_KEYS = set(INSTALL_MODES) | {"reason"}
 MANIFEST_ITEM_KEYS = {
     "program": {
         "name",
@@ -314,18 +333,24 @@ def load_manifest(pkg: str) -> dict | None:
     Warnings are printed and the bad entry dropped rather than raised: a typo in
     a manifest must not stop a package from being stowed.
     """
-    path = STOW_DIR / pkg / INSTALL_MANIFEST
-    if not path.is_file():
+    found = [p for p in (STOW_DIR / pkg / n for n in INSTALL_MANIFESTS) if p.is_file()]
+    if not found:
         return None
+    path = found[0]
+    if len(found) > 1:
+        # Both spellings present. Prefer the dotted one and say so, rather than
+        # silently applying one and leaving the other looking effective.
+        others = ", ".join(o.name for o in found[1:])
+        print(f"  {pkg}: using {path.name}, ignoring {others}")
     try:
         with path.open("rb") as fh:
             raw = tomllib.load(fh)
     except (OSError, tomllib.TOMLDecodeError) as exc:
-        print(f"  {INSTALL_MANIFEST}: could not read ({exc}) — ignoring")
+        print(f"  {pkg}/{path.name}: could not read ({exc}) — ignoring")
         return None
 
     def bad(msg: str) -> None:
-        print(f"  {pkg}/{INSTALL_MANIFEST}: {msg}")
+        print(f"  {pkg}/{path.name}: {msg}")
 
     for key in raw:
         if key not in MANIFEST_TOP_KEYS:
@@ -333,7 +358,23 @@ def load_manifest(pkg: str) -> dict | None:
                 f"unknown key '{key}' (expected: {', '.join(sorted(MANIFEST_TOP_KEYS))})"
             )
 
-    manifest: dict = {"description": raw.get("description", "")}
+    install = raw.get("install", {})
+    if not isinstance(install, dict):
+        bad("[install] is not a table — ignoring it")
+        install = {}
+    for key in install:
+        if key not in INSTALL_KEYS:
+            bad(f"[install] unknown key '{key}'")
+    chosen = [m for m in INSTALL_MODES if install.get(m)]
+    if len(chosen) > 1:
+        bad(f"[install] {' and '.join(chosen)} are mutually exclusive — ignoring both")
+        chosen = []
+
+    manifest: dict = {
+        "description": raw.get("description", ""),
+        "mode": chosen[0] if chosen else None,
+        "reason": install.get("reason", ""),
+    }
     for section in ("program", "git", "command", "service"):
         entries = raw.get(section, [])
         if isinstance(entries, dict):  # written as [program] instead of [[program]]
@@ -567,11 +608,17 @@ def _post_install_service(entry: dict, assume_yes: bool) -> None:
     print(f"  {unit}: enabled, {'active' if active else 'inactive'}")
 
 
-def post_install(pkg: str, assume_yes: bool = False, skip: bool = False) -> None:
+def post_install(
+    pkg: str,
+    assume_yes: bool = False,
+    skip: bool = False,
+    manifest: dict | None = None,
+) -> None:
     """Apply stow/<pkg>/.dots-install.toml after the package has been stowed."""
     if skip:
         return
-    manifest = load_manifest(pkg)
+    if manifest is None:
+        manifest = load_manifest(pkg)
     if not manifest:
         return
     for prog in manifest["program"]:
@@ -584,72 +631,96 @@ def post_install(pkg: str, assume_yes: bool = False, skip: bool = False) -> None
         _post_install_service(entry, assume_yes)
 
 
+def _resolve_install_mode(pkg: str, args: argparse.Namespace, manifest: dict | None):
+    """Pick copy/overwrite/adopt/None for a package.
+
+    An explicit CLI flag always wins over the manifest's [install] table, so a
+    one-off `dots install -a cosmic` still works on a package that declares
+    copy = true.
+    """
+    cli = next((m for m in INSTALL_MODES if getattr(args, m)), None)
+    declared = manifest["mode"] if manifest else None
+    if cli:
+        if declared and declared != cli:
+            print(f"  {pkg}: --{cli} overrides [install] {declared} = true")
+        return cli
+    if declared:
+        reason = manifest["reason"] if manifest else ""
+        print(
+            f"  {pkg}: installing with --{declared} per [install]"
+            + (f" — {reason}" if reason else "")
+        )
+    return declared
+
+
+def _install_one(
+    pkg: str, mode: str | None, args: argparse.Namespace, manifest: dict | None
+) -> int:
+    """Install a single package in `mode`. Returns a process exit code."""
+
+    def done(label: str) -> None:
+        print(f"Installed{label}: {pkg}")
+        post_install(pkg, assume_yes=args.yes, skip=args.no_post, manifest=manifest)
+
+    if mode == "copy":
+        count = copy_install(pkg)
+        done(f" (copied, {count} files)")
+        return 0
+
+    if not has_conflicts(pkg):
+        result = run_stow_install([], pkg)
+        if result.returncode != 0:
+            print(f"Failed to install: {pkg}", file=sys.stderr)
+            return result.returncode
+        done("")
+        return 0
+
+    if mode is None:
+        print(f"Conflicts detected for '{pkg}'.")
+        print("  [a]dopt existing files into dotfiles")
+        print("  [o]verwrite with dotfiles versions")
+        print("  [c]opy dotfiles versions in (real files, no symlinks)")
+        print("  [s]kip")
+        choice = input("  Choice [a/o/c/s]: ").strip().lower()
+        mode = {"a": "adopt", "o": "overwrite", "c": "copy"}.get(choice)
+        if mode is None:
+            print(f"Skipped: {pkg}")
+            return 0
+        if mode == "copy":
+            count = copy_install(pkg)
+            done(f" (copied, {count} files)")
+            return 0
+
+    if mode == "overwrite":
+        rc = stow_force_overwrite(pkg)
+        if rc != 0:
+            print(f"Failed to install: {pkg}", file=sys.stderr)
+            return rc
+        done(" (overwritten)")
+        return 0
+
+    result = run_stow_install(["--adopt"], pkg)  # mode == "adopt"
+    if result.returncode != 0:
+        print(f"Failed to adopt: {pkg}", file=sys.stderr)
+        return result.returncode
+    done(" (adopted existing files)")
+    return 0
+
+
 def cmd_install(args: argparse.Namespace) -> int:
     for pkg in args.packages:
-        pkg_path = STOW_DIR / pkg
-        if not pkg_path.is_dir():
+        if not (STOW_DIR / pkg).is_dir():
             print(f"Error: package '{pkg}' not found in {STOW_DIR}", file=sys.stderr)
             return 1
 
-        if args.copy:
-            count = copy_install(pkg)
-            print(f"Installed (copied): {pkg} ({count} files)")
-            post_install(pkg, assume_yes=args.yes, skip=args.no_post)
-            continue
-
-        conflicts = has_conflicts(pkg)
-
-        if not conflicts:
-            result = run_stow_install([], pkg)
-            if result.returncode == 0:
-                print(f"Installed: {pkg}")
-                post_install(pkg, assume_yes=args.yes, skip=args.no_post)
-            else:
-                print(f"Failed to install: {pkg}", file=sys.stderr)
-                return result.returncode
-            continue
-
-        if args.overwrite:
-            rc = stow_force_overwrite(pkg)
-            if rc != 0:
-                print(f"Failed to install: {pkg}", file=sys.stderr)
-                return rc
-            print(f"Installed (overwritten): {pkg}")
-            post_install(pkg, assume_yes=args.yes, skip=args.no_post)
-        elif args.adopt:
-            result = run_stow_install(["--adopt"], pkg)
-            if result.returncode == 0:
-                print(f"Installed (adopted existing files): {pkg}")
-                post_install(pkg, assume_yes=args.yes, skip=args.no_post)
-            else:
-                print(f"Failed to adopt: {pkg}", file=sys.stderr)
-                return result.returncode
-        else:
-            print(f"Conflicts detected for '{pkg}'.")
-            print("  [a]dopt existing files into dotfiles")
-            print("  [o]verwrite with dotfiles versions")
-            print("  [c]opy dotfiles versions in (real files, no symlinks)")
-            print("  [s]kip")
-            choice = input("  Choice [a/o/c/s]: ").strip().lower()
-            if choice == "a":
-                result = run_stow_install(["--adopt"], pkg)
-                if result.returncode == 0:
-                    print(f"Installed (adopted): {pkg}")
-                    post_install(pkg, assume_yes=args.yes, skip=args.no_post)
-                else:
-                    return result.returncode
-            elif choice == "o":
-                rc = stow_force_overwrite(pkg)
-                if rc != 0:
-                    return rc
-                print(f"Installed (overwritten): {pkg}")
-                post_install(pkg, assume_yes=args.yes, skip=args.no_post)
-            elif choice == "c":
-                count = copy_install(pkg)
-                print(f"Installed (copied): {pkg} ({count} files)")
-                post_install(pkg, assume_yes=args.yes, skip=args.no_post)
-            else:
-                print(f"Skipped: {pkg}")
+        # Parse once and hand it down: post_install would otherwise re-read the
+        # file and repeat any validation warnings.
+        manifest = load_manifest(pkg)
+        rc = _install_one(
+            pkg, _resolve_install_mode(pkg, args, manifest), args, manifest
+        )
+        if rc != 0:
+            return rc
 
     return 0
 
@@ -700,7 +771,7 @@ def get_package_drift(
 
     for root, _dirs, files in os.walk(pkg_dir):
         for name in files:
-            if name == INSTALL_MANIFEST:
+            if name in INSTALL_MANIFESTS:
                 continue
             rel = (Path(root) / name).relative_to(pkg_dir)
             target = TARGET_DIR / rel
@@ -926,7 +997,7 @@ def _copy_install_tree(src: Path, dest: Path) -> int:
     Unlike stowing, this leaves no symlinks behind — useful for apps that save
     config via atomic rename (e.g. COSMIC), which would clobber a stow symlink.
     """
-    if src.name == INSTALL_MANIFEST:
+    if src.name in INSTALL_MANIFESTS:
         return 0  # package metadata, not a dotfile
     if src.is_symlink():
         try:
@@ -978,18 +1049,23 @@ def cmd_adopt(args: argparse.Namespace) -> int:
 
     if pkg_path.exists() and args.overwrite:
         # The manifest describes the package and is never adopted from $HOME,
-        # so a wipe would lose it for good. Stash and restore it.
-        manifest_src = pkg_path / INSTALL_MANIFEST
-        manifest_body = manifest_src.read_bytes() if manifest_src.is_file() else None
+        # so a wipe would lose it for good. Stash and restore whichever
+        # spellings are there.
+        stashed = {
+            m.name: m.read_bytes()
+            for m in (pkg_path / n for n in INSTALL_MANIFESTS)
+            if m.is_file()
+        }
         if dry:
             print(f"  Would rmtree: {pkg_path}")
-            if manifest_body is not None:
-                print(f"  Would keep:   {args.package}/{INSTALL_MANIFEST}")
+            for name in stashed:
+                print(f"  Would keep:   {args.package}/{name}")
         else:
             shutil.rmtree(pkg_path)
-            if manifest_body is not None:
+            if stashed:
                 pkg_path.mkdir(parents=True, exist_ok=True)
-                (pkg_path / INSTALL_MANIFEST).write_bytes(manifest_body)
+                for name, body in stashed.items():
+                    (pkg_path / name).write_bytes(body)
 
     if not dry:
         pkg_path.mkdir(parents=True, exist_ok=True)
@@ -1386,7 +1462,7 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
 
     if not manifests:
         section("Package dependencies")
-        warn(f"No package declares a {INSTALL_MANIFEST}")
+        warn(f"No package declares a {INSTALL_MANIFESTS[0]}")
     else:
         unstowed: list[str] = []
         for pkg, manifest in manifests.items():
@@ -1685,11 +1761,15 @@ def main() -> int:
             "into the package), overwrite (replace with the package's version,\n"
             "saving a timestamped backup), or skip.\n"
             "\n"
-            f"After stowing, a package's {INSTALL_MANIFEST} (if present) is applied:\n"
-            "declared programs are offered via pixi or flatpak, git clones and\n"
-            "installer commands are offered, and systemd user units are reloaded\n"
-            "and enabled or restarted. Every install is prompted [y/N]; apt/dnf\n"
-            "commands are printed for you to run, never executed."
+            f"A package's {INSTALL_MANIFESTS[0]} (or dots-install.toml) can set\n"
+            "the mode itself via [install], so `dots install cosmic` copies with\n"
+            "no flag to remember; an explicit flag here overrides it.\n"
+            "\n"
+            "After stowing, the rest of that file is applied: declared programs\n"
+            "are offered via pixi or flatpak, git clones and installer commands\n"
+            "are offered, and systemd user units are reloaded and enabled or\n"
+            "restarted. Every install is prompted [y/N]; apt/dnf commands are\n"
+            "printed for you to run, never executed."
         ),
         epilog=(
             "Examples:\n"
@@ -1705,22 +1785,27 @@ def main() -> int:
     )
     p_install.add_argument("packages", nargs="+", help="Package names to install")
     conflict_group = p_install.add_mutually_exclusive_group()
+    # default=None, not False, so _resolve_install_mode can tell "you didn't ask"
+    # from "you asked for something else" and let the flag beat [install].
     conflict_group.add_argument(
         "-o",
         "--overwrite",
         action="store_true",
+        default=None,
         help="On conflict, replace target with the package version (backs up the original)",
     )
     conflict_group.add_argument(
         "-a",
         "--adopt",
         action="store_true",
+        default=None,
         help="On conflict, move the existing file into the package and symlink it",
     )
     conflict_group.add_argument(
         "-c",
         "--copy",
         action="store_true",
+        default=None,
         help="Copy real files into the target instead of symlinking (overwrites existing); "
         "for apps that save via atomic rename and would clobber stow symlinks (e.g. COSMIC)",
     )
@@ -1729,12 +1814,12 @@ def main() -> int:
         "--yes",
         action="store_true",
         help="Accept every post-install action in the package's "
-        f"{INSTALL_MANIFEST} without prompting",
+        f"{INSTALL_MANIFESTS[0]} without prompting",
     )
     p_install.add_argument(
         "--no-post",
         action="store_true",
-        help=f"Stow only — skip the package's {INSTALL_MANIFEST} entirely",
+        help=f"Stow only — skip the package's {INSTALL_MANIFESTS[0]} entirely",
     )
     p_install.set_defaults(func=cmd_install)
 
@@ -1969,7 +2054,7 @@ def main() -> int:
             "GNU Stow is installed, the repo lives where expected, the `dots`\n"
             "command is on PATH, and Nerd Fonts are available.\n"
             "\n"
-            f"Each stowed package that ships a {INSTALL_MANIFEST} then gets its\n"
+            f"Each stowed package that ships a {INSTALL_MANIFESTS[0]} then gets its\n"
             "own section, reporting whether the programs, clones, installer\n"
             "commands and systemd units it declares are present. Packages that\n"
             "declare dependencies but aren't stowed are listed at the end."
