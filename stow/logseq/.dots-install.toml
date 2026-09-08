@@ -1,0 +1,12 @@
+description = "Logseq notes app: preferences, plugin list and per-plugin settings"
+
+[[program]]
+name = "Logseq"
+flatpak = "com.logseq.Logseq"
+note = "the app these settings belong to; the Flathub build gets filesystems=home, so it reads ~/.logseq directly"
+
+[[command]]
+name = "Logseq plugins"
+run = "$DOTFILES_DIR/scripts/installers/logseq-plugins.py"
+check_cmd = "$DOTFILES_DIR/scripts/installers/logseq-plugins.py --check"
+note = "fetches the plugins pinned in plugins.edn from their GitHub releases into ~/.logseq/plugins"

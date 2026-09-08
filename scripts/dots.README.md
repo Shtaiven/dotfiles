@@ -111,7 +111,8 @@ recursive = true                       # clone --recursive
 
 [[command]]                            # an installer to offer
 name = "nnn plugins"
-run = "curl -Ls .../getplugs | sh"     # runs via `sh -c`
+run = "curl -Ls .../getplugs | sh"     # runs via `sh -c`; $DOTFILES_DIR and
+                                       # $STOW_DIR point at this repo
 check = "~/.config/nnn/plugins/preview-tui"   # path that exists once done
 check_cmd = "..."                      # ...or a command whose exit status is the probe
 requires = ["curl"]                    # binaries needed to run it
@@ -130,7 +131,9 @@ reason = "COSMIC rewrites its config by atomic rename"
 ```
 
 Paths take `~` and `$VARS`, with `$XDG_CONFIG_HOME` and friends falling back to
-their spec defaults when the host never exported them. A malformed file, an
+their spec defaults when the host never exported them, and `$DOTFILES_DIR` /
+`$STOW_DIR` always pointing at this repo — so a `[[command]]` can call an
+installer kept in `scripts/installers/` instead of inlining a long pipeline. A malformed file, an
 entry missing a required key,
 or an unknown key is reported and skipped — a typo in a manifest never blocks a
 package from being stowed.
@@ -184,6 +187,7 @@ enabled. Disable those yourself if you mean to.
 | `starship` | starship |
 | `tmux` | tmux, fzf |
 | `wezterm` | wezterm (manual) |
+| `logseq` | Logseq flatpak, the plugins pinned in `plugins.edn` |
 | `zsh` | zsh, Prezto clone |
 | `cosmic` | nothing to install — declares `[install] copy = true` |
 

@@ -239,7 +239,8 @@ def _confirm(prompt: str) -> bool:
 #
 #   [[command]]                     # arbitrary installer to offer
 #   name = "nnn plugins"            # required
-#   run  = "curl -Ls … | sh"        # required; runs via `sh -c`
+#   run  = "curl -Ls … | sh"        # required; runs via `sh -c`, with
+#                                   # $DOTFILES_DIR and $STOW_DIR available
 #   check = "~/.config/nnn/plugins/preview-tui"   # path that exists once done
 #   check_cmd = "…"                 # or a command whose exit status is the probe
 #   requires = ["curl"]             # binaries needed to run it
@@ -310,12 +311,39 @@ XDG_DEFAULTS = {
 }
 
 
+def _export_repo_vars() -> None:
+    """Put the repo's paths in the environment for manifest commands to use."""
+    os.environ.setdefault("DOTFILES_DIR", str(DOTFILES_DIR))
+    os.environ.setdefault("STOW_DIR", str(STOW_DIR))
+
+
+def manifest_env() -> dict[str, str]:
+    """Environment for manifest commands, with the repo's own paths added.
+
+    Lets a [[command]] point at an installer that lives in the repo
+    ($DOTFILES_DIR/scripts/installers/…) instead of duplicating a long shell
+    pipeline inside the TOML.
+    """
+    return {
+        **os.environ,
+        "DOTFILES_DIR": str(DOTFILES_DIR),
+        "STOW_DIR": str(STOW_DIR),
+    }
+
+
 def _expand(value: str) -> Path:
-    """Expand ~ and $VARS in a manifest path, filling in the XDG defaults."""
-    for var, default in XDG_DEFAULTS.items():
-        if not os.environ.get(var):
-            resolved = str(Path(default).expanduser())
-            value = value.replace(f"${{{var}}}", resolved).replace(f"${var}", resolved)
+    """Expand ~ and $VARS in a manifest path, filling in the defaults.
+
+    $DOTFILES_DIR and $STOW_DIR always resolve to this repo; the XDG_*_HOME
+    variables fall back to their spec defaults when the host never set them.
+    """
+    for var, default in (
+        ("DOTFILES_DIR", str(DOTFILES_DIR)),
+        ("STOW_DIR", str(STOW_DIR)),
+        *((v, d) for v, d in XDG_DEFAULTS.items() if not os.environ.get(v)),
+    ):
+        resolved = str(Path(default).expanduser())
+        value = value.replace(f"${{{var}}}", resolved).replace(f"${var}", resolved)
     return Path(os.path.expandvars(os.path.expanduser(value)))
 
 
@@ -457,13 +485,15 @@ def _manual_hints(prog: dict) -> list[str]:
 
 def _offer(label: str, cmd: list[str] | str, assume_yes: bool) -> bool:
     """Print a command and run it, prompting first unless assume_yes."""
-    shown = cmd if isinstance(cmd, str) else " ".join(cmd)
+    # Show it expanded: you're being asked to approve this, so $DOTFILES_DIR
+    # should read as the path it will actually run.
+    shown = os.path.expandvars(cmd) if isinstance(cmd, str) else " ".join(cmd)
     print(f"         {shown}")
     if not assume_yes and not _confirm("         Run it? [y/N] "):
         print(f"  {label}: skipped")
         return False
     if isinstance(cmd, str):
-        result = subprocess.run(["sh", "-c", cmd])
+        result = subprocess.run(["sh", "-c", cmd], env=manifest_env())
     else:
         result = subprocess.run(cmd)
     if result.returncode == 0:
@@ -528,7 +558,9 @@ def _command_done(entry: dict) -> bool:
     if entry.get("check_cmd"):
         return (
             subprocess.run(
-                ["sh", "-c", str(entry["check_cmd"])], capture_output=True
+                ["sh", "-c", str(entry["check_cmd"])],
+                capture_output=True,
+                env=manifest_env(),
             ).returncode
             == 0
         )
@@ -939,6 +971,7 @@ def _merge_copy(
     live files are left behind, and no directory is created just to hold them.
     Returns (copied, skipped) file counts.
     """
+
     def place(real: Path, d: Path) -> tuple[int, int]:
         if tracked is not None and d not in tracked:
             return 0, 1
@@ -2084,6 +2117,7 @@ def main() -> int:
     p_completion.set_defaults(func=cmd_completion)
 
     args = parser.parse_args()
+    _export_repo_vars()
     if args.command is None:
         parser.print_help()
         return 0

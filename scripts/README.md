@@ -24,3 +24,5 @@ Small checks wired into `.pre-commit-config.yaml`:
   `gnome-extension-load.sh`, `gnome-restart.sh`.
 * **`installers/`** — one-off installers for tools that aren't packaged via stow
   (`nvim.sh`, `kitty.sh`, `wezterm.sh`, `zellij.sh`, webi packages, `update.sh`).
+  `logseq-plugins.py` is called by `stow/logseq/.dots-install.toml`; run it
+  directly with `--list`, `--dry-run` or `--force` to manage Logseq plugins.
