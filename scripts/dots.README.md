@@ -128,6 +128,7 @@ copy = true                            # same as `dots install --copy`
 overwrite = true                       # same as -o; on conflict, take the repo's version
 adopt = true                           # same as -a; on conflict, absorb the live file
 reason = "COSMIC rewrites its config by atomic rename"
+ignore = ["\\.md$", "^docs"]            # files that stay in the repo, never installed
 ```
 
 Paths take `~` and `$VARS`, with `$XDG_CONFIG_HOME` and friends falling back to
@@ -158,6 +159,40 @@ An explicit flag on the command line always wins, so a one-off
 on every install; `overwrite` and `adopt` only engage when there's a conflict,
 exactly as the flags do. There is deliberately no way to declare `-y`: whether
 to install software without being asked stays your call, not a package's.
+
+### Keeping files out of `~` (`[install] ignore`)
+
+Not everything in a package belongs in your home directory — notes, docs, an
+upstream bundle's README. List regexes in `ignore` and those files stay in the
+repo:
+
+```toml
+[install]
+ignore = ["\\.md$", "^docs"]
+```
+
+They're passed to stow as `--ignore`, and `dots` applies the identical rules in
+`dots list` and `dots install --copy`, so all three agree on what gets skipped.
+
+Two things about the syntax, both inherited from stow:
+
+* **Patterns are anchored at the end, not the start.** stow compiles each one as
+  `($pattern)\z`, so `ignore = ["guide"]` does *not* match `guide.md` — use
+  `guide.*` or `\.md$`. They match against the file's path within the package,
+  so `^docs` and `\.md$` both work, and a pattern that matches a directory
+  prunes everything under it.
+* **Ignoring by extension still creates the parent directory.** `\.md$` leaves
+  an empty `~/.config/app/docs/`, because stow creates the directory before
+  finding nothing to link there. Ignore the directory instead (`^docs`, or
+  `^\.config/app/docs`) and it's skipped entirely.
+
+`dots` also mirrors stow's own built-in ignore list, so a package's top-level
+`README.*`, `LICENSE.*` and `COPYING`, plus `.git*`, editor backups and VCS
+directories at any depth, are skipped without being declared — and no longer
+show up as permanently "not linked" in `dots list`. (If a package grows a
+`.stow-local-ignore`, or you add `~/.stow-global-ignore`, stow uses that instead
+of its built-in list; `dots` notices and stops applying the built-in rules
+rather than reporting something stow wouldn't do.)
 
 ### What dots will and won't run
 
