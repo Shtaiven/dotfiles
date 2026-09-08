@@ -1,6 +1,14 @@
 [Unit]
 Description=Smile Autopaste Service for Smile
+# wtype needs WAYLAND_DISPLAY, which the compositor only publishes to the user
+# manager (via `systemctl --user import-environment`) just before it activates
+# graphical-session.target. Binding to default.target started this too early,
+# so the process inherited no WAYLAND_DISPLAY and every wtype call died with
+# "Wayland connection failed". PartOf= additionally ties the service's lifetime
+# to the session, so a compositor restart hands it the new socket instead of
+# leaving it attached to a dead one.
 After=graphical-session.target
+PartOf=graphical-session.target
 
 [Service]
 Type=simple
@@ -9,4 +17,4 @@ Restart=on-failure
 RestartSec=5
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target
