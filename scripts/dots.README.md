@@ -73,9 +73,14 @@ dots adopt -c -t cosmic ~/.config/cosmic  # refresh only what's already tracked
 
 A package declares what it needs in `stow/<pkg>/.dots-install.toml`, next to the
 config it belongs to — no per-package branches inside `dots`. `dots install`
-applies it after stowing, and `dots checkhealth` reports it. The file is stow's
-only ignored name (`--ignore='\.dots-install\.toml'`), so it never lands in `~`;
-the copy-install, drift and `adopt --overwrite` paths skip it too.
+applies it after stowing, and `dots checkhealth` reports it.
+
+`dots-install.toml` without the leading dot works identically; pick whichever
+you prefer to see in `ls`. If a package somehow has both, the dotted one wins
+and `dots` says which it ignored. Either name is invisible to stow
+(`--ignore='^\.?dots-install\.toml$'`, anchored so a real dotfile like
+`theme.dots-install.toml` still installs normally), and the copy-install, drift
+and `adopt --overwrite` paths skip it too.
 
 Every install is a `[y/N]` prompt that prints the exact command first. `-y` /
 `--yes` accepts them all (useful on a fresh machine), `--no-post` skips the file
@@ -116,6 +121,12 @@ unit = "smile-autopaste.service"
 scope = "user"                         # "user" (default) or "system"
 enable = true                          # default true
 restart = true                         # default true
+
+[install]                              # how this package wants to be installed
+copy = true                            # same as `dots install --copy`
+overwrite = true                       # same as -o; on conflict, take the repo's version
+adopt = true                           # same as -a; on conflict, absorb the live file
+reason = "COSMIC rewrites its config by atomic rename"
 ```
 
 Paths take `~` and `$VARS`, with `$XDG_CONFIG_HOME` and friends falling back to
@@ -123,6 +134,27 @@ their spec defaults when the host never exported them. A malformed file, an
 entry missing a required key,
 or an unknown key is reported and skipped — a typo in a manifest never blocks a
 package from being stowed.
+
+### Declaring the install mode (`[install]`)
+
+Some packages only work one way. COSMIC saves settings by atomic rename, which
+replaces a stow symlink with a real file, so `stow/cosmic` declares:
+
+```toml
+[install]
+copy = true
+reason = "COSMIC saves settings by atomic rename, ..."
+```
+
+`dots install cosmic` then copies real files with no flag to remember, printing
+the `reason` so it's clear why. The three modes are mutually exclusive — declare
+two and both are ignored with a warning.
+
+An explicit flag on the command line always wins, so a one-off
+`dots install -a cosmic` still works and says what it overrode. `copy` applies
+on every install; `overwrite` and `adopt` only engage when there's a conflict,
+exactly as the flags do. There is deliberately no way to declare `-y`: whether
+to install software without being asked stays your call, not a package's.
 
 ### What dots will and won't run
 
@@ -153,6 +185,7 @@ enabled. Disable those yourself if you mean to.
 | `tmux` | tmux, fzf |
 | `wezterm` | wezterm (manual) |
 | `zsh` | zsh, Prezto clone |
+| `cosmic` | nothing to install — declares `[install] copy = true` |
 
 ## Examples
 

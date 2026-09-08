@@ -1,0 +1,5 @@
+description = "COSMIC desktop settings"
+
+[install]
+copy = true
+reason = "COSMIC saves settings by atomic rename, which replaces a stow symlink with a real file"
