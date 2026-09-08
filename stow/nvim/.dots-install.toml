@@ -1,0 +1,6 @@
+description = "Neovim configuration"
+
+[[program]]
+name = "nvim"
+pixi = "nvim"
+expose = ["nvim"]

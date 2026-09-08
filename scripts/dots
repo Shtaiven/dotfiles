@@ -9,12 +9,20 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 import urllib.request
 from pathlib import Path
 
 DOTFILES_DIR = Path(__file__).resolve().parent.parent
 STOW_DIR = DOTFILES_DIR / "stow"
 TARGET_DIR = Path.home()
+
+# Per-package post-install manifest. Lives at stow/<pkg>/.dots-install.toml and
+# declares the programs, clones, commands and services the package's config
+# needs. It describes the package rather than belonging in $HOME, so stow is
+# told to ignore it (STOW_IGNORE_RE) and the copy/drift walkers skip it too.
+INSTALL_MANIFEST = ".dots-install.toml"
+STOW_IGNORE_RE = r"\.dots-install\.toml"
 
 
 def stow_force_overwrite(pkg: str) -> int:
@@ -68,7 +76,15 @@ def run_stow(args: list[str], capture: bool = False) -> subprocess.CompletedProc
     # doesn't exist yet: real directories are created and only files are linked.
     # That way an app writing a new file into ~/.config/<app> can't drop it into
     # the repo, and untracked siblings can live next to stowed files.
-    cmd = ["stow", "--no-folding", "-d", str(STOW_DIR), "-t", str(TARGET_DIR)] + args
+    cmd = [
+        "stow",
+        "--no-folding",
+        f"--ignore={STOW_IGNORE_RE}",
+        "-d",
+        str(STOW_DIR),
+        "-t",
+        str(TARGET_DIR),
+    ] + args
     return subprocess.run(cmd, cwd=DOTFILES_DIR, capture_output=capture, text=True)
 
 
@@ -147,6 +163,8 @@ def get_stowed_packages() -> dict[str, list[Path]]:
 
         for root, dirs, files in os.walk(pkg_dir):
             for name in list(dirs) + files:
+                if name == INSTALL_MANIFEST:
+                    continue
                 stow_entry = Path(root) / name
                 rel = stow_entry.relative_to(pkg_dir)
                 target_entry = TARGET_DIR / rel
@@ -189,81 +207,381 @@ def _confirm(prompt: str) -> bool:
         return False
 
 
-def post_install(pkg: str) -> None:
-    """Run post-install hooks for specific packages."""
-    if pkg == "zsh":
-        zprezto = Path.home() / ".zprezto"
-        if not zprezto.exists():
-            if not shutil.which("git"):
-                print("  Prezto: skipped (git not found)")
-            elif _confirm("  Install Prezto? [y/N] "):
-                print("  Installing Prezto...")
-                subprocess.run(
-                    [
-                        "git",
-                        "clone",
-                        "--recursive",
-                        "https://github.com/sorin-ionescu/prezto.git",
-                        str(zprezto),
-                    ],
-                )
-            else:
-                print("  Prezto: skipped")
-        else:
-            print("  Prezto: already installed")
-    elif pkg == "shell":
-        plugins_dir = (
-            Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
-            / "nnn"
-            / "plugins"
-        )
-        if not (plugins_dir / "preview-tui").exists():
-            if not shutil.which("curl"):
-                print("  nnn plugins: skipped (curl not found)")
-            elif _confirm("  Install nnn plugins? [y/N] "):
-                print("  Installing nnn plugins...")
-                subprocess.run(
-                    [
-                        "sh",
-                        "-c",
-                        "curl -Ls https://raw.githubusercontent.com/jarun/nnn/master/plugins/getplugs | sh",
-                    ],
-                )
-            else:
-                print("  nnn plugins: skipped")
-        else:
-            print("  nnn plugins: already installed")
-    elif pkg == "smile":
-        app_id = "it.mijorus.smile"
+# ── .dots-install.toml ───────────────────────────────────────────────────────
+#
+# Schema (every table is optional, every table is an array of tables):
+#
+#   description = "one-line summary, shown by checkhealth"
+#
+#   [[program]]                     # something that must be on the system
+#   name  = "bat"                   # required; display name
+#   bin   = ["bat", "batcat"]       # binaries to probe (default: [name])
+#   pixi  = "bat"                   # `pixi global install <spec>`
+#   expose = ["bat"]                # `--expose` names for the pixi install
+#   flatpak = "it.mijorus.smile"    # `flatpak install <remote> <id>`
+#   flatpak_remote = "flathub"      # default "flathub"
+#   apt = "wtype"                   # printed as instructions, never run
+#   dnf = "wtype"                   # printed as instructions, never run
+#   manual = "https://…"            # printed as instructions
+#   note = "why the package needs it"
+#   optional = true                 # checkhealth warns instead of erroring
+#
+#   [[git]]                         # a clone the config sources at runtime
+#   name = "Prezto"                 # required
+#   repo = "https://…"              # required
+#   dest = "~/.zprezto"             # required
+#   check = "~/.zprezto/init.zsh"   # presence probe (default: dest)
+#   recursive = true                # clone --recursive
+#   note = "…"
+#
+#   [[command]]                     # arbitrary installer to offer
+#   name = "nnn plugins"            # required
+#   run  = "curl -Ls … | sh"        # required; runs via `sh -c`
+#   check = "~/.config/nnn/plugins/preview-tui"   # path that exists once done
+#   check_cmd = "…"                 # or a command whose exit status is the probe
+#   requires = ["curl"]             # binaries needed to run it
+#   note = "…"
+#
+#   [[service]]                     # systemd unit shipped by the package
+#   unit = "smile-autopaste.service"   # required
+#   scope = "user"                  # "user" (default) or "system"
+#   enable = true                   # default true
+#   restart = true                  # default true
+#   note = "…"
+#
+# apt/dnf are never executed: system package managers need sudo and differ per
+# host, so dots prints the command and leaves it to you. `system`-scope services
+# are printed the same way. Everything else is offered with a [y/N] prompt.
+
+MANIFEST_TOP_KEYS = {"description", "program", "git", "command", "service"}
+MANIFEST_ITEM_KEYS = {
+    "program": {
+        "name",
+        "bin",
+        "pixi",
+        "expose",
+        "flatpak",
+        "flatpak_remote",
+        "apt",
+        "dnf",
+        "manual",
+        "note",
+        "optional",
+    },
+    "git": {"name", "repo", "dest", "check", "recursive", "note"},
+    "command": {"name", "run", "check", "check_cmd", "requires", "note"},
+    "service": {"unit", "scope", "enable", "restart", "note"},
+}
+MANIFEST_REQUIRED = {
+    "program": ("name",),
+    "git": ("name", "repo", "dest"),
+    "command": ("name", "run"),
+    "service": ("unit",),
+}
+
+
+# Manifests should be able to write $XDG_CONFIG_HOME without caring whether the
+# host actually exported it: expandvars leaves an unset variable in the string
+# verbatim, which would make a presence probe silently fail forever.
+XDG_DEFAULTS = {
+    "XDG_CONFIG_HOME": "~/.config",
+    "XDG_DATA_HOME": "~/.local/share",
+    "XDG_STATE_HOME": "~/.local/state",
+    "XDG_CACHE_HOME": "~/.cache",
+}
+
+
+def _expand(value: str) -> Path:
+    """Expand ~ and $VARS in a manifest path, filling in the XDG defaults."""
+    for var, default in XDG_DEFAULTS.items():
+        if not os.environ.get(var):
+            resolved = str(Path(default).expanduser())
+            value = value.replace(f"${{{var}}}", resolved).replace(f"${var}", resolved)
+    return Path(os.path.expandvars(os.path.expanduser(value)))
+
+
+def _as_list(value) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return [str(v) for v in value]
+
+
+def load_manifest(pkg: str) -> dict | None:
+    """Parse stow/<pkg>/.dots-install.toml, or None if absent/broken.
+
+    Warnings are printed and the bad entry dropped rather than raised: a typo in
+    a manifest must not stop a package from being stowed.
+    """
+    path = STOW_DIR / pkg / INSTALL_MANIFEST
+    if not path.is_file():
+        return None
+    try:
+        with path.open("rb") as fh:
+            raw = tomllib.load(fh)
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        print(f"  {INSTALL_MANIFEST}: could not read ({exc}) — ignoring")
+        return None
+
+    def bad(msg: str) -> None:
+        print(f"  {pkg}/{INSTALL_MANIFEST}: {msg}")
+
+    for key in raw:
+        if key not in MANIFEST_TOP_KEYS:
+            bad(
+                f"unknown key '{key}' (expected: {', '.join(sorted(MANIFEST_TOP_KEYS))})"
+            )
+
+    manifest: dict = {"description": raw.get("description", "")}
+    for section in ("program", "git", "command", "service"):
+        entries = raw.get(section, [])
+        if isinstance(entries, dict):  # written as [program] instead of [[program]]
+            entries = [entries]
+        kept = []
+        for i, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                bad(f"[[{section}]] #{i + 1} is not a table — skipped")
+                continue
+            missing = [k for k in MANIFEST_REQUIRED[section] if not entry.get(k)]
+            if missing:
+                bad(f"[[{section}]] #{i + 1} missing {', '.join(missing)} — skipped")
+                continue
+            for key in entry:
+                if key not in MANIFEST_ITEM_KEYS[section]:
+                    bad(
+                        f"[[{section}]] '{entry[MANIFEST_REQUIRED[section][0]]}': unknown key '{key}'"
+                    )
+            kept.append(entry)
+        manifest[section] = kept
+    return manifest
+
+
+def _program_label(prog: dict) -> str:
+    label = str(prog["name"])
+    if prog.get("note"):
+        label += f" — {prog['note']}"
+    return label
+
+
+def _flatpak_installed(app_id: str) -> bool:
+    if not shutil.which("flatpak"):
+        return False
+    return (
+        subprocess.run(["flatpak", "info", app_id], capture_output=True).returncode == 0
+    )
+
+
+def _program_present(prog: dict) -> tuple[bool, str]:
+    """Is the program installed? Returns (present, how-we-found-it)."""
+    for candidate in _as_list(prog.get("bin")) or [str(prog["name"])]:
+        found = shutil.which(candidate)
+        if found:
+            return True, found
+    if prog.get("flatpak"):
         if not shutil.which("flatpak"):
-            print(f"  {app_id}: skipped check (flatpak not found)")
-        elif (
-            subprocess.run(["flatpak", "info", app_id], capture_output=True).returncode
+            return False, "flatpak not installed — cannot check"
+        if _flatpak_installed(str(prog["flatpak"])):
+            return True, f"flatpak app {prog['flatpak']}"
+    return False, "not found"
+
+
+def _pixi_cmd(prog: dict) -> list[str] | None:
+    if not prog.get("pixi"):
+        return None
+    cmd = ["pixi", "global", "install"]
+    for name in _as_list(prog.get("expose")):
+        cmd += ["--expose", name]
+    return cmd + [str(prog["pixi"])]
+
+
+def _flatpak_cmd(prog: dict) -> list[str] | None:
+    if not prog.get("flatpak"):
+        return None
+    remote = str(prog.get("flatpak_remote", "flathub"))
+    return ["flatpak", "install", "-y", remote, str(prog["flatpak"])]
+
+
+def _manual_hints(prog: dict) -> list[str]:
+    """Instructions dots will not run itself (sudo package managers, URLs)."""
+    hints = []
+    if prog.get("apt"):
+        hints.append(f"sudo apt install {prog['apt']}")
+    if prog.get("dnf"):
+        hints.append(f"sudo dnf install {prog['dnf']}")
+    if prog.get("manual"):
+        hints.append(str(prog["manual"]))
+    return hints
+
+
+def _offer(label: str, cmd: list[str] | str, assume_yes: bool) -> bool:
+    """Print a command and run it, prompting first unless assume_yes."""
+    shown = cmd if isinstance(cmd, str) else " ".join(cmd)
+    print(f"         {shown}")
+    if not assume_yes and not _confirm("         Run it? [y/N] "):
+        print(f"  {label}: skipped")
+        return False
+    if isinstance(cmd, str):
+        result = subprocess.run(["sh", "-c", cmd])
+    else:
+        result = subprocess.run(cmd)
+    if result.returncode == 0:
+        print(f"  {label}: installed")
+        return True
+    print(f"  {label}: failed (exit {result.returncode})")
+    return False
+
+
+def _post_install_program(prog: dict, assume_yes: bool) -> None:
+    label = str(prog["name"])
+    present, how = _program_present(prog)
+    if present:
+        print(f"  {label}: already installed ({how})")
+        return
+
+    print(
+        f"  {label}: not installed" + (f" — {prog['note']}" if prog.get("note") else "")
+    )
+    for cmd in (_pixi_cmd(prog), _flatpak_cmd(prog)):
+        if cmd is None:
+            continue
+        if not shutil.which(cmd[0]):
+            print(f"         {cmd[0]} not on PATH — cannot install this way")
+            continue
+        # First usable installer wins — offer it and stop, accepted or not.
+        _offer(label, cmd, assume_yes)
+        return
+    hints = _manual_hints(prog)
+    if hints:
+        print("         install it with:")
+        for hint in hints:
+            print(f"           {hint}")
+    elif not prog.get("pixi") and not prog.get("flatpak"):
+        print("         no installer declared — install it yourself")
+
+
+def _post_install_git(entry: dict, assume_yes: bool) -> None:
+    label = str(entry["name"])
+    dest = _expand(str(entry["dest"]))
+    check = _expand(str(entry.get("check", entry["dest"])))
+    if check.exists():
+        print(f"  {label}: already installed ({dest})")
+        return
+    if not shutil.which("git"):
+        print(f"  {label}: skipped (git not found)")
+        return
+    cmd = ["git", "clone"]
+    if entry.get("recursive"):
+        cmd.append("--recursive")
+    cmd += [str(entry["repo"]), str(dest)]
+    print(
+        f"  {label}: not installed"
+        + (f" — {entry['note']}" if entry.get("note") else "")
+    )
+    _offer(label, cmd, assume_yes)
+
+
+def _command_done(entry: dict) -> bool:
+    if entry.get("check"):
+        return _expand(str(entry["check"])).exists()
+    if entry.get("check_cmd"):
+        return (
+            subprocess.run(
+                ["sh", "-c", str(entry["check_cmd"])], capture_output=True
+            ).returncode
             == 0
-        ):
-            print(f"  {app_id}: already installed")
+        )
+    return False  # no probe: always offer
+
+
+def _post_install_command(entry: dict, assume_yes: bool) -> None:
+    label = str(entry["name"])
+    if _command_done(entry):
+        print(f"  {label}: already installed")
+        return
+    missing = [b for b in _as_list(entry.get("requires")) if not shutil.which(b)]
+    if missing:
+        print(f"  {label}: skipped ({', '.join(missing)} not found)")
+        return
+    print(
+        f"  {label}: not installed"
+        + (f" — {entry['note']}" if entry.get("note") else "")
+    )
+    _offer(label, str(entry["run"]), assume_yes)
+
+
+def _systemctl(scope: str, *args: str, capture: bool = False):
+    cmd = ["systemctl"] + (["--user"] if scope == "user" else []) + list(args)
+    return subprocess.run(cmd, capture_output=capture, text=True)
+
+
+def _unit_state(scope: str, unit: str) -> tuple[str, bool]:
+    """(is-enabled output, is-active) for a unit."""
+    enabled = _systemctl(scope, "is-enabled", unit, capture=True).stdout.strip()
+    active = (
+        _systemctl(scope, "is-active", unit, capture=True).stdout.strip() == "active"
+    )
+    return enabled, active
+
+
+def _post_install_service(entry: dict, assume_yes: bool) -> None:
+    unit = str(entry["unit"])
+    scope = str(entry.get("scope", "user"))
+    enable = entry.get("enable", True)
+    restart = entry.get("restart", True)
+
+    if scope != "user":
+        # System units need root; print the commands rather than sudo behind your back.
+        print(f"  {unit}: system-scope unit — run these yourself:")
+        print("           sudo systemctl daemon-reload")
+        if enable:
+            print(f"           sudo systemctl enable --now {unit}")
+        return
+    if not shutil.which("systemctl"):
+        print(f"  {unit}: skipped (systemctl not found)")
+        return
+
+    # The unit file was just (re)linked, so the manager's cache is stale.
+    _systemctl(scope, "daemon-reload", capture=True)
+    enabled, active = _unit_state(scope, unit)
+
+    if enabled != "enabled" and enable:
+        print(
+            f"  {unit}: not enabled"
+            + (f" — {entry['note']}" if entry.get("note") else "")
+        )
+        _offer(unit, ["systemctl", "--user", "enable", "--now", unit], assume_yes)
+        return
+    if enabled != "enabled":
+        print(f"  {unit}: not enabled (enable = false)")
+        return
+    if restart:
+        # Already enabled: the config it reads just changed, so cycle it. This
+        # needs no prompt — it is the point of re-stowing the package.
+        result = _systemctl(scope, "restart", unit, capture=True)
+        if result.returncode == 0:
+            print(f"  {unit}: enabled, restarted")
         else:
-            print(f"  {app_id}: not installed — the shortcut has nothing to launch")
-            print(f"         install it with: flatpak install flathub {app_id}")
-        if shutil.which("wtype"):
-            print("  wtype: already installed")
-        else:
-            print("  wtype: not found — autopaste cannot type emoji without it")
-            print("         install it with: sudo apt install wtype")
-            print("         (needs a compositor with zwp_virtual_keyboard_v1:")
-            print("          COSMIC, KDE or wlroots — not GNOME)")
-        unit = "smile-autopaste.service"
-        enabled = subprocess.run(
-            ["systemctl", "--user", "is-enabled", unit],
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-        if enabled == "enabled":
-            print(f"  {unit}: enabled")
-        else:
-            print(f"  {unit}: stowed but not enabled")
-            print("         systemctl --user daemon-reload")
-            print(f"         systemctl --user enable --now {unit}")
+            print(f"  {unit}: enabled, restart failed: {result.stderr.strip()}")
+        return
+    print(f"  {unit}: enabled, {'active' if active else 'inactive'}")
+
+
+def post_install(pkg: str, assume_yes: bool = False, skip: bool = False) -> None:
+    """Apply stow/<pkg>/.dots-install.toml after the package has been stowed."""
+    if skip:
+        return
+    manifest = load_manifest(pkg)
+    if not manifest:
+        return
+    for prog in manifest["program"]:
+        _post_install_program(prog, assume_yes)
+    for entry in manifest["git"]:
+        _post_install_git(entry, assume_yes)
+    for entry in manifest["command"]:
+        _post_install_command(entry, assume_yes)
+    for entry in manifest["service"]:
+        _post_install_service(entry, assume_yes)
 
 
 def cmd_install(args: argparse.Namespace) -> int:
@@ -276,7 +594,7 @@ def cmd_install(args: argparse.Namespace) -> int:
         if args.copy:
             count = copy_install(pkg)
             print(f"Installed (copied): {pkg} ({count} files)")
-            post_install(pkg)
+            post_install(pkg, assume_yes=args.yes, skip=args.no_post)
             continue
 
         conflicts = has_conflicts(pkg)
@@ -285,7 +603,7 @@ def cmd_install(args: argparse.Namespace) -> int:
             result = run_stow_install([], pkg)
             if result.returncode == 0:
                 print(f"Installed: {pkg}")
-                post_install(pkg)
+                post_install(pkg, assume_yes=args.yes, skip=args.no_post)
             else:
                 print(f"Failed to install: {pkg}", file=sys.stderr)
                 return result.returncode
@@ -297,12 +615,12 @@ def cmd_install(args: argparse.Namespace) -> int:
                 print(f"Failed to install: {pkg}", file=sys.stderr)
                 return rc
             print(f"Installed (overwritten): {pkg}")
-            post_install(pkg)
+            post_install(pkg, assume_yes=args.yes, skip=args.no_post)
         elif args.adopt:
             result = run_stow_install(["--adopt"], pkg)
             if result.returncode == 0:
                 print(f"Installed (adopted existing files): {pkg}")
-                post_install(pkg)
+                post_install(pkg, assume_yes=args.yes, skip=args.no_post)
             else:
                 print(f"Failed to adopt: {pkg}", file=sys.stderr)
                 return result.returncode
@@ -317,7 +635,7 @@ def cmd_install(args: argparse.Namespace) -> int:
                 result = run_stow_install(["--adopt"], pkg)
                 if result.returncode == 0:
                     print(f"Installed (adopted): {pkg}")
-                    post_install(pkg)
+                    post_install(pkg, assume_yes=args.yes, skip=args.no_post)
                 else:
                     return result.returncode
             elif choice == "o":
@@ -325,11 +643,11 @@ def cmd_install(args: argparse.Namespace) -> int:
                 if rc != 0:
                     return rc
                 print(f"Installed (overwritten): {pkg}")
-                post_install(pkg)
+                post_install(pkg, assume_yes=args.yes, skip=args.no_post)
             elif choice == "c":
                 count = copy_install(pkg)
                 print(f"Installed (copied): {pkg} ({count} files)")
-                post_install(pkg)
+                post_install(pkg, assume_yes=args.yes, skip=args.no_post)
             else:
                 print(f"Skipped: {pkg}")
 
@@ -382,6 +700,8 @@ def get_package_drift(
 
     for root, _dirs, files in os.walk(pkg_dir):
         for name in files:
+            if name == INSTALL_MANIFEST:
+                continue
             rel = (Path(root) / name).relative_to(pkg_dir)
             target = TARGET_DIR / rel
 
@@ -606,6 +926,8 @@ def _copy_install_tree(src: Path, dest: Path) -> int:
     Unlike stowing, this leaves no symlinks behind — useful for apps that save
     config via atomic rename (e.g. COSMIC), which would clobber a stow symlink.
     """
+    if src.name == INSTALL_MANIFEST:
+        return 0  # package metadata, not a dotfile
     if src.is_symlink():
         try:
             real = src.resolve(strict=True)
@@ -655,10 +977,19 @@ def cmd_adopt(args: argparse.Namespace) -> int:
             return 1
 
     if pkg_path.exists() and args.overwrite:
+        # The manifest describes the package and is never adopted from $HOME,
+        # so a wipe would lose it for good. Stash and restore it.
+        manifest_src = pkg_path / INSTALL_MANIFEST
+        manifest_body = manifest_src.read_bytes() if manifest_src.is_file() else None
         if dry:
             print(f"  Would rmtree: {pkg_path}")
+            if manifest_body is not None:
+                print(f"  Would keep:   {args.package}/{INSTALL_MANIFEST}")
         else:
             shutil.rmtree(pkg_path)
+            if manifest_body is not None:
+                pkg_path.mkdir(parents=True, exist_ok=True)
+                (pkg_path / INSTALL_MANIFEST).write_bytes(manifest_body)
 
     if not dry:
         pkg_path.mkdir(parents=True, exist_ok=True)
@@ -826,6 +1157,103 @@ def cmd_dir(args: argparse.Namespace) -> int:
     return 0
 
 
+def _git_repo_freshness(dest: Path) -> tuple[str, str]:
+    """(severity, message) describing how current a cloned repo is.
+
+    severity is one of "ok", "warn".
+    """
+    if not (dest / ".git").exists():
+        return "warn", "not a git repo — cannot check for updates"
+    try:
+        local = subprocess.run(
+            ["git", "-C", str(dest), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        ).stdout.strip()
+        remote_res = subprocess.run(
+            ["git", "-C", str(dest), "ls-remote", "origin", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except subprocess.TimeoutExpired:
+        return "warn", "timed out checking remote"
+    if remote_res.returncode != 0 or not remote_res.stdout.strip():
+        return "warn", "could not reach remote (offline?)"
+    remote = remote_res.stdout.split()[0]
+    if local == remote:
+        return "ok", f"up to date ({local[:8]})"
+    return "warn", f"updates available  local:{local[:8]} -> remote:{remote[:8]}"
+
+
+def manifest_health(pkg: str, manifest: dict, ok, warn, err, detail) -> None:
+    """Report a package's declared dependencies for `dots checkhealth`."""
+    for prog in manifest["program"]:
+        label = str(prog["name"])
+        present, how = _program_present(prog)
+        if present:
+            ok(label)
+            detail(f"found: {how}")
+            continue
+        (warn if prog.get("optional") else err)(
+            f"{label}: not installed"
+            + (f" — {prog['note']}" if prog.get("note") else "")
+        )
+        for cmd in (_pixi_cmd(prog), _flatpak_cmd(prog)):
+            if cmd:
+                detail(f"install: {' '.join(cmd)}")
+        for hint in _manual_hints(prog):
+            detail(f"install: {hint}")
+
+    for entry in manifest["git"]:
+        label = str(entry["name"])
+        dest = _expand(str(entry["dest"]))
+        check = _expand(str(entry.get("check", entry["dest"])))
+        if not check.exists():
+            err(f"{label}: not installed  (run: dots install {pkg})")
+            detail(f"clone: {entry['repo']} -> {dest}")
+            continue
+        ok(f"{label}: {dest}")
+        severity, msg = _git_repo_freshness(dest)
+        if severity == "ok":
+            detail(msg)
+            continue
+        warn(f"{label}: {msg}")
+        pull = f"git -C {dest} pull"
+        if entry.get("recursive"):
+            pull += f" && git -C {dest} submodule update --init --recursive"
+        detail(pull)
+
+    for entry in manifest["command"]:
+        label = str(entry["name"])
+        if _command_done(entry):
+            ok(label)
+        else:
+            warn(f"{label}: not installed  (run: dots install {pkg})")
+            detail(f"command: {entry['run']}")
+
+    for entry in manifest["service"]:
+        unit = str(entry["unit"])
+        scope = str(entry.get("scope", "user"))
+        if scope != "user":
+            warn(f"{unit}: system-scope unit — enable it with sudo yourself")
+            continue
+        if not shutil.which("systemctl"):
+            warn(f"{unit}: systemctl not found")
+            continue
+        enabled, active = _unit_state(scope, unit)
+        if enabled == "enabled":
+            (ok if active else warn)(
+                f"{unit}: enabled, {'active' if active else 'inactive'}"
+            )
+        elif not entry.get("enable", True):
+            ok(f"{unit}: present, not enabled by design")
+        else:
+            warn(f"{unit}: stowed but not enabled  (run: dots install {pkg})")
+            detail(f"systemctl --user enable --now {unit}")
+
+
 def cmd_checkhealth(args: argparse.Namespace) -> int:
     use_color = sys.stdout.isatty()
     if use_color:
@@ -846,6 +1274,9 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
 
     def err(msg: str) -> None:
         print(f"  {R}ERROR{X} {msg}")
+
+    def detail(msg: str) -> None:
+        print(f"          {msg}")
 
     def section(title: str) -> None:
         print(f"\n{B}{C}## {title}{X}")
@@ -906,45 +1337,6 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
     if zsh_stowed and not shell_stowed:
         warn("zsh dotfiles stowed but shell package is not (run: dots install shell)")
 
-    # ── Prezto ───────────────────────────────────────────────────────────────
-    section("Prezto")
-    zprezto = Path.home() / ".zprezto"
-    if not zprezto.exists():
-        err("Prezto not installed (run: dots install zsh)")
-    else:
-        ok(f"Installed at {zprezto}")
-        if not (zprezto / ".git").exists():
-            warn("Not a git repo — cannot check for updates")
-        else:
-            try:
-                local = subprocess.run(
-                    ["git", "-C", str(zprezto), "rev-parse", "HEAD"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5,
-                ).stdout.strip()
-                remote_res = subprocess.run(
-                    ["git", "-C", str(zprezto), "ls-remote", "origin", "HEAD"],
-                    capture_output=True,
-                    text=True,
-                    timeout=15,
-                )
-                if remote_res.returncode == 0 and remote_res.stdout.strip():
-                    remote = remote_res.stdout.split()[0]
-                    if local == remote:
-                        ok(f"Up to date ({local[:8]})")
-                    else:
-                        warn(
-                            f"Updates available  local:{local[:8]} → remote:{remote[:8]}"
-                        )
-                        warn(
-                            "Update: git -C ~/.zprezto pull && git -C ~/.zprezto submodule update --init --recursive"
-                        )
-                else:
-                    warn("Could not reach Prezto remote (offline?)")
-            except subprocess.TimeoutExpired:
-                warn("Timed out checking Prezto remote")
-
     # ── Pixi ─────────────────────────────────────────────────────────────────
     section("Pixi")
     pixi_path = shutil.which("pixi")
@@ -982,73 +1374,33 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
         except Exception as exc:
             warn(f"Could not check for pixi updates: {exc}")
 
-    # ── Recommended Programs ─────────────────────────────────────────────────
-    section("Recommended Programs")
-    # (display_name, [binary_candidates], stow_package_or_None)
-    TOOLS: list[tuple[str, list[str], str | None]] = [
-        ("bat", ["bat", "batcat"], "bat"),
-        ("carapace", ["carapace"], None),
-        ("cargo", ["cargo"], None),
-        ("delta", ["delta"], None),
-        ("fd", ["fd"], None),
-        ("fzf", ["fzf"], None),
-        ("git", ["git"], "git"),
-        ("nnn", ["nnn"], None),
-        ("nvim", ["nvim"], "nvim"),
-        ("pixi", ["pixi"], None),
-        ("ripgrep", ["rg"], None),
-        ("starship", ["starship"], "starship"),
-        ("tmux", ["tmux"], "tmux"),
-        ("wezterm", ["wezterm"], "wezterm"),
-        ("zoxide", ["zoxide"], None),
-        ("zsh", ["zsh"], "zsh"),
-    ]
-    stowed = get_stowed_packages()
-    for display, candidates, pkg in TOOLS:
-        found_cmd = found_path = None
-        for candidate in candidates:
-            p = shutil.which(candidate)
-            if p:
-                found_cmd, found_path = candidate, p
-                break
-        # Determine dotfiles status
-        dots_status = None  # None = no stow package for this tool
-        if pkg:
-            pkg_dir = STOW_DIR / pkg
-            if pkg_dir.is_dir():
-                dots_status = (
-                    "stowed" if (pkg in stowed and stowed[pkg]) else "not stowed"
-                )
-            else:
-                dots_status = "none"
+    # ── Package dependencies ─────────────────────────────────────────────────
+    # Everything below comes from the packages' own .dots-install.toml files —
+    # there is no second list of tools to keep in sync here.
+    manifests: dict[str, dict] = {}
+    for pkg_dir in sorted(STOW_DIR.iterdir()):
+        if pkg_dir.is_dir():
+            manifest = load_manifest(pkg_dir.name)
+            if manifest:
+                manifests[pkg_dir.name] = manifest
 
-        # Warn if installed but dotfiles available and not stowed
-        if found_path and dots_status == "not stowed":
-            warn(display)
-        elif found_path:
-            ok(display)
-        else:
-            warn(display)
-
-        if found_path:
-            suffix = f" (as {found_cmd})" if found_cmd != candidates[0] else ""
-            print(f"          binary: {found_path}{suffix}")
-        else:
-            print(f"          binary: not found")
-        if dots_status is not None:
-            print(f"          dotfiles: {dots_status}")
-        # nnn addon check
-        if display == "nnn" and found_path:
-            nnn_preview = (
-                Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
-                / "nnn"
-                / "plugins"
-                / "preview-tui"
-            )
-            if nnn_preview.exists():
-                print(f"          plugins: installed")
-            else:
-                print(f"          plugins: not installed (run: dots install shell)")
+    if not manifests:
+        section("Package dependencies")
+        warn(f"No package declares a {INSTALL_MANIFEST}")
+    else:
+        unstowed: list[str] = []
+        for pkg, manifest in manifests.items():
+            if not stowed_early.get(pkg):
+                unstowed.append(pkg)
+                continue
+            desc = manifest["description"]
+            section(f"{pkg}" + (f" — {desc}" if desc else ""))
+            manifest_health(pkg, manifest, ok, warn, err, detail)
+        if unstowed:
+            section("Declared but not stowed")
+            for pkg in unstowed:
+                warn(f"{pkg}: not stowed — its dependencies were not checked")
+                detail(f"dots install {pkg}")
 
     # ── Nerd Fonts ───────────────────────────────────────────────────────────
     section("Nerd Fonts")
@@ -1191,6 +1543,8 @@ _dots() {{
                         '(-o --overwrite -a --adopt -c --copy)'{{-o,--overwrite}}'[overwrite existing files]' \\
                         '(-o --overwrite -a --adopt -c --copy)'{{-a,--adopt}}'[adopt existing files into dotfiles]' \\
                         '(-o --overwrite -a --adopt -c --copy)'{{-c,--copy}}'[copy files instead of symlinking]' \\
+                        '(--no-post)'{{-y,--yes}}'[accept every post-install action]' \\
+                        '(-y --yes)--no-post[stow only, skip .dots-install.toml]' \\
                         '*:package:(${{packages[@]}})'
                     ;;
                 remove|edit)
@@ -1251,7 +1605,7 @@ _dots_bash() {{
     case $subcmd in
         install)
             case $cur in
-                -*) COMPREPLY=($(compgen -W "-o --overwrite -a --adopt -c --copy" -- "$cur")) ;;
+                -*) COMPREPLY=($(compgen -W "-o --overwrite -a --adopt -c --copy -y --yes --no-post" -- "$cur")) ;;
                 *)  COMPREPLY=($(compgen -W "$packages" -- "$cur")) ;;
             esac ;;
         remove|edit)
@@ -1329,7 +1683,13 @@ def main() -> int:
             "directory into stow/<package>/. If a target path already exists with\n"
             "different content, dots prompts you to adopt (move the existing file\n"
             "into the package), overwrite (replace with the package's version,\n"
-            "saving a timestamped backup), or skip."
+            "saving a timestamped backup), or skip.\n"
+            "\n"
+            f"After stowing, a package's {INSTALL_MANIFEST} (if present) is applied:\n"
+            "declared programs are offered via pixi or flatpak, git clones and\n"
+            "installer commands are offered, and systemd user units are reloaded\n"
+            "and enabled or restarted. Every install is prompted [y/N]; apt/dnf\n"
+            "commands are printed for you to run, never executed."
         ),
         epilog=(
             "Examples:\n"
@@ -1338,6 +1698,8 @@ def main() -> int:
             "  dots install -a nvim            # adopt existing files into the package\n"
             "  dots install -c cosmic          # copy files instead of symlinking\n"
             "  dots install zsh nvim shell     # install multiple at once\n"
+            "  dots install -y zsh shell       # accept every post-install action\n"
+            "  dots install --no-post zsh      # symlink only, run no post-install\n"
         ),
         formatter_class=fmt,
     )
@@ -1361,6 +1723,18 @@ def main() -> int:
         action="store_true",
         help="Copy real files into the target instead of symlinking (overwrites existing); "
         "for apps that save via atomic rename and would clobber stow symlinks (e.g. COSMIC)",
+    )
+    p_install.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="Accept every post-install action in the package's "
+        f"{INSTALL_MANIFEST} without prompting",
+    )
+    p_install.add_argument(
+        "--no-post",
+        action="store_true",
+        help=f"Stow only — skip the package's {INSTALL_MANIFEST} entirely",
     )
     p_install.set_defaults(func=cmd_install)
 
@@ -1593,7 +1967,12 @@ def main() -> int:
         description=(
             "Run a series of sanity checks on the dotfiles environment:\n"
             "GNU Stow is installed, the repo lives where expected, the `dots`\n"
-            "command is on PATH, and required tools are available."
+            "command is on PATH, and Nerd Fonts are available.\n"
+            "\n"
+            f"Each stowed package that ships a {INSTALL_MANIFEST} then gets its\n"
+            "own section, reporting whether the programs, clones, installer\n"
+            "commands and systemd units it declares are present. Packages that\n"
+            "declare dependencies but aren't stowed are listed at the end."
         ),
         epilog="Example:\n  dots checkhealth\n",
         formatter_class=fmt,

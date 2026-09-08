@@ -1,0 +1,5 @@
+description = "WezTerm configuration"
+
+[[program]]
+name = "wezterm"
+manual = "https://wezterm.org/installation.html — no conda-forge build; use the WezTerm apt repo or a release .deb"

@@ -1,0 +1,7 @@
+description = "bat themes and config"
+
+[[program]]
+name = "bat"
+bin = ["bat", "batcat"]
+pixi = "bat"
+expose = ["bat"]

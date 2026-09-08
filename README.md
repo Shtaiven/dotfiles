@@ -44,21 +44,25 @@ distant-install <user@host>  # install distant.nvim on the remote which allows f
 
 ## Recommended Programs
 
-* bat (or batcat on debian/ubuntu, alternative for cat)
-* carapace (shell completions)
-* cargo (for rust package installation and dev)
-* delta (sometimes called git-delta, alternative for diff)
-* fd (sometimes called fd-find, alternative for find)
-* firacode nerd font (a nerd font is required for many configs)
-* fzf (fuzzy-find throughout your system)
-* git
-* nnn (cli file browser)
-* nvim (text editor, alternative for vim)
-* pixi (package manager)
-* prezto (will be auto installed if zsh dots are installed)
-* ripgrep (executable is rg, alternative for grep)
-* starship (nice shell prompt)
-* tmux (recommended to do a system install)
-* wezterm (a terminal emulator to install locally)
-* zoxide (executable is z, zi, alternative for cd)
-* zsh (bash alternative with extra features)
+Each package declares the programs it needs in its own
+`stow/<pkg>/.dots-install.toml`, so there's no list to keep in sync here.
+`dots install <pkg>` offers to install them (via pixi or flatpak, prompting
+first; apt/dnf commands are printed for you to run), and `dots checkhealth`
+reports what's missing:
+
+```sh
+dots checkhealth              # what every stowed package still needs
+dots install -y zsh shell     # install a package and accept its post-install steps
+cat "$(dots dir shell)/.dots-install.toml"   # see what a package declares
+```
+
+See [scripts/dots.README.md](scripts/dots.README.md) for the file format.
+
+Two things aren't tied to a single package and `dots checkhealth` checks them
+separately:
+
+* **pixi** — the package manager `bootstrap.sh` installs, and the one most of
+  the declared programs come from
+* **a Nerd Font** (FiraCode Nerd Font is what these configs assume) — required
+  by the prompt, editor and terminal configs; grab one from
+  [nerdfonts.com](https://www.nerdfonts.com/font-downloads)
