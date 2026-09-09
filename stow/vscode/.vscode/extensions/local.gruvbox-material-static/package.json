@@ -3,9 +3,13 @@
   "displayName": "Gruvbox Material Hard (static)",
   "description": "Frozen sainnhe gruvbox-material hard dark + light, with local terminal palette.",
   "publisher": "local",
-  "version": "1.1.0",
-  "engines": { "vscode": "^1.70.0" },
-  "categories": ["Themes"],
+  "version": "1.4.0",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Themes"
+  ],
   "icon": "icon.png",
   "contributes": {
     "themes": [
@@ -15,9 +19,29 @@
         "path": "./themes/gruvbox-material-hard-dark.json"
       },
       {
+        "label": "Gruvbox Material Hard Dark Flat",
+        "uiTheme": "vs-dark",
+        "path": "./themes/gruvbox-material-hard-dark-flat.json"
+      },
+      {
+        "label": "Gruvbox Material Hard Dark Borderless",
+        "uiTheme": "vs-dark",
+        "path": "./themes/gruvbox-material-hard-dark-borderless.json"
+      },
+      {
         "label": "Gruvbox Material Hard Light",
         "uiTheme": "vs",
         "path": "./themes/gruvbox-material-hard-light.json"
+      },
+      {
+        "label": "Gruvbox Material Hard Light Flat",
+        "uiTheme": "vs",
+        "path": "./themes/gruvbox-material-hard-light-flat.json"
+      },
+      {
+        "label": "Gruvbox Material Hard Light Borderless",
+        "uiTheme": "vs",
+        "path": "./themes/gruvbox-material-hard-light-borderless.json"
       }
     ]
   }
