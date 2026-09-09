@@ -1,0 +1,24 @@
+{
+  "name": "gruvbox-material-static",
+  "displayName": "Gruvbox Material Hard (static)",
+  "description": "Frozen sainnhe gruvbox-material hard dark + light, with local terminal palette.",
+  "publisher": "local",
+  "version": "1.1.0",
+  "engines": { "vscode": "^1.70.0" },
+  "categories": ["Themes"],
+  "icon": "icon.png",
+  "contributes": {
+    "themes": [
+      {
+        "label": "Gruvbox Material Hard Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/gruvbox-material-hard-dark.json"
+      },
+      {
+        "label": "Gruvbox Material Hard Light",
+        "uiTheme": "vs",
+        "path": "./themes/gruvbox-material-hard-light.json"
+      }
+    ]
+  }
+}

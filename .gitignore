@@ -1,4 +1,8 @@
 .vscode/
+# ...except the stow package, whose payload *is* a .vscode directory. Git won't
+# descend into an excluded directory, so the directory itself must be negated —
+# negating only the files inside would never match.
+!stow/vscode/.vscode/
 **/input-remapper/**/xmodmap.json
 # pixi environments
 .pixi/*
