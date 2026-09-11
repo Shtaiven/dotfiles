@@ -85,6 +85,7 @@
     ch = checkout
     pushf = push --force-with-lease
     uf = pushf
+    act = activity
 
     # Show activity on the changes to the repository
     activity = for-each-ref --sort=committerdate refs/remotes/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset)%(upstream:track) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))'
