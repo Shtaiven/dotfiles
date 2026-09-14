@@ -186,6 +186,15 @@ Two things about the syntax, both inherited from stow:
   finding nothing to link there. Ignore the directory instead (`^docs`, or
   `^\.config/app/docs`) and it's skipped entirely.
 
+A package may end up ignoring *everything*. `stow/vscode` does: its whole
+payload is a VS Code theme that has to be packed into a `.vsix` and installed
+with `code --install-extension`, because VS Code no longer loads extension
+folders that were merely dropped into `~/.vscode/extensions`. Nothing is
+symlinked, a `[[command]]` does the work, and `dots list` says `vscode (0
+stowed)` with no "not linked" count. `checkhealth` treats such a package as
+present and checks its dependencies rather than reporting it as unstowed —
+there is nothing it could ever stow.
+
 `dots` also mirrors stow's own built-in ignore list, so a package's top-level
 `README.*`, `LICENSE.*` and `COPYING`, plus `.git*`, editor backups and VCS
 directories at any depth, are skipped without being declared — and no longer

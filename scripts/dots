@@ -532,6 +532,25 @@ def ignore_matcher(pkg: str):
     return ignored
 
 
+def has_installable_files(pkg: str) -> bool:
+    """Would stow install anything at all for this package?
+
+    A package can legitimately install nothing: stow/vscode's whole payload is
+    [install] ignore-d, because extension/ is packed into a .vsix and handed to
+    `code --install-extension` by a post-install command rather than symlinked
+    into $HOME. Such a package can never show up as stowed, so checkhealth must
+    not read an empty link list as "not installed yet".
+    """
+    pkg_dir = STOW_DIR / pkg
+    ignored = ignore_matcher(pkg)
+    for root, dirs, files in os.walk(pkg_dir):
+        for name in list(dirs) + files:
+            rel = (Path(root) / name).relative_to(pkg_dir).as_posix()
+            if not ignored(rel):
+                return True
+    return False
+
+
 def _program_label(prog: dict) -> str:
     label = str(prog["name"])
     if prog.get("note"):
@@ -1610,7 +1629,9 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
     else:
         unstowed: list[str] = []
         for pkg, manifest in manifests.items():
-            if not stowed_early.get(pkg):
+            # A package that installs no files (everything [install] ignore-d)
+            # is never "stowed" — check its dependencies rather than warn.
+            if not stowed_early.get(pkg) and has_installable_files(pkg):
                 unstowed.append(pkg)
                 continue
             desc = manifest["description"]

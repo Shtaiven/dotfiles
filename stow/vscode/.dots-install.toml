@@ -1,7 +1,25 @@
 description = "VS Code static Gruvbox Material Hard Dark theme (no marketplace extension)"
 
+[install]
+ignore = ["extension"]
+reason = "extension/ is the theme's source, packed into a .vsix and installed by the command below — none of it belongs in $HOME"
+
 [[program]]
 name = "Visual Studio Code"
 bin = ["code"]
 manual = "https://code.visualstudio.com/docs/setup/linux — Microsoft apt repo, or `flatpak install com.visualstudio.code`"
-note = "the editor the theme is for; nothing else is needed — VS Code scans ~/.vscode/extensions itself"
+note = "the editor the theme is for"
+
+[[command]]
+name = "Gruvbox Material theme"
+run = "cd $STOW_DIR/vscode && d=$(mktemp -d) && zip -qr $d/gruvbox-material-static.vsix extension && code --install-extension $d/gruvbox-material-static.vsix && rm -rf $d"
+# Not just "is it installed" — compare the installed themes/ with the repo's, so
+# editing a theme (or bumping version, which renames the install directory) makes
+# the next `dots install vscode` repack and reinstall. package.json is excluded:
+# VS Code rewrites it on install, retabbing it and appending __metadata.
+check_cmd = """
+v=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' "$STOW_DIR/vscode/extension/package.json" | head -1)
+diff -rq "$STOW_DIR/vscode/extension/themes" "$HOME/.vscode/extensions/local.gruvbox-material-static-$v/themes" >/dev/null 2>&1
+"""
+requires = ["zip", "code"]
+note = "a .vsix is just a zip of extension/ — no build step, no marketplace; VS Code ignores extension folders it has no registry entry for, so it has to be installed rather than symlinked in"

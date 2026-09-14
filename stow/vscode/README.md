@@ -21,13 +21,35 @@ gets two flattened variants.
 set `window.autoDetectColorScheme` and point
 `workbench.preferredDarkColorTheme` / `preferredLightColorTheme` at the labels.
 
-VS Code scans `~/.vscode/extensions` for folders with a `package.json` and reads
-their `contributes.themes` — no `extensions.json` entry, no `.vsix`, no install
-command. Verified on 1.135 with the files symlinked in by stow (`code
---list-extensions` reports `local.gruvbox-material-static`).
+This package stows nothing — `dots list` correctly reports `vscode (0 stowed)`.
+`extension/` is the theme's source, kept out of `$HOME` by `[install] ignore`,
+and the manifest's one post-install step zips it into a `.vsix` and hands that
+to `code --install-extension`:
 
-There is nothing to maintain: no marketplace version to track, no rebuild step,
-and no generator to re-run. The theme files are the artifact.
+```sh
+zip -qr "$d/gruvbox-material-static.vsix" extension
+code --install-extension "$d/gruvbox-material-static.vsix"
+```
+
+That is the whole build. A `.vsix` is an ordinary zip whose payload lives under
+`extension/`, and a theme has no code, so nothing is compiled and no `vsce` or
+node toolchain is involved. Verified on 1.137 that even the `[Content_Types].xml`
+and `extension.vsixmanifest` that `vsce` writes are unnecessary — VS Code
+installs a bare `zip -r out.vsix extension/` as long as `extension/package.json`
+is there. The step's probe diffs the installed `themes/` against the repo's
+rather than just asking whether the extension exists, so re-running `dots
+install vscode` is a no-op when they match and repacks when they don't.
+
+It has to be *installed* rather than symlinked in. `extensions.json` in
+`~/.vscode/extensions` is VS Code's authoritative list of installed user
+extensions, and a folder missing from it is ignored outright — no error, no
+line in `code --list-extensions`, nothing in the picker. Dropping a folder in
+place used to work and no longer does. Going through `--install-extension`
+means VS Code writes that entry itself, which is also why there is no
+`.obsolete` bookkeeping here and no need to quit the editor first.
+
+There is nothing to maintain: no marketplace version to track and no generator
+to re-run. The theme files are the artifact.
 
 Once one is selected, these entries in the synced `settings.json` are dead and
 can go: `gruvboxMaterial.*` (darkContrast, darkWorkbench, italicComments) and
@@ -158,7 +180,20 @@ The switch is a setting, not a colour:
 
 ## Editing it
 
-Edit the files under `themes/` in the repo — the installed paths are symlinks to
-them — then reload the window. `label` in `package.json` is the name shown in
-the picker; `icon.png` is sainnhe's own, carried over from 6.5.2, and shows in
-the Extensions view rather than the picker.
+Edit the files under `extension/themes/` in the repo, then `dots install -y
+vscode` to repack and reinstall, and reload the window. The installed copy under
+`~/.vscode/extensions/local.gruvbox-material-static-<version>/` is real files,
+not symlinks, so an edit in the repo does not reach VS Code until that runs —
+the price of being a properly registered extension rather than a folder dropped
+in place. The manifest's probe notices the edit, so the install step is not
+skipped.
+
+Bumping `version` in `package.json` also triggers a reinstall, because the
+install directory is named after it — but it is not required, since
+`code --install-extension` reinstalls over the same version happily. Editing
+`package.json` alone (a renamed `label`, say) is the one change the probe
+misses: VS Code retabs that file and appends `__metadata` on install, so it
+cannot be compared, and only `themes/` is. Bump the version in that case.
+
+`label` is the name shown in the picker; `icon.png` is sainnhe's own, carried
+over from 6.5.2, and shows in the Extensions view rather than the picker.
