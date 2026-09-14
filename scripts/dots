@@ -1613,8 +1613,14 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
     def detail(msg: str) -> None:
         print(f"          {msg}")
 
+    # Ruled headings rather than a "## " prefix, the way `nvim +checkhealth`
+    # separates its sections: the run is long enough that a full-width line is
+    # easier to find when scrolling back than a marker at the start of a title.
+    width = min(shutil.get_terminal_size().columns, 78)
+
     def section(title: str) -> None:
-        print(f"\n{B}{C}## {title}{X}")
+        print(f"\n{B}{C}{'=' * width}{X}")
+        print(f"{B}{C}{title}{X}")
 
     # ── dots & stow ──────────────────────────────────────────────────────────
     section("dots & stow")
