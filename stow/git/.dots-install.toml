@@ -3,10 +3,8 @@ description = "git config, ignores and delta pager setup"
 [[program]]
 name = "git"
 pixi = "git"
-expose = ["git"]
 
 [[program]]
 name = "delta"
 pixi = "git-delta"
-expose = ["delta"]
 note = "configured as git's pager and diff/merge highlighter"

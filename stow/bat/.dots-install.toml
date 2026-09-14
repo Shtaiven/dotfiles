@@ -4,4 +4,3 @@ description = "bat themes and config"
 name = "bat"
 bin = ["bat", "batcat"]
 pixi = "bat"
-expose = ["bat"]

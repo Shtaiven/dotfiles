@@ -93,7 +93,8 @@ description = "zsh + Prezto"          # shown as the checkhealth section title
 name = "fd"                            # required — display name
 bin = ["fd", "fdfind"]                 # binaries to probe (default: [name])
 pixi = "fd-find"                       # pixi global install <spec>
-expose = ["fd"]                        # --expose names for that install
+expose = ["fd"]                        # narrow it to these commands; unset
+                                       # (the default) exposes all of them
 flatpak = "it.mijorus.smile"           # flatpak install <remote> <id>
 flatpak_remote = "flathub"             # default "flathub"
 apt = "wtype"                          # PRINTED, never run
@@ -106,15 +107,15 @@ optional = true                        # checkhealth warns instead of erroring
 name = "Prezto"
 repo = "https://github.com/sorin-ionescu/prezto.git"
 dest = "~/.zprezto"
-check = "~/.zprezto/init.zsh"          # presence probe (default: dest)
+check_path = "~/.zprezto/init.zsh"     # presence probe (default: dest)
 recursive = true                       # clone --recursive
 
 [[command]]                            # an installer to offer
 name = "nnn plugins"
 run = "curl -Ls .../getplugs | sh"     # runs via `sh -c`; $DOTFILES_DIR and
                                        # $STOW_DIR point at this repo
-check = "~/.config/nnn/plugins/preview-tui"   # path that exists once done
-check_cmd = "..."                      # ...or a command whose exit status is the probe
+check_path = "~/.config/nnn/..."       # a path that exists once it is done
+check_cmd = "..."                      # a command that exits 0 once it is done
 requires = ["curl"]                    # binaries needed to run it
 
 [[service]]                            # a systemd unit the package ships

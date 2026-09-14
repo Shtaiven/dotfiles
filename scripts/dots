@@ -247,7 +247,8 @@ def _confirm(prompt: str) -> bool:
 #   name  = "bat"                   # required; display name
 #   bin   = ["bat", "batcat"]       # binaries to probe (default: [name])
 #   pixi  = "bat"                   # `pixi global install <spec>`
-#   expose = ["bat"]                # `--expose` names for the pixi install
+#   expose = ["bat"]                # narrow the pixi install to these commands
+#                                   # (default: unset — pixi exposes them all)
 #   flatpak = "it.mijorus.smile"    # `flatpak install <remote> <id>`
 #   flatpak_remote = "flathub"      # default "flathub"
 #   apt = "wtype"                   # printed as instructions, never run
@@ -260,7 +261,7 @@ def _confirm(prompt: str) -> bool:
 #   name = "Prezto"                 # required
 #   repo = "https://…"              # required
 #   dest = "~/.zprezto"             # required
-#   check = "~/.zprezto/init.zsh"   # presence probe (default: dest)
+#   check_path = "~/.zprezto/init.zsh"  # presence probe (default: dest)
 #   recursive = true                # clone --recursive
 #   note = "…"
 #
@@ -268,8 +269,10 @@ def _confirm(prompt: str) -> bool:
 #   name = "nnn plugins"            # required
 #   run  = "curl -Ls … | sh"        # required; runs via `sh -c`, with
 #                                   # $DOTFILES_DIR and $STOW_DIR available
-#   check = "~/.config/nnn/plugins/preview-tui"   # path that exists once done
-#   check_cmd = "…"                 # or a command whose exit status is the probe
+#   check_path = "~/.config/nnn/…"  # a path that exists once it is done
+#   check_cmd = "…"                 # a command that exits 0 once it is done
+#                                   # set both and both must pass; set neither
+#                                   # and the command is offered every time
 #   requires = ["curl"]             # binaries needed to run it
 #   note = "…"
 #
@@ -299,10 +302,10 @@ MANIFEST_TOP_KEYS = {
     "command",
     "service",
 }
-# Mutually exclusive, mirroring `dots install`'s own -c/-o/-a group.
 # How many drifted files checkhealth names before summarising the rest.
 DRIFT_SHOWN = 10
 
+# Mutually exclusive, mirroring `dots install`'s own -c/-o/-a group.
 INSTALL_MODES = ("copy", "overwrite", "adopt")
 INSTALL_KEYS = set(INSTALL_MODES) | {"reason", "ignore"}
 MANIFEST_ITEM_KEYS = {
@@ -319,8 +322,8 @@ MANIFEST_ITEM_KEYS = {
         "note",
         "optional",
     },
-    "git": {"name", "repo", "dest", "check", "recursive", "note"},
-    "command": {"name", "run", "check", "check_cmd", "requires", "note"},
+    "git": {"name", "repo", "dest", "check_path", "recursive", "note"},
+    "command": {"name", "run", "check_path", "check_cmd", "requires", "note"},
     "service": {"unit", "scope", "enable", "restart", "note"},
 }
 MANIFEST_REQUIRED = {
@@ -684,7 +687,7 @@ def _post_install_program(prog: dict, assume_yes: bool) -> None:
 def _post_install_git(entry: dict, assume_yes: bool) -> None:
     label = str(entry["name"])
     dest = _expand(str(entry["dest"]))
-    check = _expand(str(entry.get("check", entry["dest"])))
+    check = _expand(str(entry.get("check_path", entry["dest"])))
     if check.exists():
         print(f"  {label}: already installed ({dest})")
         return
@@ -703,10 +706,17 @@ def _post_install_git(entry: dict, assume_yes: bool) -> None:
 
 
 def _command_done(entry: dict) -> bool:
-    if entry.get("check"):
-        return _expand(str(entry["check"])).exists()
+    """Has this command already been run? Every declared probe must agree.
+
+    A command may need both kinds of evidence — a file that has to exist *and*
+    a state only a command can report. Requiring all of them means adding a
+    probe can only ever make dots more willing to re-run the step, never less.
+    """
+    probes: list[bool] = []
+    if entry.get("check_path"):
+        probes.append(_expand(str(entry["check_path"])).exists())
     if entry.get("check_cmd"):
-        return (
+        probes.append(
             subprocess.run(
                 ["sh", "-c", str(entry["check_cmd"])],
                 capture_output=True,
@@ -714,7 +724,7 @@ def _command_done(entry: dict) -> bool:
             ).returncode
             == 0
         )
-    return False  # no probe: always offer
+    return all(probes) if probes else False  # no probe: always offer
 
 
 def _post_install_command(entry: dict, assume_yes: bool) -> None:
@@ -1534,7 +1544,7 @@ def manifest_health(pkg: str, manifest: dict, ok, warn, err, detail) -> None:
     for entry in manifest["git"]:
         label = str(entry["name"])
         dest = _expand(str(entry["dest"]))
-        check = _expand(str(entry.get("check", entry["dest"])))
+        check = _expand(str(entry.get("check_path", entry["dest"])))
         if not check.exists():
             err(f"{label}: not installed  (run: dots install {pkg})")
             detail(f"clone: {entry['repo']} -> {dest}")
