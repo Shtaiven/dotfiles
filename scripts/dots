@@ -246,6 +246,8 @@ def _confirm(prompt: str) -> bool:
 #   [[program]]                     # something that must be on the system
 #   name  = "bat"                   # required; display name
 #   bin   = ["bat", "batcat"]       # binaries to probe (default: [name])
+#   check_path = "/usr/share/…"     # a file that means it is present, for a
+#                                   # dependency that is not an executable
 #   pixi  = "bat"                   # `pixi global install <spec>`
 #   expose = ["bat"]                # narrow the pixi install to these commands
 #                                   # (default: unset — pixi exposes them all)
@@ -312,6 +314,7 @@ MANIFEST_ITEM_KEYS = {
     "program": {
         "name",
         "bin",
+        "check_path",
         "pixi",
         "expose",
         "flatpak",
@@ -595,11 +598,23 @@ def _flatpak_installed(app_id: str) -> bool:
 
 
 def _program_present(prog: dict) -> tuple[bool, str]:
-    """Is the program installed? Returns (present, how-we-found-it)."""
+    """Is the program installed? Returns (present, how-we-found-it).
+
+    The probes are alternatives, not requirements: a dependency can be on PATH,
+    be a flatpak, or be a file that no binary represents — bash-completion is
+    sourced from /usr/share, never executed. Any one of them counts. (This is
+    the opposite of [[command]], where every declared probe must agree; there
+    the probes ask "is this step done", here they ask "where does this live".)
+    """
     for candidate in _as_list(prog.get("bin")) or [str(prog["name"])]:
         found = shutil.which(candidate)
         if found:
             return True, found
+    # Before the flatpak branch, which gives up early when flatpak is missing.
+    if prog.get("check_path"):
+        path = _expand(str(prog["check_path"]))
+        if path.exists():
+            return True, str(path)
     if prog.get("flatpak"):
         if not shutil.which("flatpak"):
             return False, "flatpak not installed — cannot check"

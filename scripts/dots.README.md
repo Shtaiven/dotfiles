@@ -92,6 +92,8 @@ description = "zsh + Prezto"          # shown as the checkhealth section title
 [[program]]                            # something that must exist on the system
 name = "fd"                            # required — display name
 bin = ["fd", "fdfind"]                 # binaries to probe (default: [name])
+check_path = "/usr/share/foo"          # a file that means it is present, for a
+                                       # dependency that is not an executable
 pixi = "fd-find"                       # pixi global install <spec>
 expose = ["fd"]                        # narrow it to these commands; unset
                                        # (the default) exposes all of them
@@ -102,6 +104,12 @@ dnf = "wtype"                          # PRINTED, never run
 manual = "https://rustup.rs"           # printed instructions
 note = "why the package needs it"
 optional = true                        # checkhealth warns instead of erroring
+
+A `[[program]]`'s probes are alternatives, not requirements — on `PATH`, or a
+flatpak, or `check_path` existing, any one counts. `bash-completion` is the
+case that needs it: `.bashrc` sources it from `/usr/share`, nothing ever
+executes it, so `which` can never find it. (`[[command]]` reads its probes the
+other way round: there they all have to agree.)
 
 [[git]]                                # a clone the config sources at runtime
 name = "Prezto"

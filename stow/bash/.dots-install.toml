@@ -3,3 +3,11 @@ description = "bash: interactive shell config, profile and window title"
 [[program]]
 name = "bash"
 note = "the shell these files configure; .bashrc sources ~/.shell.d, so the shell package belongs with it"
+
+[[program]]
+name = "bash-completion"
+check_path = "/usr/share/bash-completion/bash_completion"
+apt = "bash-completion"
+dnf = "bash-completion"
+optional = true
+note = ".bashrc sources it when present; without it only bash's built-in completion works"
