@@ -1,0 +1,8 @@
+description = "FiraCode Nerd Font and Inter, stowed into ~/.fonts"
+
+[[command]]
+name = "font cache"
+run = "fc-cache -f"
+check_cmd = "fc-list : family | grep -qi nerd"
+requires = ["fc-cache"]
+note = "fontconfig has to index ~/.fonts before anything can select these; until it does the files are on disk but no terminal or editor can see them"

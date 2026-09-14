@@ -24,7 +24,7 @@ initial setup. Run `dots checkhealth` to confirm.
 | `dots dir [pkg]` | Print the absolute path to the repo root, or to `stow/<pkg>`. |
 | `dots edit <pkg>` | Open `stow/<pkg>/` in `$EDITOR`. |
 | `dots deploy <user@host>` | `scp` the repo to a remote host, optionally running `bootstrap.sh`. |
-| `dots checkhealth` | Sanity-check the environment (stow installed, repo location, `dots` on PATH) plus every stowed package's declared dependencies. |
+| `dots checkhealth` | Sanity-check the prerequisites (`dots` on PATH, stow, pixi) plus every installed package's declared dependencies. |
 | `dots completion <bash\|zsh>` | Emit a shell completion script to stdout. |
 
 Run `dots <command> --help` for full options and examples.

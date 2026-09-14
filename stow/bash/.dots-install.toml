@@ -1,0 +1,5 @@
+description = "bash: interactive shell config, profile and window title"
+
+[[program]]
+name = "bash"
+note = "the shell these files configure; .bashrc sources ~/.shell.d, so the shell package belongs with it"

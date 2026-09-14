@@ -1622,8 +1622,11 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
         print(f"\n{B}{C}{'=' * width}{X}")
         print(f"{B}{C}{title}{X}")
 
-    # ── dots & stow ──────────────────────────────────────────────────────────
-    section("dots & stow")
+    # ── Prerequisites ────────────────────────────────────────────────────────
+    # dots, stow and pixi belong to no package: every package depends on them,
+    # so no package's manifest can declare them. They are the one set of
+    # dependencies checkhealth has to know about on its own.
+    section("Prerequisites")
     dots_path = shutil.which("dots")
     if dots_path:
         ok(f"dots: {dots_path}")
@@ -1634,6 +1637,41 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
         ok(f"stow: {stow_path}")
     else:
         err("stow not installed  (run: pixi global install --expose stow stow)")
+
+    pixi_path = shutil.which("pixi")
+    if not pixi_path:
+        warn("pixi: not installed")
+        detail("curl -fsSL https://pixi.sh/install.sh | bash")
+    else:
+        ok(f"pixi: {pixi_path}")
+        ver_res = subprocess.run(
+            ["pixi", "--version"], capture_output=True, text=True, timeout=5
+        )
+        current_ver = ver_res.stdout.strip() if ver_res.returncode == 0 else ""
+        if current_ver:
+            detail(current_ver)
+        try:
+            req = urllib.request.Request(
+                "https://api.github.com/repos/prefix-dev/pixi/releases/latest",
+                headers={"User-Agent": "dots-checkhealth/1.0"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read())
+            latest_tag = data.get("tag_name", "").lstrip("v")
+            current_tag = (
+                current_ver.removeprefix("pixi ").strip() if current_ver else ""
+            )
+            if latest_tag and current_tag:
+                if current_tag == latest_tag:
+                    detail(f"up to date (v{latest_tag})")
+                else:
+                    warn(
+                        f"pixi: v{current_tag} → v{latest_tag} available  (run: pixi self-update)"
+                    )
+            else:
+                warn("pixi: could not compare versions")
+        except Exception as exc:
+            warn(f"pixi: could not check for updates ({exc})")
 
     # ── Shell ────────────────────────────────────────────────────────────────
     section("Shell")
@@ -1677,43 +1715,6 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
         warn("bash dotfiles stowed but shell package is not (run: dots install shell)")
     if zsh_stowed and not shell_stowed:
         warn("zsh dotfiles stowed but shell package is not (run: dots install shell)")
-
-    # ── Pixi ─────────────────────────────────────────────────────────────────
-    section("Pixi")
-    pixi_path = shutil.which("pixi")
-    if not pixi_path:
-        warn("pixi not installed")
-        warn("Install: curl -fsSL https://pixi.sh/install.sh | bash")
-    else:
-        ok(f"Installed at {pixi_path}")
-        ver_res = subprocess.run(
-            ["pixi", "--version"], capture_output=True, text=True, timeout=5
-        )
-        current_ver = ver_res.stdout.strip() if ver_res.returncode == 0 else ""
-        if current_ver:
-            ok(f"Version: {current_ver}")
-        try:
-            req = urllib.request.Request(
-                "https://api.github.com/repos/prefix-dev/pixi/releases/latest",
-                headers={"User-Agent": "dots-checkhealth/1.0"},
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read())
-            latest_tag = data.get("tag_name", "").lstrip("v")
-            current_tag = (
-                current_ver.removeprefix("pixi ").strip() if current_ver else ""
-            )
-            if latest_tag and current_tag:
-                if current_tag == latest_tag:
-                    ok(f"Up to date (v{latest_tag})")
-                else:
-                    warn(
-                        f"Update available: v{current_tag} → v{latest_tag}  (run: pixi self-update)"
-                    )
-            else:
-                warn("Could not compare pixi versions")
-        except Exception as exc:
-            warn(f"Could not check for pixi updates: {exc}")
 
     # ── Package dependencies ─────────────────────────────────────────────────
     # Everything below comes from the packages' own .dots-install.toml files —
@@ -1768,50 +1769,6 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
             for pkg in unstowed:
                 warn(f"{pkg}: not installed — its dependencies were not checked")
                 detail(f"dots install {pkg}")
-
-    # ── Nerd Fonts ───────────────────────────────────────────────────────────
-    section("Nerd Fonts")
-    nerd_families: set[str] = set()
-    if shutil.which("fc-list"):
-        try:
-            fc_res = subprocess.run(
-                ["fc-list", ":", "family"],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            for line in fc_res.stdout.splitlines():
-                for token in line.split(","):
-                    token = token.strip()
-                    if "nerd" in token.lower():
-                        nerd_families.add(token)
-        except Exception:
-            pass
-    else:
-        # Fallback: scan common font dirs for files with "nerd" in the name
-        font_dirs = [
-            Path.home() / ".local/share/fonts",
-            Path.home() / ".fonts",
-            Path("/usr/share/fonts"),
-            Path("/usr/local/share/fonts"),
-        ]
-        for font_dir in font_dirs:
-            if font_dir.is_dir():
-                for f in font_dir.rglob("*"):
-                    if (
-                        f.suffix.lower() in (".ttf", ".otf")
-                        and "nerd" in f.stem.lower()
-                    ):
-                        nerd_families.add(f.stem)
-
-    if nerd_families:
-        for fam in sorted(nerd_families):
-            ok(fam)
-    else:
-        warn("No Nerd Fonts detected")
-        warn(
-            "Required by many configs — install from: https://www.nerdfonts.com/font-downloads"
-        )
 
     print()
     return 0

@@ -64,11 +64,14 @@ just does the right thing.
 See [scripts/dots.README.md](scripts/dots.README.md) for the file format
 (`dots-install.toml` without the leading dot works too).
 
-Two things aren't tied to a single package and `dots checkhealth` checks them
-separately:
+Three things belong to no package, because every package depends on them —
+`dots checkhealth` reports them under **Prerequisites**:
 
+* **dots** itself, on `PATH`
+* **stow**, which does the symlinking
 * **pixi** — the package manager `bootstrap.sh` installs, and the one most of
   the declared programs come from
-* **a Nerd Font** (FiraCode Nerd Font is what these configs assume) — required
-  by the prompt, editor and terminal configs; grab one from
-  [nerdfonts.com](https://www.nerdfonts.com/font-downloads)
+
+The font these configs assume (FiraCode Nerd Font, required by the prompt,
+editor and terminal) is not one of them: `stow/fonts` ships it and its manifest
+runs `fc-cache` and checks fontconfig can see it.
