@@ -1,11 +1,18 @@
+# Separate kill/wake keys so repeated presses don't cancel out:
+#   ctrl+alt+shift+k  -> KILL   (keyboard + pointer together)
+#   ctrl+alt+shift+l  -> "live" / WAKE (both)
+# Tapping kill repeatedly just keeps it killed; tapping wake keeps it awake.
+# Note: wake from the fairyboard (or any external kbd); ctrl+alt+shift+w was
+# avoided because that chord is matrix-blocked on the Dell laptop keyboard.
+
 [groups.laptop_keyboards]
 label = "Laptop Keyboards"
 keyboards = ["AT Translated Set 2 keyboard"]
 kill_combo = "ctrl+alt+shift+k"
-wake_combo = "ctrl+alt+shift+k"
+wake_combo = "ctrl+alt+shift+l"
 
 [groups.laptop_trackpads]
 label = "Laptop Trackpads"
 pointers = ["DELL*Touchpad", "*Synaptics*", "*ALPS TrackPoint*", "PIXA*Touchpad"]
-kill_combo = "ctrl+alt+shift+p"
-wake_combo = "ctrl+alt+shift+p"
+kill_combo = "ctrl+alt+shift+k"
+wake_combo = "ctrl+alt+shift+l"
