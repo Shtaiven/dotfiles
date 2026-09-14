@@ -18,7 +18,7 @@ initial setup. Run `dots checkhealth` to confirm.
 |---|---|
 | `dots install <pkg>…` | Symlink a package's files into `~`, then apply its `.dots-install.toml`. On conflict, prompts to adopt / overwrite (with backup) / skip. `-y` accepts every post-install action, `--no-post` skips them. |
 | `dots remove <pkg>…` | Remove the symlinks a package created (source files kept). |
-| `dots list [--installed\|--not-installed\|--unmanaged]` | Show every package and its status: `installed`, `not installed`, or `partial`. |
+| `dots list [--installed\|--not-installed\|--unmanaged]` | Show every package and its status: `installed`, `not installed`, or `partial`. Copy-mode packages are reported as `copied`/`drifted` against the repo's contents. |
 | `dots adopt <pkg> <path>…` | Capture live files from `~` into a package, then re-stow them as symlinks. `--tracked` limits it to files git already tracks. |
 | `dots update` | `git pull` the repo — only on `main` with a clean tree. |
 | `dots dir [pkg]` | Print the absolute path to the repo root, or to `stow/<pkg>`. |
@@ -154,6 +154,42 @@ reason = "COSMIC saves settings by atomic rename, ..."
 the `reason` so it's clear why. The three modes are mutually exclusive — declare
 two and both are ignored with a warning.
 
+A copy-mode package leaves no symlinks, so counting links says nothing about
+it. Both status commands compare it against the repo's bytes instead:
+
+```
+cosmic (247 copied, 5 drifted)
+```
+
+`copied` is how many of the files the package owns are present in the target,
+`drifted` how many of those differ from the repo, and `not copied` how many are
+missing. Before this, every copied file counted as `unmanaged` — the label for
+a *conflict* — so a correctly installed `cosmic` read as 247 problems and real
+divergence was invisible inside that number. `--unmanaged` now selects copy
+packages with drifted files, and `--installed` / `--not-installed` go by
+whether the files are there.
+
+`checkhealth` uses the same signal to decide whether to check a copy package's
+dependencies, rather than reporting a perfectly installed `cosmic` as missing
+and skipping them — and reports the drift itself, naming the files:
+
+```
+## cosmic — COSMIC desktop settings
+  WARN  5 copied file(s) differ from the repo
+          ~/.config/cosmic/com.system76.CosmicFiles/v1/tab
+          ...
+          dots adopt cosmic    # keep the live copies
+          dots install cosmic  # restore the repo's
+```
+
+It names the first ten and counts the rest. A copy package with no drift says
+so (`OK copied files all match the repo`), so silence never has to be read as
+either "fine" or "not checked".
+
+The comparison is byte-exact, so a file that differs only by a trailing newline
+counts as drifted. `dots adopt cosmic` pulls the live version back into the
+repo; `dots install cosmic` pushes the repo's version out.
+
 An explicit flag on the command line always wins, so a one-off
 `dots install -a cosmic` still works and says what it overrode. `copy` applies
 on every install; `overwrite` and `adopt` only engage when there's a conflict,
@@ -192,8 +228,8 @@ with `code --install-extension`, because VS Code no longer loads extension
 folders that were merely dropped into `~/.vscode/extensions`. Nothing is
 symlinked, a `[[command]]` does the work, and `dots list` says `vscode (0
 stowed)` with no "not linked" count. `checkhealth` treats such a package as
-present and checks its dependencies rather than reporting it as unstowed —
-there is nothing it could ever stow.
+present and checks its dependencies rather than reporting it as missing —
+there is nothing it could ever install.
 
 `dots` also mirrors stow's own built-in ignore list, so a package's top-level
 `README.*`, `LICENSE.*` and `COPYING`, plus `.git*`, editor backups and VCS

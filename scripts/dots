@@ -300,6 +300,9 @@ MANIFEST_TOP_KEYS = {
     "service",
 }
 # Mutually exclusive, mirroring `dots install`'s own -c/-o/-a group.
+# How many drifted files checkhealth names before summarising the rest.
+DRIFT_SHOWN = 10
+
 INSTALL_MODES = ("copy", "overwrite", "adopt")
 INSTALL_KEYS = set(INSTALL_MODES) | {"reason", "ignore"}
 MANIFEST_ITEM_KEYS = {
@@ -538,8 +541,7 @@ def has_installable_files(pkg: str) -> bool:
     A package can legitimately install nothing: stow/vscode's whole payload is
     [install] ignore-d, because extension/ is packed into a .vsix and handed to
     `code --install-extension` by a post-install command rather than symlinked
-    into $HOME. Such a package can never show up as stowed, so checkhealth must
-    not read an empty link list as "not installed yet".
+    into $HOME. Such a package can never show up as stowed.
     """
     pkg_dir = STOW_DIR / pkg
     ignored = ignore_matcher(pkg)
@@ -548,6 +550,29 @@ def has_installable_files(pkg: str) -> bool:
             rel = (Path(root) / name).relative_to(pkg_dir).as_posix()
             if not ignored(rel):
                 return True
+    return False
+
+
+def is_installed(pkg: str, stowed_links: list[Path]) -> bool:
+    """Is this package installed — by whichever route it installs?
+
+    Counting symlinks into STOW_DIR only recognises the default mode. Two kinds
+    of package never produce one and are not "missing":
+
+      * `[install] copy = true` (stow/cosmic) lands real files, because COSMIC
+        rewrites its config by atomic rename and would replace a symlink anyway.
+        Installed means every file it owns is present in the target.
+      * a package with nothing to install at all (stow/vscode — see
+        has_installable_files).
+    """
+    if stowed_links:
+        return True
+    if not has_installable_files(pkg):
+        return True
+    manifest = load_manifest(pkg)
+    if manifest and manifest["mode"] == "copy":
+        missing, _, _ = get_copy_drift(pkg)
+        return not missing
     return False
 
 
@@ -912,6 +937,45 @@ def cmd_remove(args: argparse.Namespace) -> int:
     return 0
 
 
+def get_copy_drift(pkg: str) -> tuple[list[Path], list[Path], list[Path]]:
+    """Return (missing, drifted, in_sync) for a copy-mode package.
+
+    A copy-installed package leaves no symlinks, so there is nothing to count
+    links against — but the repo still holds the authoritative bytes of every
+    file it owns. Comparing those with what is in the target says exactly as
+    much as a symlink does, and rather more: a symlink can only be there or
+    not, while a copy can also have been edited in place. Which is the whole
+    point of copy mode — COSMIC rewrites these files itself.
+
+      missing:  the package owns it, the target has nothing there
+      drifted:  present but the bytes differ — the app (or you) changed it
+      in_sync:  present and byte-identical to the repo
+    """
+    pkg_dir = STOW_DIR / pkg
+    ignored = ignore_matcher(pkg)
+    missing: list[Path] = []
+    drifted: list[Path] = []
+    in_sync: list[Path] = []
+
+    for root, _dirs, files in os.walk(pkg_dir):
+        for name in files:
+            source = Path(root) / name
+            rel = source.relative_to(pkg_dir)
+            if ignored(rel.as_posix()):
+                continue
+            target = TARGET_DIR / rel
+            if not target.exists():
+                missing.append(target)
+                continue
+            try:
+                same = source.read_bytes() == target.read_bytes()
+            except OSError:
+                same = False
+            (in_sync if same else drifted).append(target)
+
+    return missing, drifted, in_sync
+
+
 def get_package_drift(
     pkg: str, stowed_links: list[Path]
 ) -> tuple[list[Path], list[Path]]:
@@ -969,6 +1033,28 @@ def cmd_list(args: argparse.Namespace) -> int:
 
     for pkg in all_pkgs:
         stowed_links = stowed.get(pkg, [])
+        manifest = load_manifest(pkg)
+
+        # A copy-mode package has no symlinks to count. Its files are real, so
+        # report them against the repo's bytes instead: every one of them would
+        # otherwise read as "unmanaged", which is what a *conflict* looks like.
+        if manifest and manifest["mode"] == "copy":
+            missing, drifted, in_sync = get_copy_drift(pkg)
+            if args.installed and not (in_sync or drifted):
+                continue
+            if args.not_installed and not missing:
+                continue
+            if args.unmanaged and not drifted:
+                continue
+
+            parts = [f"{len(in_sync) + len(drifted)} copied"]
+            if drifted:
+                parts.append(f"{len(drifted)} drifted")
+            if missing:
+                parts.append(f"{len(missing)} not copied")
+            print(f"{pkg} ({', '.join(parts)})")
+            continue
+
         repo_only, unmanaged = get_package_drift(pkg, stowed_links)
 
         if args.installed and not stowed_links:
@@ -1629,18 +1715,42 @@ def cmd_checkhealth(args: argparse.Namespace) -> int:
     else:
         unstowed: list[str] = []
         for pkg, manifest in manifests.items():
-            # A package that installs no files (everything [install] ignore-d)
-            # is never "stowed" — check its dependencies rather than warn.
-            if not stowed_early.get(pkg) and has_installable_files(pkg):
+            if not is_installed(pkg, stowed_early.get(pkg, [])):
                 unstowed.append(pkg)
                 continue
+
+            # A copy-mode package's files are real and the app rewrites them in
+            # place, so being installed says nothing about still matching the
+            # repo. Report what has diverged.
+            drifted: list[Path] = []
+            if manifest["mode"] == "copy":
+                _, drifted, _ = get_copy_drift(pkg)
+
+            declares_deps = any(
+                manifest[s] for s in ("program", "git", "command", "service")
+            )
+            # A manifest may declare only [install] (stow/cosmic) — with nothing
+            # to report, don't print a bare section header for it.
+            if not declares_deps and not drifted and manifest["mode"] != "copy":
+                continue
+
             desc = manifest["description"]
             section(f"{pkg}" + (f" — {desc}" if desc else ""))
+            if manifest["mode"] == "copy" and not drifted:
+                ok("copied files all match the repo")
+            if drifted:
+                warn(f"{len(drifted)} copied file(s) differ from the repo")
+                for path in drifted[:DRIFT_SHOWN]:
+                    detail(str(path).replace(str(TARGET_DIR), "~", 1))
+                if len(drifted) > DRIFT_SHOWN:
+                    detail(f"... and {len(drifted) - DRIFT_SHOWN} more")
+                detail(f"dots adopt {pkg}    # keep the live copies")
+                detail(f"dots install {pkg}  # restore the repo's")
             manifest_health(pkg, manifest, ok, warn, err, detail)
         if unstowed:
-            section("Declared but not stowed")
+            section("Declared but not installed")
             for pkg in unstowed:
-                warn(f"{pkg}: not stowed — its dependencies were not checked")
+                warn(f"{pkg}: not installed — its dependencies were not checked")
                 detail(f"dots install {pkg}")
 
     # ── Nerd Fonts ───────────────────────────────────────────────────────────
