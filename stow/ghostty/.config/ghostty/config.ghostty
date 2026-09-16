@@ -46,10 +46,11 @@ gtk-toolbar-style = flat
 
 # ── Bell ───────────────────────────────────────────────────────────────
 # Adds to the defaults (attention, title). COSMIC largely ignores the GTK
-# urgency hint that `attention` sets, so draw a border on the alerted surface.
+# urgency hint that `attention` sets, and `border` is the only feature that
+# marks a split rather than a tab.
 bell-features = border
 # The border color is not a config option; it comes from Ghostty's built-in GTK
-# stylesheet (libadwaita --accent-color). Override it with gruvbox yellow.
+# stylesheet (libadwaita --accent-color). gtk.css restyles it as a glow.
 gtk-custom-css = gtk.css
 
 # ── Keybinds ───────────────────────────────────────────────────────────
