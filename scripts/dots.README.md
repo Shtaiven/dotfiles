@@ -19,7 +19,7 @@ initial setup. Run `dots checkhealth` to confirm.
 | `dots install <pkg>…` | Symlink a package's files into `~`, then apply its `.dots-install.toml`. On conflict, prompts to adopt / overwrite (with backup) / skip. `-y` accepts every post-install action, `--no-post` skips them. |
 | `dots remove <pkg>…` | Remove the symlinks a package created (source files kept). |
 | `dots list [--installed\|--not-installed\|--unmanaged]` | Show every package and its status: `installed`, `not installed`, or `partial`. Copy-mode packages are reported as `copied`/`drifted` against the repo's contents. |
-| `dots adopt <pkg> <path>…` | Capture live files from `~` into a package, then re-stow them as symlinks. `--tracked` limits it to files git already tracks. |
+| `dots adopt <pkg> <path>…` | Capture live files from `~` into a package, then re-stow them as symlinks. `--tracked` limits it to files git already tracks. A package declaring `[install] copy = true` is adopted as copies instead; `--no-copy` opts out. |
 | `dots update` | `git pull` the repo — only on `main` with a clean tree. |
 | `dots dir [pkg]` | Print the absolute path to the repo root, or to `stow/<pkg>`. |
 | `dots edit <pkg>` | Open `stow/<pkg>/` in `$EDITOR`. |
@@ -53,6 +53,10 @@ When a target already exists with different content, `dots install` offers:
 * **copy** (`-c`) — copy real files instead of symlinking, for apps that save via
   atomic rename and would otherwise clobber stow symlinks (e.g. COSMIC)
 
+`--no-copy` is the opposite: it drops a `[install] copy = true` declared by the
+package without naming a replacement, so the install symlinks and falls back to
+the prompt above on conflict.
+
 ## Adopting only tracked files (`adopt --tracked`)
 
 By default `adopt` pulls in everything under the paths you give it, including
@@ -62,12 +66,42 @@ are skipped, and directories that contain only untracked files aren't created.
 
 It reads the index rather than the worktree, so it composes with the other
 flags: `-o --tracked` wipes the package and restores just its tracked files from
-the host, and it works with or without `--copy`. Combine with `--dry-run` to see
-exactly what would be skipped.
+the host, and it works in either copy or symlink mode. Combine with `--dry-run`
+to see exactly what would be skipped.
 
 ```sh
-dots adopt -c -t cosmic ~/.config/cosmic  # refresh only what's already tracked
+dots adopt -t cosmic ~/.config/cosmic  # refresh only what's already tracked
 ```
+
+## Copy mode (`adopt --copy` / `--no-copy`)
+
+`--copy` is the reverse of `dots install --copy`: live files are copied into the
+package as real files and the re-stow step is skipped, because for a
+copy-managed package the live files already *are* the installed copies.
+
+You don't have to pass it. A package whose `.dots-install.toml` declares
+`[install] copy = true` is adopted that way by default, in every mode —
+plain, `--tracked`, `--overwrite`, `--dry-run` — so `adopt` and `install` treat
+it the same way and neither needs a flag you have to remember. `dots` prints the
+`reason` when it applies:
+
+```
+$ dots adopt cosmic ~/.config/cosmic
+  cosmic: adopting with --copy per [install] copy = true — COSMIC saves settings by atomic rename, ...
+```
+
+`-c` / `--copy` is still there for a package that *doesn't* declare it — a
+one-off copy adopt without editing the manifest. `--no-copy` is the opposite,
+opting back out for one run: adopt the files and re-stow them as symlinks
+anyway.
+
+```sh
+dots adopt -c logseq ~/.logseq            # copy mode for an undeclared package
+dots adopt --no-copy cosmic ~/.config/cosmic  # symlink a copy-declared one
+```
+
+`-c` and `--no-copy` are mutually exclusive, and neither combines with `-i` /
+`--install` — under copy mode there is nothing to re-stow.
 
 ## Post-install (`.dots-install.toml`)
 
@@ -160,7 +194,8 @@ reason = "COSMIC saves settings by atomic rename, ..."
 ```
 
 `dots install cosmic` then copies real files with no flag to remember, printing
-the `reason` so it's clear why. The three modes are mutually exclusive — declare
+the `reason` so it's clear why — and `dots adopt cosmic` copies in the other
+direction for the same reason, unless you pass `--no-copy`. The three modes are mutually exclusive — declare
 two and both are ignored with a warning.
 
 A copy-mode package leaves no symlinks, so counting links says nothing about
@@ -200,7 +235,9 @@ counts as drifted. `dots adopt cosmic` pulls the live version back into the
 repo; `dots install cosmic` pushes the repo's version out.
 
 An explicit flag on the command line always wins, so a one-off
-`dots install -a cosmic` still works and says what it overrode. `copy` applies
+`dots install -a cosmic` still works and says what it overrode; `--no-copy`
+(on both `install` and `adopt`) drops a declared `copy` without picking another
+mode. `copy` applies
 on every install; `overwrite` and `adopt` only engage when there's a conflict,
 exactly as the flags do. There is deliberately no way to declare `-y`: whether
 to install software without being asked stays your call, not a package's.
@@ -287,7 +324,7 @@ dots install zsh nvim shell     # install several packages
 dots install -y zsh shell       # ...accepting every post-install action
 dots list --not-installed       # what's not linked yet
 dots adopt cosmic ~/.config/cosmic   # pull live changes back into the repo
-dots adopt -c -t cosmic ~/.config/cosmic  # ...only the files already tracked
+dots adopt -t cosmic ~/.config/cosmic  # ...only the files already tracked
 cd "$(dots dir nvim)"           # jump to a package directory
 dots completion zsh >> ~/.zshrc # enable tab-completion
 ```

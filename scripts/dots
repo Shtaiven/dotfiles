@@ -843,10 +843,14 @@ def _resolve_install_mode(pkg: str, args: argparse.Namespace, manifest: dict | N
 
     An explicit CLI flag always wins over the manifest's [install] table, so a
     one-off `dots install -a cosmic` still works on a package that declares
-    copy = true.
+    copy = true. --no-copy drops a declared copy without naming a replacement,
+    leaving the usual conflict prompt.
     """
     cli = next((m for m in INSTALL_MODES if getattr(args, m)), None)
     declared = manifest["mode"] if manifest else None
+    if getattr(args, "no_copy", False) and declared == "copy":
+        print(f"  {pkg}: --no-copy overrides [install] copy = true")
+        declared = None
     if cli:
         if declared and declared != cli:
             print(f"  {pkg}: --{cli} overrides [install] {declared} = true")
@@ -1306,9 +1310,43 @@ def copy_install(pkg: str) -> int:
     return _copy_install_tree(STOW_DIR / pkg, TARGET_DIR, ignore_matcher(pkg))
 
 
+def _resolve_adopt_copy(args: argparse.Namespace, manifest: dict | None) -> bool:
+    """Decide whether `dots adopt` runs in copy mode.
+
+    Mirrors _resolve_install_mode for the reverse direction: a package that
+    declares [install] copy = true is adopted as real files with no re-stow,
+    so adopting it needs no flag to remember either. An explicit --copy or
+    --no-copy on the command line always wins.
+    """
+    declared = bool(manifest and manifest["mode"] == "copy")
+    if args.no_copy:
+        if declared:
+            print(f"  {args.package}: --no-copy overrides [install] copy = true")
+        return False
+    if args.copy:
+        return True
+    if declared:
+        reason = manifest["reason"] if manifest else ""
+        print(
+            f"  {args.package}: adopting with --copy per [install] copy = true"
+            + (f" — {reason}" if reason else "")
+        )
+    return declared
+
+
 def cmd_adopt(args: argparse.Namespace) -> int:
     pkg_path = STOW_DIR / args.package
     dry = getattr(args, "dry_run", False)
+
+    copy_mode = _resolve_adopt_copy(args, load_manifest(args.package))
+    if copy_mode and args.install:
+        print(
+            "Error: -i/--install has nothing to do in copy mode — the live "
+            "files already are the installed copies. Pass --no-copy to "
+            "re-stow as symlinks instead.",
+            file=sys.stderr,
+        )
+        return 1
 
     tracked: set[Path] | None = None
     if getattr(args, "tracked", False):
@@ -1415,10 +1453,12 @@ def cmd_adopt(args: argparse.Namespace) -> int:
                 else "."
             )
         )
+        if copy_mode:
+            print("Copy-managed: nothing would be re-stowed.")
         print("Re-run without --dry-run to apply.")
         return 0
 
-    if args.copy:
+    if copy_mode:
         # Copy-managed package: the live files already are the installed copies,
         # so there is nothing to re-stow (mirror of `dots install --copy`, reversed).
         print(f"Adopted (copied) package: {args.package}")
@@ -1879,9 +1919,10 @@ _dots() {{
             case $words[1] in
                 install)
                     _arguments \\
-                        '(-o --overwrite -a --adopt -c --copy)'{{-o,--overwrite}}'[overwrite existing files]' \\
-                        '(-o --overwrite -a --adopt -c --copy)'{{-a,--adopt}}'[adopt existing files into dotfiles]' \\
-                        '(-o --overwrite -a --adopt -c --copy)'{{-c,--copy}}'[copy files instead of symlinking]' \\
+                        '(-o --overwrite -a --adopt -c --copy --no-copy)'{{-o,--overwrite}}'[overwrite existing files]' \\
+                        '(-o --overwrite -a --adopt -c --copy --no-copy)'{{-a,--adopt}}'[adopt existing files into dotfiles]' \\
+                        '(-o --overwrite -a --adopt -c --copy --no-copy)'{{-c,--copy}}'[copy files instead of symlinking]' \\
+                        '(-o --overwrite -a --adopt -c --copy --no-copy)--no-copy[ignore a declared copy mode and symlink]' \\
                         '(--no-post)'{{-y,--yes}}'[accept every post-install action]' \\
                         '(-y --yes)--no-post[stow only, skip .dots-install.toml]' \\
                         '*:package:(${{packages[@]}})'
@@ -1902,9 +1943,10 @@ _dots() {{
                     _arguments \\
                         '(-o --overwrite)'{{-o,--overwrite}}'[overwrite existing package]' \\
                         '(-t --tracked)'{{-t,--tracked}}'[only adopt files already tracked by git]' \\
-                        '(-i --install -n --no-install -c --copy)'{{-i,--install}}'[install after creating]' \\
-                        '(-i --install -n --no-install -c --copy)'{{-n,--no-install}}'[don'"'"'t install after creating]' \\
-                        '(-i --install -n --no-install -c --copy)'{{-c,--copy}}'[copy-managed package: real files, no re-stow]' \\
+                        '(-i --install -n --no-install)'{{-i,--install}}'[install after creating]' \\
+                        '(-i --install -n --no-install)'{{-n,--no-install}}'[don'"'"'t install after creating]' \\
+                        '(-c --copy --no-copy)'{{-c,--copy}}'[copy-managed package: real files, no re-stow]' \\
+                        '(-c --copy --no-copy)--no-copy[opt out of copy mode: re-stow as symlinks]' \\
                         '1:package' \\
                         '*:file:_files'
                     ;;
@@ -1944,7 +1986,7 @@ _dots_bash() {{
     case $subcmd in
         install)
             case $cur in
-                -*) COMPREPLY=($(compgen -W "-o --overwrite -a --adopt -c --copy -y --yes --no-post" -- "$cur")) ;;
+                -*) COMPREPLY=($(compgen -W "-o --overwrite -a --adopt -c --copy --no-copy -y --yes --no-post" -- "$cur")) ;;
                 *)  COMPREPLY=($(compgen -W "$packages" -- "$cur")) ;;
             esac ;;
         remove|edit)
@@ -1956,7 +1998,7 @@ _dots_bash() {{
         adopt)
             if [ "$cword" -eq 2 ]; then
                 case $cur in
-                    -*) COMPREPLY=($(compgen -W "-o --overwrite -t --tracked -i --install -n --no-install -c --copy" -- "$cur")) ;;
+                    -*) COMPREPLY=($(compgen -W "-o --overwrite -t --tracked -i --install -n --no-install -c --copy --no-copy" -- "$cur")) ;;
                 esac
             else
                 COMPREPLY=($(compgen -f -- "$cur"))
@@ -2026,7 +2068,9 @@ def main() -> int:
             "\n"
             f"A package's {INSTALL_MANIFESTS[0]} (or dots-install.toml) can set\n"
             "the mode itself via [install], so `dots install cosmic` copies with\n"
-            "no flag to remember; an explicit flag here overrides it.\n"
+            "no flag to remember; an explicit flag here overrides it, and\n"
+            "--no-copy drops a declared copy = true without naming a\n"
+            "replacement.\n"
             "\n"
             "After stowing, the rest of that file is applied: declared programs\n"
             "are offered via pixi or flatpak, git clones and installer commands\n"
@@ -2040,6 +2084,7 @@ def main() -> int:
             "  dots install -o cosmic          # force overwrite existing files\n"
             "  dots install -a nvim            # adopt existing files into the package\n"
             "  dots install -c cosmic          # copy files instead of symlinking\n"
+            "  dots install --no-copy cosmic   # symlink anyway, ignoring [install] copy\n"
             "  dots install zsh nvim shell     # install multiple at once\n"
             "  dots install -y zsh shell       # accept every post-install action\n"
             "  dots install --no-post zsh      # symlink only, run no post-install\n"
@@ -2071,6 +2116,11 @@ def main() -> int:
         default=None,
         help="Copy real files into the target instead of symlinking (overwrites existing); "
         "for apps that save via atomic rename and would clobber stow symlinks (e.g. COSMIC)",
+    )
+    conflict_group.add_argument(
+        "--no-copy",
+        action="store_true",
+        help="Ignore [install] copy = true and symlink instead, prompting on conflict",
     )
     p_install.add_argument(
         "-y",
@@ -2163,11 +2213,15 @@ def main() -> int:
             "with --overwrite (wipe, then restore just the tracked files from the\n"
             "host) and with or without --copy.\n"
             "\n"
-            "Use --copy for copy-managed packages (the reverse of\n"
-            "`dots install --copy`): live files are copied into stow as real\n"
-            "files and re-stowing is skipped, since the live files already are\n"
-            "the installed copies. Combine with --overwrite to delete the\n"
-            "package directory and copy the host's contents in fresh."
+            "Copy-managed packages (the reverse of `dots install --copy`) copy\n"
+            "live files into stow as real files and skip re-stowing, since the\n"
+            "live files already are the installed copies. A package that\n"
+            "declares [install] copy = true in its .dots-install.toml is adopted\n"
+            "that way by default — no flag to remember, matching how\n"
+            "`dots install` treats it. Use --copy to force it for a package\n"
+            "that doesn't declare it, or --no-copy to opt out and re-stow as\n"
+            "symlinks anyway. Combine with --overwrite to delete the package\n"
+            "directory and copy the host's contents in fresh."
         ),
         epilog=(
             "Examples:\n"
@@ -2175,8 +2229,10 @@ def main() -> int:
             "  dots adopt --dry-run cosmic ~/.config/cosmic     # show planned changes only\n"
             "  dots adopt -o nvim ~/.config/nvim                # wipe stow/nvim and re-adopt\n"
             "  dots adopt -i tmux ~/.tmux.conf                  # adopt and re-install non-interactively\n"
-            "  dots adopt -c -o cosmic ~/.config/cosmic         # refresh copy-managed pkg from host\n"
-            "  dots adopt -c -t cosmic ~/.config/cosmic         # refresh only the files already tracked\n"
+            "  dots adopt -o cosmic ~/.config/cosmic            # copy-managed per [install] copy = true\n"
+            "  dots adopt -t cosmic ~/.config/cosmic            # refresh only the files already tracked\n"
+            "  dots adopt -c logseq ~/.logseq                   # force copy mode, undeclared package\n"
+            "  dots adopt --no-copy cosmic ~/.config/cosmic     # adopt and re-stow as symlinks anyway\n"
         ),
         formatter_class=fmt,
     )
@@ -2217,13 +2273,21 @@ def main() -> int:
         action="store_true",
         help="Skip re-stow and exit after copying",
     )
-    install_group.add_argument(
+    copy_group = p_adopt.add_mutually_exclusive_group()
+    copy_group.add_argument(
         "-c",
         "--copy",
         action="store_true",
         help="Adopt as a copy-managed package: copy live files into stow as real "
         "files (no symlinks) and skip re-stowing, since the live files already are "
-        "the installed copies; the reverse of `dots install --copy` (e.g. COSMIC)",
+        "the installed copies; the reverse of `dots install --copy` (e.g. COSMIC). "
+        "Implied by [install] copy = true in the package's .dots-install.toml",
+    )
+    copy_group.add_argument(
+        "--no-copy",
+        action="store_true",
+        help="Opt out of copy mode: adopt and then re-stow as symlinks, even if "
+        "the package declares [install] copy = true",
     )
     p_adopt.set_defaults(func=cmd_adopt)
 
