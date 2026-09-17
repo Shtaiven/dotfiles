@@ -2,12 +2,56 @@
 theme = gruvbox-material-dark
 
 # ── Font ───────────────────────────────────────────────────────────────
+# The first font-family is the primary; the rest are fallbacks, tried in
+# order for any codepoint it lacks. Without them fontconfig answers per
+# codepoint from whatever sorts first, so a single line can mix six faces
+# (DejaVu Sans Mono, FreeMono, Noto Sans Mono CJK JP, FreeSerif …). Inspect
+# with `ghostty +show-face`.
+#
+#   Noto Color Emoji    first, so anything with a real emoji glyph gets one
+#   Noto Sans Symbols   planetary, alchemical and gender signs, enclosed
+#                       alphanumerics
+#   Noto Sans Symbols2  Miscellaneous Symbols, Dingbats, Geometric Shapes,
+#                       chess, Miscellaneous Symbols & Arrows
+#
+# The two monochrome faces are near-disjoint despite the names — Symbols2 is
+# not a newer Symbols, it covers different blocks — so their relative order
+# decides only a handful of codepoints. Color Emoji's position is the one
+# that matters; ahead of the mono faces it wins every codepoint it has.
+#
+# Nothing here needs a Nerd Font exclusion list: the primary always wins, so
+# the PUA icon ranges, the IEC power symbols U+23FB-U+23FE and U+2B58, and
+# the two Octicons living at U+2665 and U+26A1 all keep coming from
+# FiraCode. Box drawing, Block Elements and Braille never reach a font at
+# all — Ghostty draws those itself as sprites.
+#
+# Two consequences of the ranking need pinning, and font-codepoint-map is
+# the only thing that can do it: unlike font-family it outranks the primary
+# as well as the fallbacks. Both lists are deliberately tiny — everything
+# else is left to the ranking above.
 font-family = FiraCode Nerd Font Mono
+font-family = Noto Color Emoji
+font-family = Noto Sans Symbols
+font-family = Noto Sans Symbols2
 font-size = 11
 font-feature = -calt
 font-feature = -clig
 font-feature = -liga
 adjust-underline-position = 25%
+
+# Color Emoji sits ahead of the mono faces and has all four of these, so the
+# text-presentation symbols FiraCode lacks would come back as color bitmaps.
+# They are chrome in a running TUI, not pictures: ⏺ and ⏸ are Claude Code's
+# response and pause markers, ✳ is one of its spinner frames (the rest of
+# that family — ✢ ✶ ✻ ✽ — is already monochrome in Symbols2), and ✔ is the
+# check mark CLI tools print.
+font-codepoint-map = U+23F8-U+23FA,U+2733,U+2714=Noto Sans Symbols2
+
+# The reverse case: FiraCode has all four card suits, so as the primary it
+# would draw them monochrome. Pinned to color to keep the set matched — ♥
+# U+2665 is also Nerd Fonts' Octicon heart, given up on purpose here, and
+# nothing outside the PUA copies refers to it.
+font-codepoint-map = U+2660,U+2663,U+2665-U+2666=Noto Color Emoji
 
 # ── Cursor ─────────────────────────────────────────────────────────────
 cursor-style = bar
