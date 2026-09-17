@@ -1,21 +1,14 @@
 /*
- * GTK overrides for Ghostty's built-in stylesheet, for things with no config
- * option (the divider has split-divider-color; the bell border has nothing).
- * GTK 4.14.5 here: color-mix() and var() need 4.16+, so rules using them are
- * dropped -- use alpha() or a solid colour.
+ * GTK overrides for Ghostty's built-in stylesheet
  */
 
 /* Theme palette 0; keep in sync with themes/gruvbox-material-dark. */
 @define-color bell_glow #5a524c;
 
-/* Bell: inset glow in place of the built-in 3px box. Radius 0 keeps the outer
- * edge flush while the blur rounds the inner edge; spread must be half the
- * blur or the glow peaks at 50% where it should be solid. No animation -- a
- * CSS one runs once per config reload, not once per bell.
- */
+/* Bell: inset glow in place of the built-in 3px box. */
 .surface .bell-overlay {
   border-width: 0;
   border-radius: 0;
   box-shadow: inset 0 0 6px 3px @bell_glow;
-  margin: 0;
+  margin: 1px;  /* hold the glow a pixel off the split edge */
 }
