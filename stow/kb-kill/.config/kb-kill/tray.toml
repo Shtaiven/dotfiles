@@ -1,0 +1,5 @@
+# kb-kill-tray settings. The tray menu writes this file; the
+# geometry keys are yours to edit and apply at the next start.
+osd = true
+osd_margin = 98  # px above the bottom of the screen
+osd_opacity = 1.0  # 0.0 clear .. 1.0 solid
