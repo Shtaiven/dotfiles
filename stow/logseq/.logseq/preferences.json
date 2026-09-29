@@ -22,14 +22,13 @@
       "description": "Dark customizable theme theme with extra stuff",
       "mode": "dark",
       "pid": "logseq-awesome-styler",
-      "selected": false
+      "selected": true
     }
   },
   "externals": [],
   "pinnedToolbarItems": [
     "logseq-journals-calendar:goto-today",
     "logseq-todo-plugin:logseq-plugin-todo",
-    "logseq-journals-calendar:open-calendar",
-    "logseq-pdf-export-plugin:logseq-pdf-export-plugin"
+    "logseq-journals-calendar:open-calendar"
   ]
 }
