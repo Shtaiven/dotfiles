@@ -100,11 +100,16 @@ gtk-custom-css = gtk.css
 # ── Keybinds ───────────────────────────────────────────────────────────
 keybind = ctrl+shift+r=prompt_tab_title
 keybind = f11=toggle_fullscreen
+# Default toggle_fullscreen; conflicts with Claude Code's newline.
+keybind = ctrl+enter=unbind
 keybind = ctrl+shift+z=toggle_split_zoom
 
 # ── Tabs ───────────────────────────────────────────────────────────────
 keybind = ctrl+shift+home=previous_tab
 keybind = ctrl+shift+end=next_tab
+# Redundant with the above; frees them for nvim tab-page switching.
+keybind = ctrl+page_up=unbind
+keybind = ctrl+page_down=unbind
 # Adding alt moves the tab instead of going to it.
 keybind = ctrl+alt+shift+home=move_tab:-1
 keybind = ctrl+alt+shift+end=move_tab:1
@@ -129,16 +134,23 @@ keybind = ctrl+shift+arrow_left=goto_split:left
 keybind = ctrl+shift+arrow_right=goto_split:right
 keybind = ctrl+shift+arrow_up=goto_split:up
 keybind = ctrl+shift+arrow_down=goto_split:down
+# Vim-style aliases; mirrors alt+hjkl split nav in nvim/tmux.
+keybind = ctrl+shift+h=goto_split:left
+keybind = ctrl+shift+j=goto_split:down
+keybind = ctrl+shift+k=goto_split:up
+keybind = ctrl+shift+l=goto_split:right
 
 keybind = ctrl+alt+shift+arrow_left=resize_split:left,9
 keybind = ctrl+alt+shift+arrow_right=resize_split:right,9
 keybind = ctrl+alt+shift+arrow_up=resize_split:up,18
 keybind = ctrl+alt+shift+arrow_down=resize_split:down,18
+keybind = ctrl+alt+shift+h=resize_split:left,9
+keybind = ctrl+alt+shift+j=resize_split:down,18
+keybind = ctrl+alt+shift+k=resize_split:up,18
+keybind = ctrl+alt+shift+l=resize_split:right,9
 keybind = ctrl+alt+shift+equal=equalize_splits
 
 # ── Screen Dumps ───────────────────────────────────────────────────────
-keybind = ctrl+shift+j=unbind
-keybind = ctrl+alt+shift+j=unbind
 keybind = super+ctrl+shift+j=unbind
 keybind = ctrl+shift+d=write_screen_file:paste,plain
 keybind = ctrl+alt+shift+d=write_screen_file:open,plain
