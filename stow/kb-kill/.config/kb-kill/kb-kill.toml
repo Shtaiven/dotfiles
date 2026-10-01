@@ -5,14 +5,12 @@
 # Note: wake from the fairyboard (or any external kbd); ctrl+alt+shift+w was
 # avoided because that chord is matrix-blocked on the Dell laptop keyboard.
 
+kill_combo = "ctrl+shift+alt+k"
+wake_combo = "ctrl+shift+alt+l"
 [groups.laptop_keyboards]
 label = "Laptop Keyboards"
 keyboards = ["AT Translated Set 2 keyboard"]
-kill_combo = "ctrl+alt+shift+k"
-wake_combo = "ctrl+alt+shift+l"
 
 [groups.laptop_trackpads]
 label = "Laptop Trackpads"
 pointers = ["DELL*Touchpad", "*Synaptics*", "*ALPS TrackPoint*", "PIXA*Touchpad"]
-kill_combo = "ctrl+alt+shift+k"
-wake_combo = "ctrl+alt+shift+l"
