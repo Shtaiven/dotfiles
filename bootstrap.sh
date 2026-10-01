@@ -62,6 +62,15 @@ echo "==> Linking dots to ~/.local/bin"
 mkdir -p "$HOME/.local/bin"
 ln -sf "$DOTFILES_DIR/scripts/dots" "$HOME/.local/bin/dots"
 
+case ":$PATH:" in
+    *:"$HOME/.local/bin":*) ;;
+    *)
+        echo "    WARNING: ~/.local/bin is not on your PATH"
+        echo "    Log out and back in so ~/.profile picks it up, or for now run:"
+        echo "      export PATH=\"\$HOME/.local/bin:\$PATH\""
+        ;;
+esac
+
 echo "==> Done"
 echo "    Run 'dots list' to see available packages"
 echo "    Run 'dots install <package>' to stow a package"
