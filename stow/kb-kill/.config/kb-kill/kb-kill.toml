@@ -13,4 +13,4 @@ keyboards = ["AT Translated Set 2 keyboard"]
 
 [groups.laptop_trackpads]
 label = "Laptop Trackpads"
-pointers = ["DELL*Touchpad", "*Synaptics*", "*ALPS TrackPoint*", "PIXA*Touchpad"]
+pointers = ["DELL*Touchpad", "*Synaptics*", "*ALPS TrackPoint*", "PIXA*Touchpad", "UNIW0001:00 093A:0255*"]

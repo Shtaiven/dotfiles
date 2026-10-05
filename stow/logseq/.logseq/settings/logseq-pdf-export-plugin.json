@@ -1,5 +1,8 @@
 {
-  "retainedOptions": "",
+  "retainedOptions": [
+    "Hide Linked References",
+    "Hide Page Properties"
+  ],
   "template1CSS": "",
   "template1Choice": "Bullets for non top level elements",
   "template1Options": [
