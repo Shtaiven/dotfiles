@@ -82,6 +82,7 @@
     f = fetch
     l = log
     ll = dirs
+    ls = dirs
     ch = checkout
     pushf = push --force-with-lease
     uf = pushf
