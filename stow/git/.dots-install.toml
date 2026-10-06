@@ -8,3 +8,8 @@ pixi = "git"
 name = "delta"
 pixi = "git-delta"
 note = "configured as git's pager and diff/merge highlighter"
+
+[[warning]]
+name = "~/.gitconfig"
+message = "exists and is read after ~/.config/git/config, so any setting it shares with this package (e.g. user.email) overrides the repo's value"
+when_path = "~/.gitconfig"

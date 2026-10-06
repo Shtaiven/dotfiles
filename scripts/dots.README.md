@@ -166,6 +166,12 @@ scope = "user"                         # "user" (default) or "system"
 enable = true                          # default true
 restart = true                         # default true
 
+[[warning]]                            # printed after install when it applies
+name = "~/.gitconfig"
+message = "its settings override this package's config"
+when_path = "~/.gitconfig"             # a path whose existence triggers it
+when_cmd = "..."                       # a command whose exit 0 triggers it
+
 [install]                              # how this package wants to be installed
 copy = true                            # same as `dots install --copy`
 overwrite = true                       # same as -o; on conflict, take the repo's version

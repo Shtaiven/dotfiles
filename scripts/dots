@@ -285,6 +285,14 @@ def _confirm(prompt: str) -> bool:
 #   restart = true                  # default true
 #   note = "…"
 #
+#   [[warning]]                     # printed after install when it applies
+#   name = "~/.gitconfig"           # required
+#   message = "…"                   # required
+#   when_path = "~/.gitconfig"      # a path whose existence triggers it
+#   when_cmd = "…"                  # a command whose exit 0 triggers it
+#                                   # set both and both must pass; set neither
+#                                   # and it is printed every time
+#
 #   [install]                       # how this package wants to be installed
 #   copy = true                     # always copy real files (like install --copy)
 #   overwrite = true                # on conflict, take the repo's version
@@ -303,6 +311,7 @@ MANIFEST_TOP_KEYS = {
     "git",
     "command",
     "service",
+    "warning",
 }
 # How many drifted files checkhealth names before summarising the rest.
 DRIFT_SHOWN = 10
@@ -328,12 +337,14 @@ MANIFEST_ITEM_KEYS = {
     "git": {"name", "repo", "dest", "check_path", "recursive", "note"},
     "command": {"name", "run", "check_path", "check_cmd", "requires", "note"},
     "service": {"unit", "scope", "enable", "restart", "note"},
+    "warning": {"name", "message", "when_path", "when_cmd"},
 }
 MANIFEST_REQUIRED = {
     "program": ("name",),
     "git": ("name", "repo", "dest"),
     "command": ("name", "run"),
     "service": ("unit",),
+    "warning": ("name", "message"),
 }
 
 
@@ -464,7 +475,7 @@ def _load_manifest_uncached(pkg: str) -> dict | None:
         "reason": install.get("reason", ""),
         "ignore": ignore,
     }
-    for section in ("program", "git", "command", "service"):
+    for section in ("program", "git", "command", "service", "warning"):
         entries = raw.get(section, [])
         if isinstance(entries, dict):  # written as [program] instead of [[program]]
             entries = [entries]
@@ -815,6 +826,25 @@ def _post_install_service(entry: dict, assume_yes: bool) -> None:
     print(f"  {unit}: enabled, {'active' if active else 'inactive'}")
 
 
+def _post_install_warning(entry: dict) -> None:
+    probes: list[bool] = []
+    if entry.get("when_path"):
+        probes.append(_expand(str(entry["when_path"])).exists())
+    if entry.get("when_cmd"):
+        probes.append(
+            subprocess.run(
+                ["sh", "-c", str(entry["when_cmd"])],
+                capture_output=True,
+                env=manifest_env(),
+            ).returncode
+            == 0
+        )
+    if all(probes):  # no probe: always printed
+        # \033[33m is the terminal's own yellow, as checkhealth's WARN uses
+        y, x = ("\033[33m", "\033[0m") if sys.stdout.isatty() else ("", "")
+        print(f"  {y}Warning: {entry['name']}: {entry['message']}{x}")
+
+
 def post_install(
     pkg: str,
     assume_yes: bool = False,
@@ -836,6 +866,8 @@ def post_install(
         _post_install_command(entry, assume_yes)
     for entry in manifest["service"]:
         _post_install_service(entry, assume_yes)
+    for entry in manifest["warning"]:
+        _post_install_warning(entry)
 
 
 def _resolve_install_mode(pkg: str, args: argparse.Namespace, manifest: dict | None):
