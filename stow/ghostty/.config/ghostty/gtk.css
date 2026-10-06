@@ -12,3 +12,11 @@
   box-shadow: inset 0 0 6px 3px @bell_glow;
   margin: 1px;  /* hold the glow a pixel off the split edge */
 }
+
+/* Line under the tabs: with gtk-toolbar-style = flat the toolbarview gets
+ * .undershoot-top, which makes the terminal's scrolled window draw a 1px line
+ * + 4px gradient at its top edge whenever there is scrollback above. */
+toolbarview.undershoot-top scrolledwindow > undershoot.top {
+  box-shadow: none;
+  background: none;
+}
