@@ -268,4 +268,17 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
 		. "$NVM_DIR/nvm.sh"
 		npx "$@"
 	}
+	# First Tab on nvm loads nvm too, so version/alias completion works before first use
+	if [ -n "$BASH_VERSION" ] && [ -s "$NVM_DIR/bash_completion" ]; then
+		_nvm_lazy_complete() {
+			if ! command -v nvm_ls >/dev/null 2>&1; then
+				unset -f nvm node npm npx
+				. "$NVM_DIR/nvm.sh"
+			fi
+			unset -f _nvm_lazy_complete
+			. "$NVM_DIR/bash_completion"
+			__nvm "$@"
+		}
+		complete -o default -F _nvm_lazy_complete nvm
+	fi
 fi

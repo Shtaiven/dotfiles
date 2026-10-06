@@ -1,0 +1,5 @@
+description = "btop resource monitor config"
+
+[[program]]
+name = "btop"
+pixi = "btop"

@@ -19,5 +19,5 @@
     "Inherit logseq CSS"
   ],
   "blockExportHandling": "Keep title as heading of block",
-  "disabled": false
+  "disabled": true
 }

@@ -2,10 +2,10 @@
     "autoload": {
         "Logitech MX Master 3 for Mac": "Workspace Switcher",
         "MX Anywhere 3 Mouse": "Workspaces",
-        "AT Translated Set 2 keyboard": "CTRL<->CAPS",
         "Cherry GmbH CHERRY Mouse": "Workspace Switching",
         "Logitech Advanced Corded Mouse M500s": "Workspace switching",
-        "Logitech MX Anywhere 3": "Workspaces"
+        "Logitech MX Anywhere 3": "Workspaces",
+        "AT Translated Set 2 keyboard": "CTRL<->CAPS"
     },
     "macros": {
         "keystroke_sleep_ms": 10

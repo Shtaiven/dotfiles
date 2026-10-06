@@ -39,7 +39,9 @@ repos:
         language: script
         entry: scripts/check-hardcoded-home.sh
         types: [text]
-        exclude: ^(scripts/check-hardcoded-home\.sh|stow/cosmic/)|\.md$
+        # btop regenerates its config (including the example comments that
+        # mention a home path) every time it exits, so it can't be edited.
+        exclude: ^(scripts/check-hardcoded-home\.sh|stow/cosmic/|stow/btop/\.config/btop/btop\.conf$)|\.md$
 
       - id: zsh-syntax-check
         name: zsh syntax check

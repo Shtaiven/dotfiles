@@ -1,4 +1,5 @@
 # ~/.profile: executed by the command interpreter for login shells.
+# shellcheck shell=sh
 
 # if running bash
 if [ -n "$BASH_VERSION" ]; then

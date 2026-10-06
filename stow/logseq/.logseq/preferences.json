@@ -27,8 +27,8 @@
   },
   "externals": [],
   "pinnedToolbarItems": [
-    "logseq-journals-calendar:goto-today",
     "logseq-todo-plugin:logseq-plugin-todo",
-    "logseq-journals-calendar:open-calendar"
+    "logseq-journals-calendar:open-calendar",
+    "logseq-journals-calendar:goto-today"
   ]
 }
