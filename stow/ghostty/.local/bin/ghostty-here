@@ -1,0 +1,14 @@
+#!/bin/sh
+# Open a Ghostty window in the caller's working directory.
+#
+# With gtk-single-instance, a plain `ghostty` launch just hands an activation
+# to the running instance over D-Bus. The caller's cwd and even an explicit
+# --working-directory are dropped, so the new window inherits the focused
+# window's directory instead (window-inherit-working-directory). That breaks
+# "Open in terminal" in the file manager. `+new-window` forwards the cwd and
+# any -e command; it D-Bus-activates Ghostty if nothing is running yet. Fall
+# back to a normal launch if that fails anyway.
+
+ghostty +new-window "$@" 2>/dev/null && exit 0
+
+exec ghostty --gtk-single-instance=true "$@"

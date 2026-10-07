@@ -1,0 +1,29 @@
+# Overrides the system entry so launchers (e.g. COSMIC Files "Open in terminal")
+# open the new window in their own directory; see ~/.local/bin/ghostty-here.
+# DBusActivatable=false so they run Exec instead of activating over D-Bus.
+[Desktop Entry]
+Version=1.0
+Name=Ghostty
+Type=Application
+Comment=A terminal emulator
+TryExec=/usr/bin/ghostty
+Exec=ghostty-here
+Icon=com.mitchellh.ghostty
+Categories=System;TerminalEmulator;
+Keywords=terminal;tty;pty;
+StartupNotify=true
+StartupWMClass=com.mitchellh.ghostty
+Terminal=false
+Actions=new-window;
+X-GNOME-UsesNotifications=true
+X-TerminalArgExec=-e
+X-TerminalArgTitle=--title=
+X-TerminalArgAppId=--class=
+X-TerminalArgDir=--working-directory=
+X-TerminalArgHold=--wait-after-command
+DBusActivatable=false
+X-KDE-Shortcuts=Ctrl+Alt+T
+
+[Desktop Action new-window]
+Name=New Window
+Exec=ghostty-here
