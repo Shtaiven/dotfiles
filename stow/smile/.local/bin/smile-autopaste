@@ -19,10 +19,11 @@
 # compositor has not handed keyboard focus back to your window yet. Input
 # synthesised immediately goes to a surface that is going away. This is routing,
 # not mechanism -- wtype needs the wait exactly as much as ctrl+v did.
+# 0.1s was not enough on cosmic-comp 1.0.0 (nothing appeared); 0.5s is.
 
 set -u
 
-SETTLE=0.1 # seconds to wait for focus to return to the target window
+SETTLE=${SMILE_AUTOPASTE_SETTLE:-0.3} # seconds to wait for focus to return to the target window
 
 if ! command -v wtype >/dev/null 2>&1; then
   echo "Error: wtype is not installed or not in PATH" >&2
@@ -51,5 +52,9 @@ dbus-monitor --session "type='signal',interface='it.mijorus.smile',member='Copie
     [ -n "$emoji" ] || continue
 
     sleep "$SETTLE"
-    wtype -- "$emoji"
+    if wtype -- "$emoji"; then
+      echo "typed $emoji after ${SETTLE}s" >&2
+    else
+      echo "wtype failed (exit $?) typing $emoji" >&2
+    fi
   done
