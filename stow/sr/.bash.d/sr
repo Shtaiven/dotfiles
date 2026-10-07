@@ -14,9 +14,8 @@ fi
 [[ -f ~/dots/setup.bash ]] && source ~/dots/setup.bash
 
 # alias for sr
-SR_DOTS_DIR="$HOME/dots"
 SR_INSTALLATION_TOOLS_DIR="$HOME/src/sr_installation_tools"
-alias sr-update="( cd $SR_DOTS_DIR && git pull );pixi global install --force-reinstall caty sr_installation_tools -c https://conda.smart-robotics.nl/get/smart-robotics -c conda-forge"
+alias sr-update="( cd ${SR_DOTS_DIR:-$HOME/dots} && git pull );pixi global install --force-reinstall caty sr_installation_tools -c https://conda.smart-robotics.nl/get/smart-robotics -c conda-forge"
 
 # sr_deployment
 [[ -f "$HOME/src/sr_deployment/scripts/common.bash" ]] && source "$HOME/src/sr_deployment/scripts/common.bash"
@@ -25,20 +24,3 @@ alias sr-update="( cd $SR_DOTS_DIR && git pull );pixi global install --force-rei
 alias sr-clion='tmux new -d sr run clion \$CONDA_DEFAULT_ENV'
 alias sr-code='tmux new -d sr run code \$CONDA_DEFAULT_ENV'
 alias sr-pycharm='tmux new -d sr run pycharm \$CONDA_DEFAULT_ENV'
-
-# >>> mamba initialize >>>
-# !! Contents within this block are managed by 'mamba init' !!
-export MAMBA_EXE="$HOME/.local/bin/micromamba";
-export MAMBA_ROOT_PREFIX="$HOME/micromamba";
-__mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__mamba_setup"
-else
-    if [ -f "$HOME/micromamba/etc/profile.d/micromamba.sh" ]; then
-        . "$HOME/micromamba/etc/profile.d/micromamba.sh"
-    else
-        export  PATH="$HOME/micromamba/bin:$PATH"  # extra space after export prevents interference from conda init
-    fi
-fi
-unset __mamba_setup
-# <<< mamba initialize <<<
