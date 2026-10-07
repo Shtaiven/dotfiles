@@ -6,3 +6,7 @@ run = "fc-cache -f"
 check_cmd = "fc-list : family | grep -qi nerd"
 requires = ["fc-cache"]
 note = "fontconfig has to index ~/.fonts before anything can select these; until it does the files are on disk but no terminal or editor can see them"
+
+[install]
+copy = true
+reason = "Flatpak bind-mounts ~/.fonts at /run/host/user-fonts, so a stow symlink into ~/.dotfiles dangles inside the sandbox and apps draw boxes instead of glyphs"
