@@ -11,7 +11,7 @@ return {
 			local servers = {
 				bashls = {},
 				clangd = {},
-				cmake = {},
+				neocmake = {},
 				jsonls = {},
 				ruff = {},
 				rust_analyzer = {},
