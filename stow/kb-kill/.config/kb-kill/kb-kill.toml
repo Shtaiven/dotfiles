@@ -7,12 +7,14 @@
 
 kill_combo = "ctrl+shift+alt+k"
 wake_combo = "ctrl+shift+alt+l"
-[groups.laptop_keyboards]
-label = "Laptop Keyboards"
+[groups.laptop_keyboard]
+label = "Laptop Keyboard"
 keyboards = ["AT Translated Set 2 keyboard"]
 wake_on_lock = true
 
-[groups.laptop_trackpads]
-label = "Laptop Trackpads"
+[groups.laptop_trackpad]
+label = "Laptop Trackpad"
 pointers = ["DELL*Touchpad", "*Synaptics*", "*ALPS TrackPoint*", "PIXA*Touchpad", "UNIW0001:00 093A:0255*"]
 wake_on_lock = true
+kill_combo = "ctrl+alt+shift+i"
+wake_combo = "ctrl+alt+shift+o"
