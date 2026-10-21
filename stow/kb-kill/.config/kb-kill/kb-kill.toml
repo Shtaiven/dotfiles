@@ -16,5 +16,11 @@ wake_on_lock = true
 label = "Laptop Trackpad"
 pointers = ["DELL*Touchpad", "*Synaptics*", "*ALPS TrackPoint*", "PIXA*Touchpad", "UNIW0001:00 093A:0255*"]
 wake_on_lock = true
+kill_combo = "ctrl+alt+shift+comma"
+wake_combo = "ctrl+alt+shift+dot"
+
+[groups.laptop_touchscreen]
+label = "Laptop Touchscreen"
+pointers = "CSW1322:00 3558:14FD"
 kill_combo = "ctrl+alt+shift+i"
 wake_combo = "ctrl+alt+shift+o"
