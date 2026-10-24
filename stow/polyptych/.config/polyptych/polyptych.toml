@@ -1,0 +1,35 @@
+# polyptych configuration. Changes apply to running windows on save.
+
+# The spacer always shows its idle look. When it is focused, hovered or
+# floating, focus_color and focus_text are drawn over it.
+
+# Idle look: a colour, with an optional image drawn over it. The colour
+# shows through transparent parts of the image and around a zoomed one.
+idle_color = "#00000000"
+
+# A PNG or JPEG file, or a folder to pick a random one from each time a
+# spacer opens. Relative paths are relative to this file's folder.
+# idle_image = "spacers"
+# How the image fills the window: "zoom" (fit inside), "fill" (cover and
+# crop), "stretch" or "tile".
+idle_image_fit = "fill"
+
+# Text shown in the middle of the window when focused.
+focus_text = "Spacer, right-click to close"
+
+# Font: a name ("Inter"), a generic family ("sans", "serif", "monospace")
+# or a file path ("/path/to/font.ttf"). Matches COSMIC's interface font.
+font = "Inter"
+
+# Weight from 100 (thin) to 900 (black): 400 is regular, 700 bold. Only
+# variable fonts change weight; other fonts are drawn as they are.
+font_weight = 400
+
+# Font size in logical pixels.
+font_size = 18.0
+
+# Colours are "#RRGGBB" or "#RRGGBBAA". These match COSMIC's dark theme:
+# the window background and the text drawn on it. The focus_color alpha
+# (0x80, 50%) matches the COSMIC panel's opacity.
+text_color = "#ead4ad"
+focus_color = "#10101080"
