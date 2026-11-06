@@ -38,6 +38,14 @@ state:  (blank when clean) +N staged, ~N modified, ?N untracked, !N conflicts,
 EOF
 }
 
+# The -h text as a man page, so `git dirs --help` (which git turns into
+# `man git-dirs`) works once it is installed under ~/.local/share/man/man1.
+man_page() {
+  printf '.TH GIT-DIRS 1\n.SH NAME\ngit-dirs \\- show the git state of every subdirectory\n.SH SYNOPSIS\n.nf\n'
+  usage | sed -e 's/\\/\\e/g' -e "s/^[.']/\\\\\&&/"
+  printf '.fi\n'
+}
+
 all=0
 recursive=0
 git_only=0
@@ -60,6 +68,10 @@ while [ $# -gt 0 ]; do
     --no-color) color=never ;;
     -h | --help)
       usage
+      exit 0
+      ;;
+    --man)
+      man_page
       exit 0
       ;;
     --)

@@ -18,8 +18,10 @@ remote.git/  -  bare repo
 
 ## Install
 
-`dots install shell` symlinks it to `~/.local/bin/git-dirs` (a `[[command]]` in
-`stow/shell/.dots-install.toml`).
+`dots install git` symlinks it to `~/.local/bin/git-dirs` and writes its man
+page to `~/.local/share/man/man1/git-dirs.1`, so `git dirs --help` works (git
+turns `--help` into `man git-dirs`). Both are a `[[command]]` in
+`stow/git/.dots-install.toml`.
 
 ### Without these dotfiles
 
@@ -30,6 +32,8 @@ anyone can install it:
 mkdir -p ~/.local/bin
 curl -fsSL https://raw.githubusercontent.com/Shtaiven/dotfiles/main/scripts/git-dirs -o ~/.local/bin/git-dirs
 chmod +x ~/.local/bin/git-dirs
+mkdir -p ~/.local/share/man/man1   # optional: makes `git dirs --help` work
+~/.local/bin/git-dirs --man > ~/.local/share/man/man1/git-dirs.1
 git config --global alias.ls dirs   # optional: `git ls` too
 ```
 

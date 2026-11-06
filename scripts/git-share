@@ -32,6 +32,14 @@ was skipped.
 EOF
 }
 
+# The -h text as a man page, so `git share --help` (which git turns into
+# `man git-share`) works once it is installed under ~/.local/share/man/man1.
+man_page() {
+  printf '.TH GIT-SHARE 1\n.SH NAME\ngit-share \\- print git clone commands that recreate a folder of repos\n.SH SYNOPSIS\n.nf\n'
+  usage | sed -e 's/\\/\\e/g' -e "s/^[.']/\\\\\&&/"
+  printf '.fi\n'
+}
+
 remote_opt=
 git_only=0
 quiet=0
@@ -59,6 +67,10 @@ while [ $# -gt 0 ]; do
     --remote=*) remote_opt=${1#--remote=} ;;
     -h | --help)
       usage
+      exit 0
+      ;;
+    --man)
+      man_page
       exit 0
       ;;
     --)

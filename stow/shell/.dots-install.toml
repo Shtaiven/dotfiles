@@ -49,10 +49,3 @@ run = "curl -Ls https://raw.githubusercontent.com/jarun/nnn/master/plugins/getpl
 check_path = "$XDG_CONFIG_HOME/nnn/plugins/preview-tui"
 requires = ["curl"]
 note = "installs preview-tui, which NNN_PLUG in tools.sh binds"
-
-[[command]]
-name = "git-dirs and git-share"
-run = 'mkdir -p "$HOME/.local/bin" && for s in git-dirs git-share; do ln -sf "$DOTFILES_DIR/scripts/$s" "$HOME/.local/bin/$s"; done'
-check_cmd = 'for s in git-dirs git-share; do [ "$(readlink "$HOME/.local/bin/$s")" = "$DOTFILES_DIR/scripts/$s" ] || exit 1; done'
-requires = ["git"]
-note = "git subcommands behind `git ls` / `git dirs` and `git share`"

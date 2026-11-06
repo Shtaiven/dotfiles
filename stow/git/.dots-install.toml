@@ -1,4 +1,4 @@
-description = "git config, ignores and delta pager setup"
+description = "git config, ignores, delta pager setup, and the git dirs / git share scripts"
 
 [[program]]
 name = "git"
@@ -8,6 +8,13 @@ pixi = "git"
 name = "delta"
 pixi = "git-delta"
 note = "configured as git's pager and diff/merge highlighter"
+
+[[command]]
+name = "git-dirs and git-share"
+run = 'mkdir -p "$HOME/.local/bin" "$HOME/.local/share/man/man1" && for s in git-dirs git-share; do ln -sf "$DOTFILES_DIR/scripts/$s" "$HOME/.local/bin/$s" && "$DOTFILES_DIR/scripts/$s" --man >"$HOME/.local/share/man/man1/$s.1"; done'
+check_cmd = 'for s in git-dirs git-share; do [ "$(readlink "$HOME/.local/bin/$s")" = "$DOTFILES_DIR/scripts/$s" ] && "$DOTFILES_DIR/scripts/$s" --man | cmp -s - "$HOME/.local/share/man/man1/$s.1" || exit 1; done'
+requires = ["git"]
+note = "git subcommands behind `git ls` / `git dirs` and `git share`, plus man pages so `--help` works through git"
 
 [[warning]]
 name = "~/.gitconfig"

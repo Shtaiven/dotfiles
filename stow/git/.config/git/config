@@ -101,7 +101,7 @@
     hash = rev-parse --short HEAD
 
     # `git dirs` (and `ls`/`ll` above) and `git share` run scripts/git-dirs and
-    # scripts/git-share, symlinked to ~/.local/bin by the shell package's install
+    # scripts/git-share, symlinked to ~/.local/bin by the git package's install
 
     # Delete merged branches
     delete-merged = "!f() { git branch --merged ${1:-main} | grep -v '\\*\\|master\\|main' | xargs -n 1 git branch -d; }; f"

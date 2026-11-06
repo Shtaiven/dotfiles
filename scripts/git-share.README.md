@@ -19,8 +19,10 @@ The clone lines go to stdout and the warnings to stderr, so
 
 ## Install
 
-`dots install shell` symlinks it to `~/.local/bin/git-share` (a `[[command]]`
-in `stow/shell/.dots-install.toml`).
+`dots install git` symlinks it to `~/.local/bin/git-share` and writes its man
+page to `~/.local/share/man/man1/git-share.1`, so `git share --help` works (git
+turns `--help` into `man git-share`). Both are a `[[command]]` in
+`stow/git/.dots-install.toml`.
 
 ### Without these dotfiles
 
@@ -31,6 +33,8 @@ anyone can install it:
 mkdir -p ~/.local/bin
 curl -fsSL https://raw.githubusercontent.com/Shtaiven/dotfiles/main/scripts/git-share -o ~/.local/bin/git-share
 chmod +x ~/.local/bin/git-share
+mkdir -p ~/.local/share/man/man1   # optional: makes `git share --help` work
+~/.local/bin/git-share --man > ~/.local/share/man/man1/git-share.1
 ```
 
 `~/.local/bin` has to be on `PATH` (it is by default on most Linux distros).
