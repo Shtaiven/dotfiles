@@ -17,12 +17,13 @@ set -eu
 
 usage() {
   cat <<'EOF'
-usage: git dirs [-a] [-r] [-g] [--color[=WHEN]] [DIR...]
+usage: git dirs [-a] [-d] [-r] [-g] [--color[=WHEN]] [DIR...]
 
-Show the git state of each DIR (default: . itself as ./, then every
-subdirectory of .).
+Show the git state of each DIR (default: .) and of every subdirectory
+of it, like ls. DIR itself comes first (. as ./).
 
   -a, --all        include hidden directories
+  -d, --directory  list the DIRs themselves, not their subdirectories
   -r, --recursive  search folders that aren't repos for repos at any depth
                    (repos are not searched for nested repos)
   -g, --git-only   hide folders that aren't git repos
@@ -47,12 +48,14 @@ man_page() {
 }
 
 all=0
+dirs_only=0
 recursive=0
 git_only=0
 color=auto
 while [ $# -gt 0 ]; do
   case $1 in
     -a | --all) all=1 ;;
+    -d | --directory) dirs_only=1 ;;
     -r | --recursive) recursive=1 ;;
     -g | --git-only) git_only=1 ;;
     -[!-]?*)
@@ -228,29 +231,45 @@ find_repos() {
   fi | sort
 }
 
-# default: the current directory itself (shown as ./) first, then its subdirs
-if [ $# -eq 0 ]; then
-  set -- . */
-  [ "$all" -eq 1 ] && set -- "$@" .[!.]*/ ..?*/
-fi
+# add_target DIR: queue DIR for probing. -r: a folder outside any repo is
+# replaced by the repos found below it (./ itself always stays, so you still
+# see where you are)
+add_target() {
+  [ -d "$1" ] || return 0
+  if [ "$recursive" -eq 1 ] && [ "$1" != . ] &&
+    ! git -C "$1" rev-parse --git-dir >/dev/null 2>&1; then
+    found=$(find_repos "$1")
+    if [ -n "$found" ]; then
+      printf '%s\n' "$found" >>"$tmp/targets"
+      return 0
+    fi
+  fi
+  printf '%s\n' "$1" >>"$tmp/targets"
+}
 
+# like ls: each DIR (default .) is shown itself, then every subdirectory of
+# it; with -d only the DIRs themselves
+[ $# -eq 0 ] && set -- .
 for d in "$@"; do
   # unmatched globs stay literal; skip them and anything that isn't a dir
   [ -d "$d" ] || continue
   case $d in
     */) [ "$d" = / ] || d=${d%/} ;;
   esac
-  # -r: a folder outside any repo is replaced by the repos found below it
-  # (./ itself always stays, so you still see where you are)
-  if [ "$recursive" -eq 1 ] && [ "$d" != . ] &&
-    ! git -C "$d" rev-parse --git-dir >/dev/null 2>&1; then
-    found=$(find_repos "$d")
-    if [ -n "$found" ]; then
-      printf '%s\n' "$found" >>"$tmp/targets"
-      continue
-    fi
+  add_target "$d"
+  [ "$dirs_only" -eq 1 ] && continue
+  case $d in
+    .) p= ;;
+    /) p=/ ;;
+    *) p=$d/ ;;
+  esac
+  for c in "$p"*/; do add_target "${c%/}"; done
+  if [ "$all" -eq 1 ]; then
+    for c in "$p".[!.]*/ "$p"..?*/; do
+      # a repo's own .git dir is not a row of its own
+      [ "${c%/}" = "$p.git" ] || add_target "${c%/}"
+    done
   fi
-  printf '%s\n' "$d" >>"$tmp/targets"
 done
 
 jobs_max=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)

@@ -50,7 +50,8 @@ git ls -a              # include hidden directories
 git ls -r              # also find repos at any depth inside folders that aren't repos
 git ls -g              # hide folders that aren't git repos
 git ls -rg             # every repo below ., nothing else
-git ls foo bar         # just these
+git ls ..              # like ls: ../ itself, then every subdirectory of ..
+git ls -d foo bar      # just these, not what's inside them
 git ls --color=always | less -R
 ```
 
