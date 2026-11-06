@@ -51,8 +51,8 @@ requires = ["curl"]
 note = "installs preview-tui, which NNN_PLUG in tools.sh binds"
 
 [[command]]
-name = "git-dirs"
-run = 'mkdir -p "$HOME/.local/bin" && ln -sf "$DOTFILES_DIR/scripts/git-dirs" "$HOME/.local/bin/git-dirs"'
-check_cmd = '[ "$(readlink "$HOME/.local/bin/git-dirs")" = "$DOTFILES_DIR/scripts/git-dirs" ]'
+name = "git-dirs and git-share"
+run = 'mkdir -p "$HOME/.local/bin" && for s in git-dirs git-share; do ln -sf "$DOTFILES_DIR/scripts/$s" "$HOME/.local/bin/$s"; done'
+check_cmd = 'for s in git-dirs git-share; do [ "$(readlink "$HOME/.local/bin/$s")" = "$DOTFILES_DIR/scripts/$s" ] || exit 1; done'
 requires = ["git"]
-note = "per-subdirectory repo status behind `git ls` / `git dirs`"
+note = "git subcommands behind `git ls` / `git dirs` and `git share`"

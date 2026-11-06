@@ -1,0 +1,209 @@
+#!/bin/sh
+#
+# git-share — print `git clone` commands that recreate the repos in the
+# subdirectories of the current directory, each on what it has checked out:
+#
+#   git clone git@host:group/foo.git --branch main foo
+#   git clone git@host:group/bar.git --branch v1.4.0 bar
+#   git clone git@host:group/baz.git baz && git -C baz checkout 0c0ffee...
+#
+# The clone lines go to stdout, so `git share > clone.sh` captures only them.
+# Anything the clones won't reproduce (unpushed work, local-only branches,
+# uncommitted changes) and every folder that was skipped is reported on
+# stderr at the end. POSIX sh. See git-share.README.md.
+
+set -eu
+
+usage() {
+  cat <<'EOF'
+usage: git share [-g] [-q] [-r REMOTE] [DIR...]
+
+Print `git clone` commands that recreate each DIR (default: every
+subdirectory of .) on the branch, tag or commit it has checked out.
+
+  -r, --remote NAME  remote to clone from (default: the branch's upstream
+                     remote, else origin, else the repo's only remote)
+  -g, --git-only     don't warn about folders that aren't git repos
+  -q, --quiet        don't print any warnings
+  -h, --help         show this help
+
+Warnings on stderr (yellow on a terminal) list what the clones won't include and any folder that
+was skipped.
+EOF
+}
+
+remote_opt=
+git_only=0
+quiet=0
+while [ $# -gt 0 ]; do
+  case $1 in
+    -g | --git-only) git_only=1 ;;
+    -q | --quiet) quiet=1 ;;
+    -[gq]?*)
+      # split bundled short options: -gq -> -g -q (-r takes a value, so it
+      # can only come last: -gr origin)
+      rest=${1#-?}
+      first=${1%"$rest"}
+      shift
+      set -- "$first" "-$rest" "$@"
+      continue
+      ;;
+    -r | --remote)
+      [ $# -ge 2 ] || {
+        printf 'git-share: %s needs a remote name\n' "$1" >&2
+        exit 2
+      }
+      remote_opt=$2
+      shift
+      ;;
+    --remote=*) remote_opt=${1#--remote=} ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      printf 'git-share: unknown option: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *) break ;;
+  esac
+  shift
+done
+
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX 2>/dev/null || :
+
+# Quote $1 for the shell, only when it needs it.
+shq() {
+  case $1 in
+    '' | *[!A-Za-z0-9_./:@%+=,-]*)
+      printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+      ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
+warnings=
+warn() {
+  warnings="$warnings
+warning: $*"
+}
+
+[ $# -eq 0 ] && set -- */
+
+for d in "$@"; do
+  [ -d "$d" ] || continue # unmatched glob
+  case $d in
+    */) [ "$d" = / ] || d=${d%/} ;;
+  esac
+
+  if [ -L "$d" ]; then
+    warn "$d/: symlink, skipped (the clone of its target covers it)"
+    continue
+  fi
+  top=$(git -C "$d" rev-parse --show-toplevel 2>/dev/null) || {
+    if [ "$(git -C "$d" rev-parse --is-bare-repository 2>/dev/null)" = true ]; then
+      warn "$d/: bare repo, skipped"
+    elif [ "$git_only" -eq 0 ]; then
+      warn "$d/: not a git repo"
+    fi
+    continue
+  }
+  if [ "$top" != "$(cd "$d" && pwd -P)" ]; then
+    [ "$git_only" -eq 1 ] || warn "$d/: not a git repo (inside a parent repo)"
+    continue
+  fi
+
+  g() { git -C "$d" "$@"; }
+
+  branch=$(g symbolic-ref -q --short HEAD 2>/dev/null || :)
+
+  # which remote to clone from
+  remote=$remote_opt
+  if [ -z "$remote" ] && [ -n "$branch" ]; then
+    remote=$(g config --get "branch.$branch.remote" 2>/dev/null || :)
+    [ "$remote" = . ] && remote= # upstream is a local branch
+  fi
+  if [ -z "$remote" ]; then
+    if g config --get remote.origin.url >/dev/null 2>&1; then
+      remote=origin
+    elif [ "$(g remote | wc -l)" -eq 1 ]; then
+      remote=$(g remote)
+    fi
+  fi
+  url=
+  [ -n "$remote" ] && url=$(g config --get "remote.$remote.url" 2>/dev/null || :)
+  if [ -z "$url" ]; then
+    if [ -z "$(g remote)" ]; then
+      warn "$d/: no remote, skipped"
+    elif [ -n "$remote_opt" ]; then
+      warn "$d/: no remote named $remote_opt, skipped"
+    else
+      warn "$d/: no origin remote and several others, skipped (pick one with -r)"
+    fi
+    continue
+  fi
+
+  if ! g rev-parse -q --verify HEAD >/dev/null; then
+    warn "$d/: no commits yet, skipped"
+    continue
+  fi
+  head=$(g rev-parse HEAD)
+
+  # what to check out: a branch as it is named on the remote, else a tag,
+  # else the commit itself (--branch can't take a commit)
+  ref='' checkout=''
+  if [ -n "$branch" ]; then
+    rbranch=$branch
+    if [ "$(g config --get "branch.$branch.remote" 2>/dev/null || :)" = "$remote" ]; then
+      merge=$(g config --get "branch.$branch.merge" 2>/dev/null || :)
+      [ -n "$merge" ] && rbranch=${merge#refs/heads/}
+    fi
+    if g rev-parse -q --verify "refs/remotes/$remote/$rbranch" >/dev/null; then
+      ref=$rbranch
+      ahead=$(g rev-list --count "refs/remotes/$remote/$rbranch..HEAD")
+      [ "$ahead" -gt 0 ] &&
+        warn "$d/: $ahead commit(s) on $branch not pushed to $remote/$rbranch"
+    else
+      warn "$d/: branch $branch is not on $remote; using a tag or the commit instead"
+    fi
+  fi
+  if [ -z "$ref" ]; then
+    tag=$(g describe --tags --exact-match HEAD 2>/dev/null || :)
+    if [ -n "$tag" ]; then
+      ref=$tag
+    else
+      checkout=$head
+      [ -n "$(g for-each-ref --contains HEAD --count=1 "refs/remotes/$remote" 2>/dev/null)" ] ||
+        warn "$d/: commit $(g rev-parse --short HEAD) is not on any $remote branch; the clone will fail to check it out"
+    fi
+  fi
+
+  [ -n "$(g --no-optional-locks status --porcelain 2>/dev/null)" ] &&
+    warn "$d/: uncommitted changes aren't included"
+
+  qd=$(shq "$d")
+  if [ -n "$ref" ]; then
+    printf 'git clone %s --branch %s %s\n' "$(shq "$url")" "$(shq "$ref")" "$qd"
+  else
+    printf 'git clone %s %s && git -C %s checkout %s\n' "$(shq "$url")" "$qd" "$qd" "$checkout"
+  fi
+done
+
+if [ -n "$warnings" ] && [ "$quiet" -eq 0 ]; then
+  # yellow when stderr is a terminal, unless NO_COLOR or color.ui is off
+  yellow='' reset=''
+  if [ -t 2 ] && [ -z "${NO_COLOR:-}" ]; then
+    case $(git config --get color.ui 2>/dev/null || :) in
+      never | false | off | no | 0) ;;
+      *) yellow=$(printf '\033[33m') reset=$(printf '\033[0m') ;;
+    esac
+  fi
+  printf '%s\n' "$warnings" | sed 1d | while IFS= read -r line; do
+    printf '%s%s%s\n' "$yellow" "$line" "$reset"
+  done >&2
+fi
