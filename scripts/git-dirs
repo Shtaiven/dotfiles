@@ -1,0 +1,305 @@
+#!/bin/sh
+#
+# git-dirs — show the git state of every subdirectory, one row per directory.
+# Behind the `git ls` / `git ll` / `git dirs` aliases. POSIX sh.
+#
+#   name/   ref          commit   sync    state
+#   foo/    main         a1b2c3d  ↑2 ↓1   +1 ~3 ?2
+#   bar/    tag:v1.4.0   9f8e7d6
+#   baz/    HEAD         0c0ffee
+#   docs/   -  not a git repo
+#
+# Colors: directory names from $LS_COLORS, git state from git's own color
+# settings (color.status.*, color.decorate.tag, color.diff.commit), plain
+# ANSI codes for the rest. See git-dirs.README.md for the full legend.
+
+set -eu
+
+usage() {
+  cat <<'EOF'
+usage: git dirs [-a] [--color[=WHEN]] [DIR...]
+
+Show the git state of each DIR (default: . itself as ./, then every
+subdirectory of .).
+
+  -a, --all        include hidden directories
+  --color[=WHEN]   always, never or auto (default auto)
+  -h, --help       show this help
+
+ref:    branch, tag:NAME when detached on a tag,
+        HEAD when detached on a plain commit
+sync:   ↑N ahead / ↓N behind upstream, "local" = no upstream,
+        "gone" = upstream deleted
+state:  (blank when clean) +N staged, ~N modified, ?N untracked, !N conflicts,
+        REBASE/MERGE/CHERRY-PICK/REVERT/BISECT when an operation is in progress
+EOF
+}
+
+all=0
+color=auto
+while [ $# -gt 0 ]; do
+  case $1 in
+    -a | --all) all=1 ;;
+    --color) color=always ;;
+    --color=*) color=${1#--color=} ;;
+    --no-color) color=never ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      printf 'git-dirs: unknown option: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *) break ;;
+  esac
+  shift
+done
+
+case $color in
+  always) use_color=1 ;;
+  never) use_color=0 ;;
+  auto)
+    use_color=0
+    if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+      case $(git config --get color.ui 2>/dev/null || :) in
+        never | false | off | no | 0) ;;
+        *) use_color=1 ;;
+      esac
+    fi
+    ;;
+  *)
+    printf 'git-dirs: --color must be always, never or auto\n' >&2
+    exit 2
+    ;;
+esac
+
+# Probe from each dir's own location, never from an inherited repo.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX 2>/dev/null || :
+
+# Print one tab-separated record for directory $1:
+#   name islink kind ref reftype commit sync_a sync_b upstream staged modified
+#   untracked conflicts op
+# kind: repo | bare | none | parent | error
+probe() {
+  d=$1
+  link=0
+  [ -L "$d" ] && link=1
+  rec() { printf '%s\t%s\t%s\n' "$d" "$link" "$*"; }
+
+  top=$(git -C "$d" rev-parse --show-toplevel 2>/dev/null) || {
+    if [ "$(git -C "$d" rev-parse --is-bare-repository 2>/dev/null)" = true ]; then
+      rec "bare	-	-	-	0	0	-	0	0	0	0	-"
+    else
+      rec "none	-	-	-	0	0	-	0	0	0	0	-"
+    fi
+    return 0
+  }
+  here=$(cd "$d" && pwd -P)
+  if [ "$top" != "$here" ]; then
+    rec "parent	-	-	-	0	0	-	0	0	0	0	-"
+    return 0
+  fi
+
+  st=$(git -C "$d" --no-optional-locks status --porcelain=v2 --branch \
+    --untracked-files=normal 2>/dev/null) || {
+    rec "error	-	-	-	0	0	-	0	0	0	0	-"
+    return 0
+  }
+
+  # head oid upstream ahead behind staged modified untracked conflicts
+  # shellcheck disable=SC2046 # word-splitting the awk summary is intended
+  set -- $(printf '%s\n' "$st" | awk '
+    BEGIN { head = "-"; oid = "-"; up = "-"; a = "x"; b = "x" }
+    $1 == "#" && $2 == "branch.oid"      { oid = $3 }
+    $1 == "#" && $2 == "branch.head"     { head = $3 }
+    $1 == "#" && $2 == "branch.upstream" { up = "y" }
+    $1 == "#" && $2 == "branch.ab"       { a = substr($3, 2); b = substr($4, 2) }
+    $1 == "1" || $1 == "2" {
+      if (substr($2, 1, 1) != ".") s++
+      if (substr($2, 2, 1) != ".") m++
+    }
+    $1 == "u" { c++ }
+    $1 == "?" { u++ }
+    END { print head, oid, up, a, b, s + 0, m + 0, u + 0, c + 0 }')
+  head=$1 oid=$2 up=$3 ahead=$4 behind=$5
+
+  if [ "$oid" = "(initial)" ]; then
+    commit="(empty)"
+  else
+    commit=$(git -C "$d" rev-parse --short HEAD 2>/dev/null || printf '%s' "$oid")
+  fi
+
+  if [ "$head" = "(detached)" ]; then
+    if tag=$(git -C "$d" describe --tags --exact-match HEAD 2>/dev/null); then
+      ref="tag:$tag" reftype=tag
+    else
+      ref=HEAD reftype=detached
+    fi
+  else
+    ref=$head reftype=branch
+  fi
+
+  # upstream: local (none), gone (configured but missing), else ahead/behind;
+  # a detached HEAD has no upstream to compare against
+  if [ "$reftype" != branch ]; then
+    upstream=-
+  elif [ "$up" = "-" ]; then
+    upstream=local
+  elif [ "$ahead" = x ]; then
+    upstream=gone
+  else
+    upstream=ok
+  fi
+
+  gd=$(git -C "$d" rev-parse --absolute-git-dir 2>/dev/null || :)
+  op=-
+  if [ -n "$gd" ]; then
+    if [ -d "$gd/rebase-merge" ] || [ -d "$gd/rebase-apply" ]; then
+      op=REBASE
+      # show the branch being rebased rather than the detached HEAD
+      for f in "$gd/rebase-merge/head-name" "$gd/rebase-apply/head-name"; do
+        if [ -f "$f" ]; then
+          b=$(cat "$f")
+          case $b in refs/heads/*) ref=${b#refs/heads/} reftype=branch ;; esac
+        fi
+      done
+    elif [ -f "$gd/MERGE_HEAD" ]; then
+      op=MERGE
+    elif [ -f "$gd/CHERRY_PICK_HEAD" ]; then
+      op=CHERRY-PICK
+    elif [ -f "$gd/REVERT_HEAD" ]; then
+      op=REVERT
+    elif [ -f "$gd/BISECT_LOG" ]; then
+      op=BISECT
+    fi
+  fi
+
+  rec "repo	$ref	$reftype	$commit	$ahead	$behind	$upstream	$6	$7	$8	$9	$op"
+}
+
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/git-dirs.XXXXXX")
+trap 'rm -rf "$tmp"' EXIT
+trap 'exit 130' INT TERM
+
+# default: the current directory itself (shown as ./) first, then its subdirs
+if [ $# -eq 0 ]; then
+  set -- . */
+  [ "$all" -eq 1 ] && set -- "$@" .[!.]*/ ..?*/
+fi
+
+jobs_max=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
+jobs_max=$((jobs_max * 2))
+n=0
+for d in "$@"; do
+  # unmatched globs stay literal; skip them and anything that isn't a dir
+  [ -d "$d" ] || continue
+  case $d in
+    */) [ "$d" = / ] || d=${d%/} ;;
+  esac
+  n=$((n + 1))
+  probe "$d" >"$tmp/$(printf '%06d' "$n")" &
+  [ $((n % jobs_max)) -eq 0 ] && wait
+done
+wait
+
+[ "$n" -eq 0 ] && exit 0
+
+# git's own color settings, falling back to git's defaults; empty without color
+gc() {
+  [ "$use_color" -eq 1 ] || return 0
+  git config --get-color "$1" "$2" 2>/dev/null || :
+}
+
+cat "$tmp"/* | awk -F '\t' -v color="$use_color" \
+  -v g_branch="$(gc color.status.localBranch green)" \
+  -v g_nobranch="$(gc color.status.nobranch red)" \
+  -v g_tag="$(gc color.decorate.tag 'bold yellow')" \
+  -v g_commit="$(gc color.diff.commit yellow)" \
+  -v g_gone="$(gc color.status.remoteBranch red)" \
+  -v g_added="$(gc color.status.added green)" \
+  -v g_changed="$(gc color.status.changed red)" \
+  -v g_untracked="$(gc color.status.untracked red)" \
+  -v g_unmerged="$(gc color.status.unmerged red)" '
+  # c(): wrap s in an escape sequence; t(): a plain ANSI SGR code
+  function c(esc, s) { return color && esc != "" ? esc s "\033[0m" : s }
+  function t(code) { return "\033[" code "m" }
+  function pad(s, w, n) { return s sprintf("%" (w - n > 0 ? w - n : 0) "s", "") }
+  function lscolor(key,   n, parts, i, kv) {
+    n = split(ENVIRON["LS_COLORS"], parts, ":")
+    for (i = 1; i <= n; i++) {
+      split(parts[i], kv, "=")
+      if (kv[1] == key) return kv[2]
+    }
+    return ""
+  }
+  BEGIN {
+    di = lscolor("di"); if (di == "") di = "01;34"
+    ln = lscolor("ln"); if (ln == "" || ln == "target") ln = di
+    di = t(di); ln = t(ln)
+    gray = t("90"); dim = t("2"); red = t("31"); op_c = t("1;35")
+  }
+  {
+    rows++
+    name[rows] = $1 "/"; link[rows] = $2; kind[rows] = $3
+    ref[rows] = $4; reftype[rows] = $5; commit[rows] = $6
+    ahead[rows] = $7; behind[rows] = $8; up[rows] = $9
+    staged[rows] = $10; mod[rows] = $11; untr[rows] = $12; conf[rows] = $13
+    op[rows] = $14
+
+    # sync column, with its display width tracked by hand (arrows are 1 cell)
+    s = ""; sw = 0
+    if (kind[rows] == "repo") {
+      if (up[rows] == "local") { s = c(dim, "local"); sw = 5 }
+      else if (up[rows] == "gone") { s = c(g_gone, "gone"); sw = 4 }
+      else if (up[rows] == "ok") {
+        if (ahead[rows] > 0) { s = "↑" ahead[rows]; sw = 1 + length(ahead[rows]) }
+        if (behind[rows] > 0) {
+          if (sw) { s = s " "; sw++ }
+          s = s "↓" behind[rows]; sw += 1 + length(behind[rows])
+        }
+      }
+    }
+    sync[rows] = s; syncw[rows] = sw
+
+    if (length(name[rows]) > wn) wn = length(name[rows])
+    if (kind[rows] == "repo") {
+      if (length(ref[rows]) > wr) wr = length(ref[rows])
+      if (length(commit[rows]) > wc) wc = length(commit[rows])
+      if (sw > ws) ws = sw
+    }
+  }
+  END {
+    for (i = 1; i <= rows; i++) {
+      # non-repos (bare repos aside) are grayed out, name included
+      nc = kind[i] == "repo" || kind[i] == "bare" ? (link[i] == "1" ? ln : di) : gray
+      line = pad(c(nc, name[i]), wn, length(name[i]))
+      if (kind[i] != "repo") {
+        msg = kind[i] == "parent" ? "in parent repo" \
+            : kind[i] == "bare"   ? "bare repo" \
+            : kind[i] == "error"  ? "git status failed" \
+            : "not a git repo"
+        print line "  " c(kind[i] == "error" ? red : gray, "-  " msg)
+        continue
+      }
+      rc = reftype[i] == "branch" ? g_branch : reftype[i] == "tag" ? g_tag : g_nobranch
+      line = line "  " pad(c(rc, ref[i]), wr, length(ref[i]))
+      line = line "  " pad(c(g_commit, commit[i]), wc, length(commit[i]))
+      if (ws) line = line "  " pad(sync[i], ws, syncw[i])
+
+      st = ""
+      if (conf[i] > 0) st = st " " c(g_unmerged, "!" conf[i])
+      if (staged[i] > 0) st = st " " c(g_added, "+" staged[i])
+      if (mod[i] > 0) st = st " " c(g_changed, "~" mod[i])
+      if (untr[i] > 0) st = st " " c(g_untracked, "?" untr[i])
+      if (op[i] != "-") st = st "  " c(op_c, op[i])
+      line = line " " st
+      sub(/[ ]+$/, "", line)
+      print line
+    }
+  }'

@@ -6,6 +6,7 @@ have their own READMEs:
 | Tool | Description | Docs |
 |---|---|---|
 | `dots` | Dotfiles management wrapping GNU Stow (install / remove / adopt / …) | [dots.README.md](./dots.README.md) |
+| `git-dirs` | Colored git state of every subdirectory — behind `git ls` | [git-dirs.README.md](./git-dirs.README.md) |
 | `term-colors` | Print the terminal's ANSI color palette as blocks | [term-colors.README.md](./term-colors.README.md) |
 
 ## pre-commit hooks
