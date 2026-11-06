@@ -26,6 +26,9 @@ remote.git/  -  bare repo
 ```sh
 git ls                 # . itself (as ./), then every subdirectory
 git ls -a              # include hidden directories
+git ls -r              # also find repos at any depth inside folders that aren't repos
+git ls -g              # hide folders that aren't git repos
+git ls -rg             # every repo below ., nothing else
 git ls foo bar         # just these
 git ls --color=always | less -R
 ```
@@ -65,5 +68,14 @@ settings apply:
 
 The ahead/behind arrows are uncolored. Color is used on a TTY unless
 `NO_COLOR` is set or `color.ui` is off; `--color=always|never` overrides.
+
+## Recursive mode
+
+With `-r`, a folder that isn't a repo is replaced by the repos found anywhere
+below it (`group/deep/x/repo/`); it stays as a `not a git repo` row only when
+nothing is found. Like `vcs`, it doesn't search inside repos for nested ones,
+skips hidden folders unless `-a`, and doesn't find bare repos. `./` is always
+kept. The search runs one small `test` per folder, so large trees full of
+build output take a second or two.
 
 Repos are probed in parallel (2× CPU count at a time).

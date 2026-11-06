@@ -17,12 +17,15 @@ set -eu
 
 usage() {
   cat <<'EOF'
-usage: git dirs [-a] [--color[=WHEN]] [DIR...]
+usage: git dirs [-a] [-r] [-g] [--color[=WHEN]] [DIR...]
 
 Show the git state of each DIR (default: . itself as ./, then every
 subdirectory of .).
 
   -a, --all        include hidden directories
+  -r, --recursive  search folders that aren't repos for repos at any depth
+                   (repos are not searched for nested repos)
+  -g, --git-only   hide folders that aren't git repos
   --color[=WHEN]   always, never or auto (default auto)
   -h, --help       show this help
 
@@ -36,10 +39,22 @@ EOF
 }
 
 all=0
+recursive=0
+git_only=0
 color=auto
 while [ $# -gt 0 ]; do
   case $1 in
     -a | --all) all=1 ;;
+    -r | --recursive) recursive=1 ;;
+    -g | --git-only) git_only=1 ;;
+    -[!-]?*)
+      # split bundled short options: -rg -> -r -g
+      rest=${1#-?}
+      first=${1%"$rest"}
+      shift
+      set -- "$first" "-$rest" "$@"
+      continue
+      ;;
     --color) color=always ;;
     --color=*) color=${1#--color=} ;;
     --no-color) color=never ;;
@@ -186,6 +201,20 @@ probe() {
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/git-dirs.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 trap 'exit 130' INT TERM
+mkdir "$tmp/out"
+: >"$tmp/targets"
+
+# Print every repo below $1, sorted, without descending into repos (or into
+# hidden dirs unless -a). Bare repos are not found this way.
+find_repos() {
+  if [ "$all" -eq 1 ]; then
+    find "$1" -type d \( -name .git -prune -o \
+      -exec sh -c 'test -e "$1/.git"' sh {} \; -print -prune \)
+  else
+    find "$1" -type d \( -name '.*' -prune -o \
+      -exec sh -c 'test -e "$1/.git"' sh {} \; -print -prune \)
+  fi | sort
+}
 
 # default: the current directory itself (shown as ./) first, then its subdirs
 if [ $# -eq 0 ]; then
@@ -193,19 +222,33 @@ if [ $# -eq 0 ]; then
   [ "$all" -eq 1 ] && set -- "$@" .[!.]*/ ..?*/
 fi
 
-jobs_max=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
-jobs_max=$((jobs_max * 2))
-n=0
 for d in "$@"; do
   # unmatched globs stay literal; skip them and anything that isn't a dir
   [ -d "$d" ] || continue
   case $d in
     */) [ "$d" = / ] || d=${d%/} ;;
   esac
-  n=$((n + 1))
-  probe "$d" >"$tmp/$(printf '%06d' "$n")" &
-  [ $((n % jobs_max)) -eq 0 ] && wait
+  # -r: a folder outside any repo is replaced by the repos found below it
+  # (./ itself always stays, so you still see where you are)
+  if [ "$recursive" -eq 1 ] && [ "$d" != . ] &&
+    ! git -C "$d" rev-parse --git-dir >/dev/null 2>&1; then
+    found=$(find_repos "$d")
+    if [ -n "$found" ]; then
+      printf '%s\n' "$found" >>"$tmp/targets"
+      continue
+    fi
+  fi
+  printf '%s\n' "$d" >>"$tmp/targets"
 done
+
+jobs_max=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
+jobs_max=$((jobs_max * 2))
+n=0
+while IFS= read -r d; do
+  n=$((n + 1))
+  probe "$d" </dev/null >"$tmp/out/$(printf '%06d' "$n")" &
+  [ $((n % jobs_max)) -eq 0 ] && wait
+done <"$tmp/targets"
 wait
 
 [ "$n" -eq 0 ] && exit 0
@@ -216,7 +259,7 @@ gc() {
   git config --get-color "$1" "$2" 2>/dev/null || :
 }
 
-cat "$tmp"/* | awk -F '\t' -v color="$use_color" \
+cat "$tmp"/out/* | awk -F '\t' -v color="$use_color" -v git_only="$git_only" \
   -v g_branch="$(gc color.status.localBranch green)" \
   -v g_nobranch="$(gc color.status.nobranch red)" \
   -v g_tag="$(gc color.decorate.tag 'bold yellow')" \
@@ -244,6 +287,7 @@ cat "$tmp"/* | awk -F '\t' -v color="$use_color" \
     di = t(di); ln = t(ln)
     gray = t("90"); dim = t("2"); red = t("31"); op_c = t("1;35")
   }
+  git_only && ($3 == "none" || $3 == "parent") { next }
   {
     rows++
     name[rows] = $1 "/"; link[rows] = $2; kind[rows] = $3
