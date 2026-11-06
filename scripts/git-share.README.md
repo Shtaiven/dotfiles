@@ -20,8 +20,23 @@ The clone lines go to stdout and the warnings to stderr, so
 ## Install
 
 `dots install shell` symlinks it to `~/.local/bin/git-share` (a `[[command]]`
-in `stow/shell/.dots-install.toml`). Without the dotfiles, copy the file onto
-your `PATH` as `git-share` and `chmod +x` it.
+in `stow/shell/.dots-install.toml`).
+
+### Without these dotfiles
+
+It's a single file that needs only `sh` and `git` plus standard tools, so
+anyone can install it:
+
+```sh
+mkdir -p ~/.local/bin
+curl -fsSL https://raw.githubusercontent.com/Shtaiven/dotfiles/main/scripts/git-share -o ~/.local/bin/git-share
+chmod +x ~/.local/bin/git-share
+```
+
+`~/.local/bin` has to be on `PATH` (it is by default on most Linux distros).
+Git runs any `git-*` program on `PATH` as a subcommand, so no alias is needed
+for `git share`. To pin a version, replace `main` in the URL with a commit
+hash.
 
 ## Usage
 

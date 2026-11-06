@@ -21,6 +21,23 @@ remote.git/  -  bare repo
 `dots install shell` symlinks it to `~/.local/bin/git-dirs` (a `[[command]]` in
 `stow/shell/.dots-install.toml`).
 
+### Without these dotfiles
+
+It's a single file that needs only `sh` and `git` plus standard tools, so
+anyone can install it:
+
+```sh
+mkdir -p ~/.local/bin
+curl -fsSL https://raw.githubusercontent.com/Shtaiven/dotfiles/main/scripts/git-dirs -o ~/.local/bin/git-dirs
+chmod +x ~/.local/bin/git-dirs
+git config --global alias.ls dirs   # optional: `git ls` too
+```
+
+`~/.local/bin` has to be on `PATH` (it is by default on most Linux distros).
+Git runs any `git-*` program on `PATH` as a subcommand, so no alias is needed
+for `git dirs`. To pin a version, replace `main` in the URL with a commit
+hash.
+
 ## Usage
 
 ```sh
